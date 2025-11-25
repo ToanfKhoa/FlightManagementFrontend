@@ -486,3 +486,5 @@ export function getTimeRemaining(deadline: string): {
 
   return { hours, minutes, expired: false };
 }
+
+export { UserAccount };
