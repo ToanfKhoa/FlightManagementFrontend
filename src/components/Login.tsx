@@ -4,6 +4,8 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Plane, UserPlus } from "lucide-react";
+import { toast } from "sonner";
+import { mockUserAccounts, mockPassengers } from "../lib/types";
 import type { User, UserRole } from "../App";
 
 interface LoginProps {
@@ -18,15 +20,47 @@ export function Login({ onLogin, onRegister }: LoginProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Mock login - in real app, this would call an API
-    const user: User = {
-      id: "user-" + Math.random().toString(36).substr(2, 9),
-      name: email.split("@")[0],
-      email,
-      role: selectedRole,
+
+    // Attempt to find a matching account by email or username
+    const account = mockUserAccounts.find(
+      (u) => u.email === email || u.username === email,
+    );
+
+    if (!account) {
+      toast.error("Tài khoản không tồn tại. Vui lòng đăng ký hoặc kiểm tra lại.");
+      return;
+    }
+
+    // Validate password - Register used btoa for demo hashing
+    if (account.password_hash !== btoa(password)) {
+      toast.error("Mật khẩu không đúng");
+      return;
+    }
+
+    // Map backend role to frontend role if needed
+    const roleMap: Record<string, UserRole> = {
+      passenger: "passenger",
+      admin: "admin",
+      employee: "staff", // types.ts uses `employee`, app.tsx expects `staff`
+      crew: "crew",
     };
-    
+
+    const mappedRole = (roleMap[account.role as string] ?? (account.role as UserRole)) as UserRole;
+
+    let displayName = account.username || account.email;
+    if (account.passenger_id) {
+      const p = mockPassengers.find((x) => x.id === account.passenger_id);
+      if (p) displayName = p.full_name;
+    }
+
+    const user: User = {
+      id: account.id,
+      name: displayName,
+      email: account.email,
+      role: mappedRole,
+    };
+
+    toast.success(`Đăng nhập thành công (${user.name})`);
     onLogin(user);
   };
 
@@ -62,11 +96,11 @@ export function Login({ onLogin, onRegister }: LoginProps) {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Email / Tên đăng nhập</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="email@example.com"
+                  placeholder="email@example.com hoặc tên đăng nhập"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
