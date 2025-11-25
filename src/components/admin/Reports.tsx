@@ -3,7 +3,7 @@ import { Button } from "../ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Download, FileText, TrendingUp, Users, Plane, DollarSign } from "lucide-react";
 import { mockFlights, mockBookings, mockAircraft, mockCrew, formatCurrency } from "../../lib/mockData";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 export function Reports() {
   const handleDownloadReport = (reportName: string) => {

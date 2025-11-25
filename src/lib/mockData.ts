@@ -1,5 +1,7 @@
 // Mock data for the Flight Management System
 
+import { Passenger, UserAccount } from "./types";
+
 export interface Flight {
   id: string;
   flightCode: string;
@@ -355,6 +357,69 @@ export const mockCrew: CrewMember[] = [
     assignments: ["VN303", "VN404", "VN505"],
   },
 ];
+
+//Mock passenger
+export const mockPassengers: Passenger[] = [
+  {
+    id: "p1",
+    passenger_code: "PAX001",
+    full_name: "Nguyễn Văn A",
+    date_of_birth: "1990-05-12",
+    nationality: "VN",
+    id_number: "123456789",
+    address: "Hà Nội",
+    phone: "0912345678",
+    email: "nva@example.com",
+    tier: "economy",
+  },
+  {
+    id: "p2",
+    passenger_code: "PAX002",
+    full_name: "Trần Thị B",
+    date_of_birth: "1985-08-22",
+    nationality: "VN",
+    id_number: "987654321",
+    address: "TP.HCM",
+    phone: "0987654321",
+    email: "ttb@example.com",
+    tier: "business",
+  },
+];
+
+export const mockUserAccounts: UserAccount[] = [
+  {
+    id: "u1",
+    username: "admin",
+    password_hash: "hash1",
+    email: "admin@example.com",
+    phone: "0900000000",
+    role: "admin",
+    created_at: "2025-01-01T10:00:00",
+    updated_at: "2025-01-01T10:00:00",
+  },
+  {
+    id: "u2",
+    username: "employee1",
+    password_hash: "hash2",
+    email: "employee1@example.com",
+    phone: "0911111111",
+    role: "employee",
+    created_at: "2025-02-01T09:00:00",
+    updated_at: "2025-02-01T09:00:00",
+  },
+  {
+    id: "u3",
+    username: "nguyenvana",
+    password_hash: "hash3",
+    email: "nva@example.com",
+    phone: "0912345678",
+    role: "passenger",
+    passenger_id: "p1",
+    created_at: "2025-03-01T08:30:00",
+    updated_at: "2025-03-01T08:30:00",
+  },
+];
+
 
 // Baggage calculation
 export function calculateBaggageFee(

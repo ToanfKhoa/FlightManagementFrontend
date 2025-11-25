@@ -7,6 +7,7 @@ import { AircraftManagement } from "./admin/AircraftManagement";
 import { FlightOperations } from "./admin/FlightOperations";
 import { Reports } from "./admin/Reports";
 import type { User } from "../App";
+import { UserManagement } from "./admin/UserManagement";
 
 interface AdminDashboardProps {
   user: User;
@@ -38,29 +39,38 @@ export function AdminDashboard({ user, onLogout }: AdminDashboardProps) {
       </header>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-16">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 mb-8">
-            <TabsTrigger value="crew">
+          <TabsList className="flex w-full mb-8">
+            <TabsTrigger value="crew" className="flex-1 flex justify-center items-center">
               <Users className="w-4 h-4 mr-2" />
               Quản lý phi hành đoàn
             </TabsTrigger>
-            <TabsTrigger value="aircraft">
+            <TabsTrigger value="account" className="flex-1 flex justify-center items-center">
+              <Users className="w-4 h-4 mr-2" />
+              Quản lý tài khoản
+            </TabsTrigger>
+            <TabsTrigger value="aircraft" className="flex-1 flex justify-center items-center">
               <Plane className="w-4 h-4 mr-2" />
               Quản lý máy bay
             </TabsTrigger>
-            <TabsTrigger value="operations">
+            <TabsTrigger value="operations" className="flex-1 flex justify-center items-center">
               <Calendar className="w-4 h-4 mr-2" />
               Điều hành bay
             </TabsTrigger>
-            <TabsTrigger value="reports">
+            <TabsTrigger value="reports" className="flex-1 flex justify-center items-center">
               <FileBarChart className="w-4 h-4 mr-2" />
               Báo cáo
             </TabsTrigger>
           </TabsList>
 
+          {/* Tab Content */}
           <TabsContent value="crew">
             <CrewManagement />
+          </TabsContent>
+
+          <TabsContent value="account">
+            <UserManagement />
           </TabsContent>
 
           <TabsContent value="aircraft">

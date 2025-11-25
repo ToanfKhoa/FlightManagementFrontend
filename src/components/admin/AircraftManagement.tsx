@@ -5,7 +5,7 @@ import { Badge } from "../ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { Plane, Wrench, Calendar, AlertCircle } from "lucide-react";
 import { mockAircraft } from "../../lib/mockData";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import type { Aircraft } from "../../lib/mockData";
 
 export function AircraftManagement() {

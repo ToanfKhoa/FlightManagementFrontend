@@ -8,7 +8,7 @@ import { Progress } from "../ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { Users, Plus, AlertTriangle, Plane, PlaneTakeoff } from "lucide-react";
 import { mockCrew, mockFlights } from "../../lib/mockData";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import type { CrewMember, Flight } from "../../lib/mockData";
 
 export function CrewManagement() {
