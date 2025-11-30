@@ -5,8 +5,9 @@ import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Plane, UserPlus } from "lucide-react";
 import { toast } from "sonner";
-import { mockUserAccounts, mockPassengers } from "../lib/types";
 import type { User, UserRole } from "../App";
+import { authService } from "../services/authService";
+import type { LoginResponse } from "../types/authType";
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -17,51 +18,45 @@ export function Login({ onLogin, onRegister }: LoginProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [selectedRole, setSelectedRole] = useState<UserRole>("passenger");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    try {
+      const response = (await authService.login(email, password)) as LoginResponse;
 
-    // Attempt to find a matching account by email or username
-    const account = mockUserAccounts.find(
-      (u) => u.email === email || u.username === email,
-    );
+      // Store response for axios interceptors (expected shape: { token, user })
+      localStorage.setItem("user", JSON.stringify({ token: response.token, user: response.user }));
 
-    if (!account) {
-      toast.error("Tài khoản không tồn tại. Vui lòng đăng ký hoặc kiểm tra lại.");
-      return;
+      // Map API user (LoginResponse.user) to frontend `User` used in App.tsx
+      const apiUser = response.user;
+      // Map backend role (likely uppercase in `authType`) to app lowercase role
+      const roleMap: Record<string, UserRole> = {
+        PASSENGER: "passenger",
+        STAFF: "staff",
+        ADMIN: "admin",
+        CREW: "crew",
+        PILOT: "crew",
+      };
+      const mappedRole = (roleMap[apiUser.role as string] ?? (apiUser.role as unknown as UserRole)) as UserRole;
+
+      const user: User = {
+        id: String(apiUser.id),
+        name: apiUser.fullName ?? apiUser.email,
+        email: apiUser.email,
+        role: mappedRole,
+      };
+
+      toast.success(`Đăng nhập thành công (${user.name})`);
+      onLogin(user);
+    } catch (error: any) {
+      // Axios errors often hold `error.response.data.message` or similar
+      const msg = error?.response?.message || error?.message || "Đăng nhập thất bại";
+      toast.error(String(msg));
+    } finally {
+      setLoading(false);
     }
-
-    // Validate password - Register used btoa for demo hashing
-    if (account.password_hash !== btoa(password)) {
-      toast.error("Mật khẩu không đúng");
-      return;
-    }
-
-    // Map backend role to frontend role if needed
-    const roleMap: Record<string, UserRole> = {
-      passenger: "passenger",
-      admin: "admin",
-      employee: "staff", // types.ts uses `employee`, app.tsx expects `staff`
-      crew: "crew",
-    };
-
-    const mappedRole = (roleMap[account.role as string] ?? (account.role as UserRole)) as UserRole;
-
-    let displayName = account.username || account.email;
-    if (account.passenger_id) {
-      const p = mockPassengers.find((x) => x.id === account.passenger_id);
-      if (p) displayName = p.full_name;
-    }
-
-    const user: User = {
-      id: account.id,
-      name: displayName,
-      email: account.email,
-      role: mappedRole,
-    };
-
-    toast.success(`Đăng nhập thành công (${user.name})`);
-    onLogin(user);
   };
 
   const quickLogin = (role: UserRole) => {

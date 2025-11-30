@@ -4,9 +4,9 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Plane, ArrowLeft } from "lucide-react";
-import { toast } from "sonner@2.0.3";
-import { mockPassengers, mockUserAccounts } from "../lib/types";
-import type { Passenger, UserAccount } from "../lib/types";
+import { toast } from "sonner";
+import { mockPassengers, mockUserAccounts } from "../lib/mockTypes";
+import type { Passenger, UserAccount } from "../lib/mockTypes";
 
 interface RegisterProps {
   onBack: () => void;

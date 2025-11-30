@@ -1,6 +1,6 @@
 // Mock data for the Flight Management System
 
-import { Passenger, UserAccount } from "./types";
+import type { Passenger, UserAccount } from "./mockTypes";
 
 export interface Flight {
   id: string;
@@ -487,4 +487,4 @@ export function getTimeRemaining(deadline: string): {
   return { hours, minutes, expired: false };
 }
 
-export { UserAccount };
+// `UserAccount` is a TypeScript type only; no runtime export needed here.
