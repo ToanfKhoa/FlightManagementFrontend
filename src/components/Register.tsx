@@ -5,8 +5,8 @@ import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Plane, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { mockPassengers, mockUserAccounts } from "../lib/mockTypes";
-import type { Passenger, UserAccount } from "../lib/mockTypes";
+import { authService } from "../services/authService";
+import type { RegisterRequest, LoginResponse } from "../types/authType";
 
 interface RegisterProps {
   onBack: () => void;
@@ -15,9 +15,12 @@ interface RegisterProps {
 
 export function Register({ onBack, onRegisterSuccess }: RegisterProps) {
   const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
   
   // User Account fields
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   
@@ -27,8 +30,6 @@ export function Register({ onBack, onRegisterSuccess }: RegisterProps) {
   const [nationality, setNationality] = useState("Việt Nam");
   const [idNumber, setIdNumber] = useState("");
   const [address, setAddress] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
   const [tier, setTier] = useState<"economy" | "business" | "first">("economy");
 
   const handleStep1Submit = (e: React.FormEvent) => {
@@ -46,18 +47,14 @@ export function Register({ onBack, onRegisterSuccess }: RegisterProps) {
       return;
     }
     
-    // Check if username already exists
-    const usernameExists = mockUserAccounts.some(u => u.username === username);
-    if (usernameExists) {
-      toast.error("Tên đăng nhập đã tồn tại!");
-      return;
-    }
+    // Username uniqueness should be validated server-side. We rely on API error responses for duplicates.
     
     setStep(2);
   };
 
-  const handleStep2Submit = (e: React.FormEvent) => {
+  const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     
     // Validate age (must be at least 12 years old)
     const birthDate = new Date(dateOfBirth);
@@ -68,43 +65,34 @@ export function Register({ onBack, onRegisterSuccess }: RegisterProps) {
       return;
     }
     
-    // Create passenger
-    const passengerId = "P" + Date.now();
-    const passengerCode = "HK" + Math.random().toString(36).substr(2, 8).toUpperCase();
-    
-    const newPassenger: Passenger = {
-      id: passengerId,
-      passenger_code: passengerCode,
-      full_name: fullName,
-      date_of_birth: dateOfBirth,
-      nationality,
-      id_number: idNumber,
-      address,
-      phone,
-      email,
-      tier,
-    };
-    
-    // Create user account
-    const userId = "U" + Date.now();
-    const newUserAccount: UserAccount = {
-      id: userId,
-      username,
-      password_hash: btoa(password), // Simple encoding for demo (use proper hashing in production)
-      email,
-      phone,
-      role: "passenger",
-      passenger_id: passengerId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    
-    // Save to mock storage
-    mockPassengers.push(newPassenger);
-    mockUserAccounts.push(newUserAccount);
-    
-    toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
-    onRegisterSuccess();
+    try {
+      const payload: RegisterRequest = {
+        //fullName,
+        username,
+        email,
+        phone,
+        password,
+        //dateOfBirth,
+      };
+
+      const response = (await authService.register(payload)) as LoginResponse | any;
+
+      // If the API returned a token and user, persist and auto login, else just show success
+      if (response?.token && response?.user) {
+        localStorage.setItem("user", JSON.stringify({ token: response.token, user: response.user }));
+        toast.success("Đăng ký thành công và đã đăng nhập tự động");
+        // We can notify parent app to update UI. If onRegisterSuccess should hide the register screen, we call it.
+        onRegisterSuccess();
+      } else {
+        toast.success(response?.message || "Đăng ký thành công! Vui lòng đăng nhập.");
+        onRegisterSuccess();
+      }
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || error?.message || "Đăng ký thất bại";
+      toast.error(String(msg));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -135,6 +123,36 @@ export function Register({ onBack, onRegisterSuccess }: RegisterProps) {
                   onChange={(e) => setUsername(e.target.value)}
                   required
                   maxLength={50}
+                />
+              </div>
+
+              <div className="space-y-2"> 
+                <Label htmlFor="email">
+                  Email <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="user@gmail.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  maxLength={100}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">
+                  Số điện thoại <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="0912345678"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                  maxLength={20}
                 />
               </div>
 
@@ -235,36 +253,6 @@ export function Register({ onBack, onRegisterSuccess }: RegisterProps) {
                     maxLength={20}
                   />
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone">
-                    Số điện thoại <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="0912345678"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required
-                    maxLength={20}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">
-                    Email <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="email@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    maxLength={100}
-                  />
-                </div>
               </div>
 
               <div className="space-y-2">
@@ -302,7 +290,7 @@ export function Register({ onBack, onRegisterSuccess }: RegisterProps) {
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Quay lại
                 </Button>
-                <Button type="submit" className="flex-1">
+                <Button type="submit" className="flex-1" disabled={loading}>
                   Hoàn tất đăng ký
                 </Button>
               </div>

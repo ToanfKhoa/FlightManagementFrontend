@@ -18,11 +18,10 @@ export interface LoginRequest {
 }
 
 export interface RegisterRequest {
-  fullName: string;
+  username: string;
   email: string;
   password: string;
-  phoneNumber?: string;
-  dateOfBirth?: string;
+  phone?: string;
 }
 
 export interface LoginResponse {
