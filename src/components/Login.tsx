@@ -27,10 +27,10 @@ export function Login({ onLogin, onRegister }: LoginProps) {
       const response = (await authService.login(email, password)) as LoginResponse;
 
       // Store response for axios interceptors (expected shape: { token, user })
-      localStorage.setItem("user", JSON.stringify({ token: response.token, user: response.user }));
+      localStorage.setItem("user", JSON.stringify({ token: response.data.accessToken, user: response.data.user }));
 
       // Map API user (LoginResponse.user) to frontend `User` used in App.tsx
-      const apiUser = response.user;
+      const apiUser = response.data.user;
       // Map backend role (likely uppercase in `authType`) to app lowercase role
       const roleMap: Record<string, UserRole> = {
         PASSENGER: "passenger",
@@ -43,7 +43,7 @@ export function Login({ onLogin, onRegister }: LoginProps) {
 
       const user: User = {
         id: String(apiUser.id),
-        name: apiUser.fullName ?? apiUser.email,
+        name: apiUser.username ?? apiUser.email,
         email: apiUser.email,
         role: mappedRole,
       };
@@ -94,7 +94,7 @@ export function Login({ onLogin, onRegister }: LoginProps) {
               <Label htmlFor="email">Email / Tên đăng nhập</Label>
               <Input
                 id="email"
-                type="email"
+                type="text"
                   placeholder="email@example.com hoặc tên đăng nhập"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

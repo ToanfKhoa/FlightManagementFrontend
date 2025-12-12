@@ -2,14 +2,17 @@
 export type UserRole = 'PASSENGER' | 'STAFF' | 'ADMIN' | 'CREW' | 'PILOT';
 
 export interface User {
-  id: string | number;     
+  id: number;           
+  username: string;
   email: string;
-  fullName: string;
-  role: UserRole;
-  phoneNumber?: string;   
-  avatarUrl?: string;
-  dateOfBirth?: string;  
-  membershipTier?: 'ECONOMY' | 'BUSINESS' | 'FIRST'; 
+  phone: string;
+  role: string;       
+
+  version?: number;
+  createdBy?: string | null;
+  updatedBy?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface LoginRequest {
@@ -24,12 +27,21 @@ export interface RegisterRequest {
   phone?: string;
 }
 
-export interface LoginResponse {
-  token: string;           
-  refreshToken?: string;    
-  type?: string;          
-  user: User;              
+export interface ApiResponse<T> {
+  code: number;
+  message: string;
+  data: T;
+  errors: any | null;
+  timestamp: string;
 }
+
+export interface LoginResponseData {
+  accessToken: string;
+  refreshToken: string;
+  user: User;   
+}
+
+export type LoginResponse = ApiResponse<LoginResponseData>;
 
 export interface AuthState {
   user: User | null;       
