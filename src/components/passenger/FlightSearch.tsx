@@ -15,7 +15,8 @@ interface FlightSearchProps {
 }
 
 export function FlightSearch({ userId }: FlightSearchProps) {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [origin, setOrigin] = useState("");
+  const [destination, setDestination] = useState("");
   const [searchDate, setSearchDate] = useState("");
   const [searchResults, setSearchResults] = useState<Flight[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
@@ -24,13 +25,21 @@ export function FlightSearch({ userId }: FlightSearchProps) {
   const handleSearch = () => {
     let results = mockFlights;
 
-    if (searchQuery) {
+    if (origin) {
+      const q = origin.toLowerCase();
       results = results.filter(
         (f) =>
-          f.flightCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          f.route.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          f.departure.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          f.arrival.toLowerCase().includes(searchQuery.toLowerCase())
+          f.departure.toLowerCase().includes(q) ||
+          f.route.toLowerCase().includes(q)
+      );
+    }
+
+    if (destination) {
+      const q = destination.toLowerCase();
+      results = results.filter(
+        (f) =>
+          f.arrival.toLowerCase().includes(q) ||
+          f.route.toLowerCase().includes(q)
       );
     }
 
@@ -117,16 +126,28 @@ export function FlightSearch({ userId }: FlightSearchProps) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2 space-y-2">
-              <Label htmlFor="search">Mã chuyến bay / Tuyến đường</Label>
+            <div className="space-y-2">
+              <Label htmlFor="origin">Nơi đi</Label>
               <Input
-                id="search"
-                placeholder="VN101, Hà Nội - TP.HCM..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                id="origin"
+                placeholder="Hà Nội, SGN, Nội Bài..."
+                value={origin}
+                onChange={(e) => setOrigin(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="destination">Nơi đến</Label>
+              <Input
+                id="destination"
+                placeholder="TP.HCM, DAD, Tân Sơn Nhất..."
+                value={destination}
+                onChange={(e) => setDestination(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="date">Ngày bay</Label>
               <Input
