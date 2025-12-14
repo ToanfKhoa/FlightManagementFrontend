@@ -7,6 +7,7 @@ import { Badge } from "../ui/badge";
 import { Search, Plane, Clock, Calendar, Users, UserPlus } from "lucide-react";
 import { mockFlights, formatCurrency } from "../../lib/mockData";
 import { SeatSelection } from "./SeatSelection";
+import SeatClassSelection from "./SeatClassSelection";
 import { toast } from "sonner@2.0.3";
 import type { Flight, WaitingListEntry } from "../../lib/mockData";
 
@@ -107,7 +108,7 @@ export function FlightSearch({ userId }: FlightSearchProps) {
 
   if (selectedFlight) {
     return (
-      <SeatSelection
+      <SeatClassSelection
         flight={selectedFlight}
         userId={userId}
         onBack={() => setSelectedFlight(null)}
