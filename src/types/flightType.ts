@@ -37,5 +37,8 @@ export type CreateFlightRequest = {
   aircraft_id: number;
 };
 
+export type UpdateFlightRequest = {
+  status: FlightStatus;
+};
 
 
