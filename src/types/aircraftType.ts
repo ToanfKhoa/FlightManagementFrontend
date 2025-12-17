@@ -12,3 +12,25 @@ export type Aircraft = {
 };
 
 export type CreateAircraftRequest = Omit<Aircraft, 'id'>;
+
+export type AircraftSummary = {
+  id: number;
+  registration_number: string;
+  model: string;
+};
+
+export type AircraftOption = {
+  id: number;
+  label: string; 
+  disabled: boolean; 
+};
+
+export type AircraftUI = {
+  id: number;
+  registration_number: string;
+  manufacturer: string;
+  model: string;
+  seat_capacity: number;
+  status: 'active' | 'maintenance' | 'inactive';
+};
+
