@@ -2,17 +2,23 @@
 export type SeatClass = 'economy' | 'business' | 'first';
 export type SeatStatus = 'available' | 'reserved' | 'booked';
 
-export type SeatEntity = {
+export type Seat = {
   id: number;
-  flight_id: number;
-  seat_number: string;
+  flightId: number;
+  seatNumber: string;
   class: SeatClass;
   status: SeatStatus;
 };
 
+export type AvailableSeats = {
+  economy: number;
+  business: number;
+  first: number;
+};
+
 export type CreateSeatRequest = {
-  flight_id: number;
-  seat_number: string;
+  flightId: number;
+  seatNumber: string;
   class: SeatClass;
 };
 
