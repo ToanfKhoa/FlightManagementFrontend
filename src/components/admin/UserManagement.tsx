@@ -21,7 +21,7 @@ export function UserManagement() {
     try {
       setLoading(true);
       const res: ApiResponse<any> = await userService.deleteUser(userId);
-      const ok = res && (res.code === 0 || res.code === 200 || String(res.message).toLowerCase().includes('ok'));
+      const ok = res && (res.code === 0 || res.code === 200 || String(res.message).toLowerCase().includes('success'));
       if (ok) {
         setUsers((prev) => prev.filter((u) => u.id !== userId));
         toast.success("Đã xóa tài khoản");
