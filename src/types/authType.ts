@@ -49,3 +49,14 @@ export interface AuthState {
   isLoading: boolean;      
   error: string | null;  
 }
+
+export interface PageResponse<T> {
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  numberOfElements: number;
+  content: T[];
+}
+
+export type UsersPageResponse = PageResponse<User>;

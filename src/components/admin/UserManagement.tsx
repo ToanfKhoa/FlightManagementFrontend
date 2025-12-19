@@ -6,22 +6,59 @@ import { Badge } from "../ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "../ui/dialog";
 import { Users, Eye, Edit, Trash } from "lucide-react";
 import { toast } from "sonner";
-import type { UserAccount } from "../../lib/mockData";
-import { mockUserAccounts } from "../../lib/mockData";
+import type { User, ApiResponse, UsersPageResponse } from "../../types/authType";
+import { userService } from "../../services/userService";
+import { useEffect } from "react";
 
 export function UserManagement() {
-  const [users, setUsers] = useState<UserAccount[]>(mockUserAccounts);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDetailDialog, setShowDetailDialog] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<UserAccount | null>(null);
-
-  const handleDeleteUser = (userId: string) => {
-    setUsers(users.filter(u => u.id !== userId));
-    toast.success("Đã xóa tài khoản");
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const handleDeleteUser = async (userId: number) => {
+    if (!confirm('Bạn có chắc muốn xóa tài khoản này?')) return;
+    try {
+      setLoading(true);
+      const res: ApiResponse<any> = await userService.deleteUser(userId);
+      const ok = res && (res.code === 0 || res.code === 200 || String(res.message).toLowerCase().includes('ok'));
+      if (ok) {
+        setUsers((prev) => prev.filter((u) => u.id !== userId));
+        toast.success("Đã xóa tài khoản");
+      } else {
+        console.warn('Delete user unexpected response:', res);
+        toast.error('Xóa tài khoản thất bại');
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Xóa tài khoản thất bại");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        setLoading(true);
+        const res: ApiResponse<UsersPageResponse> = await userService.getAllUsers();
+        // Extract users array from paginated response
+        const items = res?.data?.content ?? [];
+        if (mounted) setUsers(items as User[]);
+      } catch (err: any) {
+        console.error(err);
+        toast.error(err?.message || "Không thể tải danh sách người dùng");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, []);
+
   // Lọc theo username
-  const filteredUsers = users.filter(u =>
+  const filteredUsers = users.filter((u) =>
     u.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -55,8 +92,8 @@ export function UserManagement() {
                     <Users className="w-5 h-5" />
                     {user.username}
                     <Badge variant={
-                      user.role === "admin" ? "destructive" :
-                      user.role === "employee" ? "default" : "secondary"
+                      String(user.role).toLowerCase() === "admin" ? "destructive" :
+                      String(user.role).toLowerCase() === "employee" || String(user.role).toLowerCase() === "staff" ? "default" : "secondary"
                     }>
                       {user.role}
                     </Badge>
@@ -86,10 +123,10 @@ export function UserManagement() {
                           <p><strong>Email:</strong> {selectedUser.email}</p>
                           <p><strong>Phone:</strong> {selectedUser.phone}</p>
                           <p><strong>Role:</strong> {selectedUser.role}</p>
-                          {selectedUser.passenger_id && <p><strong>Passenger ID:</strong> {selectedUser.passenger_id}</p>}
-                          {selectedUser.employee_id && <p><strong>Employee ID:</strong> {selectedUser.employee_id}</p>}
-                          <p><strong>Created at:</strong> {new Date(selectedUser.created_at).toLocaleString()}</p>
-                          <p><strong>Updated at:</strong> {new Date(selectedUser.updated_at).toLocaleString()}</p>
+                          {selectedUser && (selectedUser as any).passenger_id && <p><strong>Passenger ID:</strong> {(selectedUser as any).passenger_id}</p>}
+                          {selectedUser && (selectedUser as any).employee_id && <p><strong>Employee ID:</strong> {(selectedUser as any).employee_id}</p>}
+                          <p><strong>Created at:</strong> {new Date((selectedUser as any).createdAt ?? (selectedUser as any).created_at ?? '').toLocaleString()}</p>
+                          <p><strong>Updated at:</strong> {new Date((selectedUser as any).updatedAt ?? (selectedUser as any).updated_at ?? '').toLocaleString()}</p>
                         </div>
                       )}
                     </DialogContent>
