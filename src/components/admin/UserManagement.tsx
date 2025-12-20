@@ -8,6 +8,7 @@ import { Users, Eye, Edit, Trash } from "lucide-react";
 import { toast } from "sonner";
 import type { User, ApiResponse, UsersPageResponse } from "../../types/authType";
 import { userService } from "../../services/userService";
+import UserFormDialog from "./UserFormDialog";
 import { useEffect } from "react";
 
 export function UserManagement() {
@@ -16,6 +17,7 @@ export function UserManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const handleDeleteUser = async (userId: number) => {
     if (!confirm('Bạn có chắc muốn xóa tài khoản này?')) return;
     try {
@@ -36,6 +38,8 @@ export function UserManagement() {
       setLoading(false);
     }
   };
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editUser, setEditUser] = useState<User | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -76,7 +80,9 @@ export function UserManagement() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
-        <Button onClick={() => setSearchQuery("")}>Clear</Button>
+        <Button onClick={() => setSearchQuery("")}>Xóa</Button>
+        <Button onClick={() => setShowCreateDialog(true)}>Tạo mới</Button>
+        <UserFormDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} onCreated={(u: User) => setUsers(prev => [u, ...prev])} />
       </div>
 
       {/* User List */}
@@ -133,7 +139,7 @@ export function UserManagement() {
                   </Dialog>
 
                   {/* Edit */}
-                  <Button size="sm" variant="outline" onClick={() => toast.info("Chức năng sửa chưa triển khai")}>
+                  <Button size="sm" variant="outline" onClick={() => { setEditUser(user); setShowEditDialog(true); }}>
                     <Edit className="w-4 h-4 mr-1" />
                     Sửa
                   </Button>
@@ -149,6 +155,13 @@ export function UserManagement() {
           ))
         )}
       </div>
+        <UserFormDialog
+          open={showEditDialog}
+          onOpenChange={(open) => { setShowEditDialog(open); if (!open) setEditUser(null); }}
+          initial={editUser ?? undefined}
+          mode="edit"
+          onUpdated={(u: User) => setUsers(prev => prev.map(p => p.id === u.id ? u : p))}
+        />
     </div>
   );
 }
