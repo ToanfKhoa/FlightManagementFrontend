@@ -1,85 +1,107 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Plane, AlertTriangle, Clock, X } from "lucide-react";
-import { mockFlights } from "../../lib/mockData";
 import { toast } from "sonner";
-import type { Flight } from "../../lib/mockData";
+import { flightService } from "../../services/flightService";
+import type { Flight } from "../../types/flightType";
 
 export function FlightOperations() {
-  const [flights, setFlights] = useState<Flight[]>(mockFlights);
+  const [flights, setFlights] = useState<Flight[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [delayMinutes, setDelayMinutes] = useState(0);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+
+  useEffect(() => {
+    flightService
+      .getAll()
+      .then(setFlights)
+      .catch(() => {
+        toast.error("Không tải được danh sách chuyến bay");
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleDelayFlight = () => {
     if (!selectedFlight) return;
 
-    const updatedFlights = flights.map((f) => {
-      if (f.id === selectedFlight.id) {
-        return { ...f, status: "delayed" as const };
-      }
-      return f;
-    });
+    setFlights((prev) =>
+      prev.map((f) =>
+        f.id === selectedFlight.id ? { ...f, status: "delayed" } : f
+      )
+    );
 
-    setFlights(updatedFlights);
-    toast.success(`Chuyến bay ${selectedFlight.flightCode} đã được đánh dấu chậm ${delayMinutes} phút`);
+    toast.success(
+      `Chuyến bay ${selectedFlight.id} đã được đánh dấu chậm ${delayMinutes} phút`
+    );
     setSelectedFlight(null);
   };
 
   const handleCancelFlight = (flight: Flight) => {
-    const updatedFlights = flights.map((f) => {
-      if (f.id === flight.id) {
-        return { ...f, status: "canceled" as const };
-      }
-      return f;
-    });
+    setFlights((prev) =>
+      prev.map((f) =>
+        f.id === flight.id ? { ...f, status: "canceled" } : f
+      )
+    );
 
-    setFlights(updatedFlights);
-    toast.success(`Chuyến bay ${flight.flightCode} đã bị hủy. Hệ thống sẽ thông báo cho hành khách.`);
+    toast.success(
+      `Chuyến bay ${flight.id} đã bị hủy. Hệ thống sẽ thông báo cho hành khách.`
+    );
   };
 
   const handleReactivateFlight = (flight: Flight) => {
-    const updatedFlights = flights.map((f) => {
-      if (f.id === flight.id) {
-        return { ...f, status: "open" as const };
-      }
-      return f;
-    });
+    setFlights((prev) =>
+      prev.map((f) =>
+        f.id === flight.id ? { ...f, status: "open" } : f
+      )
+    );
 
-    setFlights(updatedFlights);
-    toast.success(`Chuyến bay ${flight.flightCode} đã được kích hoạt lại`);
+    toast.success(`Chuyến bay ${flight.id} đã được kích hoạt lại`);
   };
 
   const getStatusBadge = (status: Flight["status"]) => {
-    const variants: Record<Flight["status"], { variant: any; label: string }> = {
+    const variants: Record<
+      string,
+      { variant: any; label: string }
+    > = {
       open: { variant: "default", label: "Bình thường" },
       full: { variant: "secondary", label: "Hết chỗ" },
       delayed: { variant: "destructive", label: "Chậm" },
       canceled: { variant: "destructive", label: "Đã hủy" },
       completed: { variant: "secondary", label: "Hoàn thành" },
+      departed: { variant: "secondary", label: "Khởi hành" },
     };
 
-    return (
-      <Badge variant={variants[status].variant as any}>{variants[status].label}</Badge>
-    );
-  };
+    const key = String(status ?? '').toLowerCase();
+    const v = variants[key] ?? { variant: "default", label: key };
+    return <Badge variant={v.variant}>{v.label}</Badge>;
+  };  
+
+  if (loading) {
+    return <div className="text-center py-10">Loading flights...</div>;
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2>Điều hành bay</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Quản lý trạng thái chuyến bay, xử lý chậm/hủy chuyến
-          </p>
-        </div>
+      <div>
+        <h2>Điều hành bay</h2>
+        <p className="text-sm text-gray-600 mt-1">
+          Quản lý trạng thái chuyến bay, xử lý chậm/hủy chuyến
+        </p>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="pb-3">
@@ -91,7 +113,7 @@ export function FlightOperations() {
           <CardHeader className="pb-3">
             <CardDescription>Bình thường</CardDescription>
             <CardTitle className="text-3xl text-green-600">
-              {flights.filter((f) => f.status === "open").length}
+              {flights.filter((f) => String(f.status).toLowerCase() === "open").length}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -99,7 +121,7 @@ export function FlightOperations() {
           <CardHeader className="pb-3">
             <CardDescription>Hết chỗ</CardDescription>
             <CardTitle className="text-3xl text-blue-600">
-              {flights.filter((f) => f.status === "full").length}
+              {flights.filter((f) => String(f.status).toLowerCase() === "full").length}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -107,7 +129,7 @@ export function FlightOperations() {
           <CardHeader className="pb-3">
             <CardDescription>Chậm</CardDescription>
             <CardTitle className="text-3xl text-yellow-600">
-              {flights.filter((f) => f.status === "delayed").length}
+              {flights.filter((f) => String(f.status).toLowerCase() === "delayed").length}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -115,52 +137,48 @@ export function FlightOperations() {
           <CardHeader className="pb-3">
             <CardDescription>Đã hủy</CardDescription>
             <CardTitle className="text-3xl text-red-600">
-              {flights.filter((f) => f.status === "canceled").length}
+              {flights.filter((f) => String(f.status).toLowerCase() === "canceled").length}
             </CardTitle>
           </CardHeader>
         </Card>
       </div>
 
-      {/* Flight List */}
       <div className="space-y-4">
         {flights.map((flight) => (
           <Card key={flight.id}>
             <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Plane className="w-5 h-5" />
-                    {flight.flightCode}
-                    {getStatusBadge(flight.status)}
-                  </CardTitle>
-                  <CardDescription className="mt-1">
-                    {flight.route} • {flight.aircraftType}
-                  </CardDescription>
-                </div>
-              </div>
+              <CardTitle className="flex items-center gap-2">
+                <Plane className="w-5 h-5" />
+                {flight.id}
+                {getStatusBadge(flight.status)}
+              </CardTitle>
+              <CardDescription>
+                {flight.route ? `${flight.route.origin} → ${flight.route.destination}` : '—'} • {flight.aircraft ? flight.aircraft.type : '—'}
+              </CardDescription>
             </CardHeader>
+
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <p className="text-sm text-gray-600">Ngày bay</p>
                   <p className="font-semibold">
-                    {new Date(flight.date).toLocaleDateString("vi-VN")}
+                    {flight.date ? new Date(flight.date).toLocaleDateString("vi-VN") : '—'}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Giờ khởi hành</p>
-                  <p className="font-semibold">{flight.departureTime}</p>
+                  <p className="font-semibold">{flight.departureTime ?? '—'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Giờ đến</p>
-                  <p className="font-semibold">{flight.arrivalTime}</p>
+                  <p className="font-semibold">{flight.arrivalTime ?? '—'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Chỗ trống</p>
                   <p className="font-semibold">
-                    {flight.availableSeats.economy +
-                      flight.availableSeats.business +
-                      flight.availableSeats.first}
+                    {flight.aircraft.seatCapacity
+                      ? flight.aircraft.seatCapacity
+                      : '—'}
                   </p>
                 </div>
               </div>
@@ -190,9 +208,9 @@ export function FlightOperations() {
               )}
 
               <div className="flex flex-wrap gap-2">
-                {flight.status === "open" && (
+                {String(flight.status).toLowerCase() === "open" && (
                   <>
-                    <Dialog>
+                    <Dialog>  
                       <DialogTrigger asChild>
                         <Button
                           variant="outline"
@@ -209,19 +227,19 @@ export function FlightOperations() {
                         <DialogHeader>
                           <DialogTitle>Báo chậm chuyến bay</DialogTitle>
                           <DialogDescription>
-                            Nhập thời gian chậm dự kiến. Hệ thống sẽ tự động thông báo cho
-                            hành khách.
+                            Nhập thời gian chậm dự kiến. Hệ thống sẽ tự động thông báo cho hành khách.
                           </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
                           <div className="space-y-2">
                             <Label htmlFor="delay">Thời gian chậm (phút)</Label>
                             <Input
-                              id="delay"
                               type="number"
                               min="0"
                               value={delayMinutes}
-                              onChange={(e) => setDelayMinutes(Number(e.target.value))}
+                              onChange={(e) =>
+                                setDelayMinutes(Number(e.target.value))
+                              }
                             />
                           </div>
                           <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
@@ -237,9 +255,20 @@ export function FlightOperations() {
                       </DialogContent>
                     </Dialog>
 
-                    <Dialog>
+                    <Dialog open={showCancelDialog} onOpenChange={(open) => {
+                      if (!open) {
+                        setShowCancelDialog(false);
+                        setSelectedFlight(null);
+                      }
+                    }}>
                       <DialogTrigger asChild>
-                        <Button variant="destructive">
+                        <Button
+                          variant="destructive"
+                          onClick={() => {
+                            setSelectedFlight(flight);
+                            setShowCancelDialog(true);
+                          }}
+                        >
                           <X className="w-4 h-4 mr-2" />
                           Hủy chuyến bay
                         </Button>
@@ -248,9 +277,10 @@ export function FlightOperations() {
                         <DialogHeader>
                           <DialogTitle>Hủy chuyến bay</DialogTitle>
                           <DialogDescription>
-                            Bạn có chắc chắn muốn hủy chuyến bay {flight.flightCode}?
+                            Bạn có chắc chắn muốn hủy chuyến bay {selectedFlight?.id ?? flight.id}?
                           </DialogDescription>
                         </DialogHeader>
+
                         <div className="space-y-4">
                           <div className="bg-red-50 border border-red-200 p-3 rounded-lg">
                             <p className="text-sm text-red-800">
@@ -263,12 +293,12 @@ export function FlightOperations() {
                               <li>Giải phóng tất cả ghế đã đặt</li>
                             </ul>
                           </div>
+
                           <div className="flex gap-2">
-                            <Button
-                              variant="destructive"
-                              className="flex-1"
-                              onClick={() => handleCancelFlight(flight)}
-                            >
+                            <Button variant="outline" onClick={() => { setShowCancelDialog(false); setSelectedFlight(null); }}>
+                              Hủy
+                            </Button>
+                            <Button variant="destructive" className="flex-1" onClick={() => { handleCancelFlight(selectedFlight ?? flight); setShowCancelDialog(false); setSelectedFlight(null); }}>
                               Xác nhận hủy
                             </Button>
                           </div>
@@ -278,14 +308,12 @@ export function FlightOperations() {
                   </>
                 )}
 
-                {flight.status === "delayed" && (
-                  <Button variant="outline" onClick={() => handleReactivateFlight(flight)}>
-                    Kích hoạt lại
-                  </Button>
-                )}
-
-                {flight.status === "canceled" && (
-                  <Button variant="outline" onClick={() => handleReactivateFlight(flight)}>
+                {(String(flight.status).toLowerCase() === "delayed" ||
+                  String(flight.status).toLowerCase() === "canceled") && (
+                  <Button
+                    variant="outline"
+                    onClick={() => handleReactivateFlight(flight)}
+                  >
                     Kích hoạt lại
                   </Button>
                 )}

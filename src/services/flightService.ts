@@ -4,7 +4,9 @@ import type { Flight, CreateFlightRequest } from '../types/flightType.ts';
 
 export const flightService = {
   getAll(): Promise<Flight[]> {
-    return axiosClient.get('/flights/all');
+    return axiosClient
+      .get('/flights/all?all=true')
+      .then(res => res.data.content);
   },
 
   getById(id: string): Promise<Flight> {
