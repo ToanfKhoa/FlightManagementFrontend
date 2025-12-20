@@ -2,12 +2,13 @@ export type AircraftStatus = 'active' | 'maintenance' | 'inactive';
 
 export type Aircraft = {
   id: number;
-  registration_number: string;
+  type: string;
+  registrationNumber: string;
   manufacturer: string;
   model: string;
-  manufacture_year: number;
-  serial_number: string;
-  seat_capacity: number;
+  manufactureYear: number;
+  serialNumber: string;
+  seatCapacity: number;
   status: AircraftStatus;
 };
 
@@ -15,7 +16,7 @@ export type CreateAircraftRequest = Omit<Aircraft, 'id'>;
 
 export type AircraftSummary = {
   id: number;
-  registration_number: string;
+  registrationNumber: string;
   model: string;
 };
 
@@ -27,10 +28,10 @@ export type AircraftOption = {
 
 export type AircraftUI = {
   id: number;
-  registration_number: string;
+  registrationNumber: string;
   manufacturer: string;
   model: string;
-  seat_capacity: number;
+  seatCapacity: number;
   status: 'active' | 'maintenance' | 'inactive';
 };
 

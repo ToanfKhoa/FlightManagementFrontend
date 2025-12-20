@@ -1,20 +1,20 @@
 import axiosClient from '../api/axiosClient';
-import type { SeatEntity, CreateSeatRequest, UpdateSeatRequest } from '../types/seatType';
+import type { Seat, CreateSeatRequest, UpdateSeatRequest } from '../types/seatType';
 
 export const seatService = {
-  getAll(): Promise<SeatEntity[]> {
+  getAll(): Promise<Seat[]> {
     return axiosClient.get('/seats/all');
   },
 
-  getById(id: number): Promise<SeatEntity> {
+  getById(id: number): Promise<Seat> {
     return axiosClient.get(`/seats/${id}`);
   },
 
-  create(payload: CreateSeatRequest): Promise<SeatEntity> {
+  create(payload: CreateSeatRequest): Promise<Seat> {
     return axiosClient.post('/seats', payload);
   },
 
-  update(id: number, payload: UpdateSeatRequest): Promise<SeatEntity> {
+  update(id: number, payload: UpdateSeatRequest): Promise<Seat> {
     return axiosClient.put(`/seats/${id}`, payload);
   },
 
