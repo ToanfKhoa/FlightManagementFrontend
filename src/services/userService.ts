@@ -2,8 +2,12 @@ import axiosClient from '../api/axiosClient';
 import type { User, ApiResponse, UsersPageResponse } from '../types/authType';
 
 export const userService = {
-  getAllUsers(): Promise<ApiResponse<UsersPageResponse>> {
-    return axiosClient.get('/users/all') as Promise<ApiResponse<UsersPageResponse>>;
+  getAllUsers(page = 0, size = 10, search?: string): Promise<ApiResponse<UsersPageResponse>> {
+    const params = new URLSearchParams();
+    params.append('page', String(page));
+    params.append('size', String(size));
+    if (search) params.append('q', search);
+    return axiosClient.get(`/users/all?${params.toString()}`) as Promise<ApiResponse<UsersPageResponse>>;
   },
 
   getUser(id: string): Promise<ApiResponse<User>> {

@@ -14,10 +14,15 @@ import { useEffect } from "react";
 export function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editUser, setEditUser] = useState<User | null>(null);
   const handleDeleteUser = async (userId: number) => {
     if (!confirm('Bạn có chắc muốn xóa tài khoản này?')) return;
     try {
@@ -25,7 +30,15 @@ export function UserManagement() {
       const res: ApiResponse<any> = await userService.deleteUser(userId);
       const ok = res && (res.code === 0 || res.code === 200 || String(res.message).toLowerCase().includes('success'));
       if (ok) {
-        setUsers((prev) => prev.filter((u) => u.id !== userId));
+        // Refresh current page after delete
+        try {
+          const res2: ApiResponse<UsersPageResponse> = await userService.getAllUsers(page, size);
+          setUsers(res2?.data?.content ?? []);
+          setTotalPages(res2?.data?.totalPages ?? 0);
+        } catch (err) {
+          // fallback: remove locally
+          setUsers((prev) => prev.filter((u) => u.id !== userId));
+        }
         toast.success("Đã xóa tài khoản");
       } else {
         console.warn('Delete user unexpected response:', res);
@@ -38,18 +51,19 @@ export function UserManagement() {
       setLoading(false);
     }
   };
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [editUser, setEditUser] = useState<User | null>(null);
 
+  // Load users for current page
   useEffect(() => {
     let mounted = true;
-    const load = async () => {
+    const load = async (p: number) => {
       try {
         setLoading(true);
-        const res: ApiResponse<UsersPageResponse> = await userService.getAllUsers();
-        // Extract users array from paginated response
+        const res: ApiResponse<UsersPageResponse> = await userService.getAllUsers(p, size);
         const items = res?.data?.content ?? [];
-        if (mounted) setUsers(items as User[]);
+        if (mounted) {
+          setUsers(items as User[]);
+          setTotalPages(res?.data?.totalPages ?? 0);
+        }
       } catch (err: any) {
         console.error(err);
         toast.error(err?.message || "Không thể tải danh sách người dùng");
@@ -57,9 +71,9 @@ export function UserManagement() {
         if (mounted) setLoading(false);
       }
     };
-    load();
+    load(page);
     return () => { mounted = false; };
-  }, []);
+  }, [page, size]);
 
   // Lọc theo username
   const filteredUsers = users.filter((u) =>
@@ -72,6 +86,13 @@ export function UserManagement() {
         <h2>Quản lý tài khoản</h2>
         <p className="text-sm text-gray-600 mt-1">Danh sách người dùng hệ thống</p>
       </div>
+      <UserFormDialog
+        open={showEditDialog}
+        onOpenChange={(open) => { setShowEditDialog(open); if (!open) setEditUser(null); }}
+        initial={editUser ?? undefined}
+        mode="edit"
+        onUpdated={(u: User) => setUsers(prev => prev.map(p => p.id === u.id ? u : p))}
+      />
 
       {/* Search */}
       <div className="flex gap-2 items-center">
@@ -82,7 +103,7 @@ export function UserManagement() {
         />
         <Button onClick={() => setSearchQuery("")}>Xóa</Button>
         <Button onClick={() => setShowCreateDialog(true)}>Tạo mới</Button>
-        <UserFormDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} onCreated={(u: User) => setUsers(prev => [u, ...prev])} />
+        <UserFormDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} onCreated={(u: User) => { setPage(0); /* refresh first page to include new */ }} />
       </div>
 
       {/* User List */}
@@ -155,13 +176,14 @@ export function UserManagement() {
           ))
         )}
       </div>
-        <UserFormDialog
-          open={showEditDialog}
-          onOpenChange={(open) => { setShowEditDialog(open); if (!open) setEditUser(null); }}
-          initial={editUser ?? undefined}
-          mode="edit"
-          onUpdated={(u: User) => setUsers(prev => prev.map(p => p.id === u.id ? u : p))}
-        />
+      {/* Pagination controls */}
+      <div className="flex items-center justify-between mt-4">
+        <div className="text-sm text-gray-600">Trang {page + 1} / {totalPages || 1}</div>
+        <div className="flex gap-2">
+          <Button disabled={page <= 0 || loading} onClick={() => setPage(p => Math.max(0, p - 1))}>Prev</Button>
+          <Button disabled={page >= (totalPages - 1) || loading} onClick={() => setPage(p => Math.min((totalPages - 1) || p + 1, p + 1))}>Next</Button>
+        </div>
+      </div>
     </div>
   );
 }
