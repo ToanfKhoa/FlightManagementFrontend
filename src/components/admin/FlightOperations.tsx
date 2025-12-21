@@ -12,10 +12,14 @@ import {
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Plane, AlertTriangle, Clock, X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Plane, AlertTriangle, Clock, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { flightService } from "../../services/flightService";
-import type { Flight } from "../../types/flightType";
+import { aircraftService } from "../../services/aircraftService";
+import { routeService } from "../../services/routeService";
+import type { Flight, Route, FlightStatus } from "../../types/flightType";
+import type { Aircraft } from "../../types/aircraftType";
 
 export function FlightOperations() {
   const [flights, setFlights] = useState<Flight[]>([]);
@@ -23,13 +27,28 @@ export function FlightOperations() {
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [delayMinutes, setDelayMinutes] = useState(0);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [aircrafts, setAircrafts] = useState<Aircraft[]>([]);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [newFlight, setNewFlight] = useState({
+    routeId: 0,
+    aircraftId: 0,
+    status: 'OPEN' as FlightStatus,
+  });
 
   useEffect(() => {
-    flightService
-      .getAll()
-      .then(setFlights)
+    Promise.all([
+      flightService.getAll(),
+      routeService.getAll(),
+      aircraftService.getAll(),
+    ])
+      .then(([flightsData, routesData, aircraftsData]) => {
+        setFlights(flightsData);
+        setRoutes(routesData);
+        setAircrafts(aircraftsData);
+      })
       .catch(() => {
-        toast.error("Không tải được danh sách chuyến bay");
+        toast.error("Không tải được dữ liệu");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -71,6 +90,24 @@ export function FlightOperations() {
     toast.success(`Chuyến bay ${flight.id} đã được kích hoạt lại`);
   };
 
+  const handleCreateFlight = () => {
+    flightService
+      .create({
+        route_id: newFlight.routeId,
+        aircraft_id: newFlight.aircraftId,
+        status: newFlight.status,
+      })
+      .then((newFlightData) => {
+        setFlights((prev) => [...prev, newFlightData]);
+        toast.success("Chuyến bay mới đã được tạo thành công");
+        setShowCreateDialog(false);
+        setNewFlight({ routeId: 0, aircraftId: 0, status: 'OPEN' });
+      })
+      .catch(() => {
+        toast.error("Không thể tạo chuyến bay mới");
+      });
+  };
+
   const getStatusBadge = (status: Flight["status"]) => {
     const variants: Record<
       string,
@@ -95,11 +132,89 @@ export function FlightOperations() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2>Điều hành bay</h2>
-        <p className="text-sm text-gray-600 mt-1">
-          Quản lý trạng thái chuyến bay, xử lý chậm/hủy chuyến
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2>Điều hành bay</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Quản lý trạng thái chuyến bay, xử lý chậm/hủy chuyến
+          </p>
+        </div>
+        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Tạo chuyến bay mới
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Tạo chuyến bay mới</DialogTitle>
+              <DialogDescription>
+                Chọn tuyến bay, máy bay và trạng thái cho chuyến bay mới
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="route">Tuyến bay</Label>
+                <Select
+                  value={newFlight.routeId.toString()}
+                  onValueChange={(value: string) => setNewFlight({ ...newFlight, routeId: parseInt(value) })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn tuyến bay" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {routes.map((route) => (
+                      <SelectItem key={route.id} value={route.id.toString()}>
+                        {route.origin} → {route.destination}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="aircraft">Máy bay</Label>
+                <Select
+                  value={newFlight.aircraftId.toString()}
+                  onValueChange={(value: string) => setNewFlight({ ...newFlight, aircraftId: parseInt(value) })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn máy bay" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {aircrafts.map((aircraft) => (
+                      <SelectItem key={aircraft.id} value={aircraft.id.toString()}>
+                        {aircraft.type} ({aircraft.registrationNumber})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">Trạng thái</Label>
+                <Select
+                  value={newFlight.status}
+                  onValueChange={(value: string) => setNewFlight({ ...newFlight, status: value as FlightStatus })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn trạng thái" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="open">Bình thường</SelectItem>
+                    <SelectItem value="full">Hết chỗ</SelectItem>
+                    <SelectItem value="delayed">Chậm</SelectItem>
+                    <SelectItem value="canceled">Đã hủy</SelectItem>
+                    <SelectItem value="departed">Khởi hành</SelectItem>
+                    <SelectItem value="completed">Hoàn thành</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button className="w-full" onClick={handleCreateFlight}>
+                Tạo chuyến bay
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -255,7 +370,7 @@ export function FlightOperations() {
                       </DialogContent>
                     </Dialog>
 
-                    <Dialog open={showCancelDialog} onOpenChange={(open) => {
+                    <Dialog open={showCancelDialog} onOpenChange={(open: boolean) => {
                       if (!open) {
                         setShowCancelDialog(false);
                         setSelectedFlight(null);

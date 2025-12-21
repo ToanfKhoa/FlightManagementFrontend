@@ -4,7 +4,9 @@ import type { Aircraft, CreateAircraftRequest } from '../types/aircraftType';
 
 export const aircraftService = {
   getAll(): Promise<Aircraft[]> {
-    return axiosClient.get('/aircrafts/all');
+    return axiosClient
+    .get('/aircrafts/all?all=true')
+    .then(res => res.data.content);
   },
 
   getById(id: number): Promise<Aircraft> {

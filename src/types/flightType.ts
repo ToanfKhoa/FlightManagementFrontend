@@ -2,7 +2,7 @@ import type { Aircraft } from './aircraftType';
 import type { Seat, AvailableSeats} from './seatType';
 import type { Schedule } from './scheduleType';
 
-export type FlightStatus = 'open' | 'full' | 'departed' | 'completed' | 'delayed' | 'canceled';
+export type FlightStatus = 'OPEN' | 'FULL' | 'DEPARTED' | 'COMPLETED' | 'DELAYED' | 'CANCELED';
 
 export type BaseEntity = {
   id: number;
@@ -44,10 +44,12 @@ export type ApiResponse<T> = {
 export type CreateFlightRequest = {
   route_id: number;
   aircraft_id: number;
+  status: FlightStatus;
 };
 
 export type UpdateFlightRequest = {
   status: FlightStatus;
 };
+
 
 
