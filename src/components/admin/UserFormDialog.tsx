@@ -4,7 +4,8 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { toast } from 'sonner';
 import { userService } from '../../services/userService';
-import type { User, ApiResponse } from '../../types/authType';
+import type { User } from '../../types/authType';
+import type { ApiResponse } from '../../types/commonType';
 
 type Props = {
   open: boolean;

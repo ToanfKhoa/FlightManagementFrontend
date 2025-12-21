@@ -31,15 +31,7 @@ export type Flight = BaseEntity & {
   availableSeats?: AvailableSeats;
 };
 
-export type ApiErrors = Record<string, string>;
-
-export type ApiResponse<T> = {
-  code: number;
-  message: string;
-  data: T;
-  errors?: ApiErrors;
-  timestamp?: string; // ISO timestamp
-};
+import type { ApiResponse } from './commonType';
 
 export type CreateFlightRequest = {
   route_id: number;

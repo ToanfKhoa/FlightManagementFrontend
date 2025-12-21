@@ -1,5 +1,6 @@
 import axiosClient from '../api/axiosClient';
-import type { User, ApiResponse, UsersPageResponse } from '../types/authType';
+import type { User, UsersPageResponse } from '../types/authType';
+import type { ApiResponse } from '../types/commonType';
 
 export const userService = {
   getAllUsers(page = 0, size = 10, search?: string): Promise<ApiResponse<UsersPageResponse>> {

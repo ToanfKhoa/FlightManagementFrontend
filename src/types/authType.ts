@@ -27,13 +27,7 @@ export interface RegisterRequest {
   phone?: string;
 }
 
-export interface ApiResponse<T> {
-  code: number;
-  message: string;
-  data: T;
-  errors: any | null;
-  timestamp: string;
-}
+import type { ApiResponse, PageResponse } from './commonType';
 
 export interface LoginResponseData {
   accessToken: string;
@@ -48,15 +42,6 @@ export interface AuthState {
   isAuthenticated: boolean; 
   isLoading: boolean;      
   error: string | null;  
-}
-
-export interface PageResponse<T> {
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-  numberOfElements: number;
-  content: T[];
 }
 
 export type UsersPageResponse = PageResponse<User>;
