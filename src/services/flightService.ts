@@ -14,7 +14,9 @@ export const flightService = {
   },
 
   create(payload: CreateFlightRequest): Promise<Flight> {
-    return axiosClient.post('/flights', payload);
+    return axiosClient
+    .post('/flights', payload)
+    .then(res => res.data);
   },
 
   update(id: string, payload: CreateFlightRequest): Promise<Flight> {

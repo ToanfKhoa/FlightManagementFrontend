@@ -58,7 +58,7 @@ export function FlightOperations() {
 
     setFlights((prev) =>
       prev.map((f) =>
-        f.id === selectedFlight.id ? { ...f, status: "delayed" } : f
+        f.id === selectedFlight.id ? { ...f, status: "DELAYED" } : f
       )
     );
 
@@ -71,7 +71,7 @@ export function FlightOperations() {
   const handleCancelFlight = (flight: Flight) => {
     setFlights((prev) =>
       prev.map((f) =>
-        f.id === flight.id ? { ...f, status: "canceled" } : f
+        f.id === flight.id ? { ...f, status: "CANCELED" } : f
       )
     );
 
@@ -83,29 +83,35 @@ export function FlightOperations() {
   const handleReactivateFlight = (flight: Flight) => {
     setFlights((prev) =>
       prev.map((f) =>
-        f.id === flight.id ? { ...f, status: "open" } : f
+        f.id === flight.id ? { ...f, status: "OPEN" } : f
       )
     );
 
     toast.success(`Chuyến bay ${flight.id} đã được kích hoạt lại`);
   };
 
-  const handleCreateFlight = () => {
-    flightService
-      .create({
-        route_id: newFlight.routeId,
-        aircraft_id: newFlight.aircraftId,
+  const handleCreateFlight = async () => {
+    try {
+      const newFlightData = await flightService.create({
+        routeId: newFlight.routeId,
+        aircraftId: newFlight.aircraftId,
         status: newFlight.status,
-      })
-      .then((newFlightData) => {
-        setFlights((prev) => [...prev, newFlightData]);
-        toast.success("Chuyến bay mới đã được tạo thành công");
-        setShowCreateDialog(false);
-        setNewFlight({ routeId: 0, aircraftId: 0, status: 'OPEN' });
-      })
-      .catch(() => {
-        toast.error("Không thể tạo chuyến bay mới");
       });
+      const route = routes.find(r => r.id === (newFlightData as any).routeId) || newFlightData.route;
+      const aircraft = aircrafts.find(a => a.id === (newFlightData as any).aircraftId) || newFlightData.aircraft;
+      const flightWithDetails = {
+        ...newFlightData,
+        route,
+        aircraft,
+        status: newFlight.status,
+      };
+      setFlights((prev) => [...prev, flightWithDetails]);
+      toast.success("Chuyến bay mới đã được tạo thành công");
+      setShowCreateDialog(false);
+      setNewFlight({ routeId: 0, aircraftId: 0, status: 'OPEN' });
+    } catch (error) {
+      toast.error("Không thể tạo chuyến bay mới");
+    }
   };
 
   const getStatusBadge = (status: Flight["status"]) => {
@@ -200,12 +206,12 @@ export function FlightOperations() {
                     <SelectValue placeholder="Chọn trạng thái" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="open">Bình thường</SelectItem>
-                    <SelectItem value="full">Hết chỗ</SelectItem>
-                    <SelectItem value="delayed">Chậm</SelectItem>
-                    <SelectItem value="canceled">Đã hủy</SelectItem>
-                    <SelectItem value="departed">Khởi hành</SelectItem>
-                    <SelectItem value="completed">Hoàn thành</SelectItem>
+                    <SelectItem value="OPEN">Bình thường</SelectItem>
+                    <SelectItem value="FULL">Hết chỗ</SelectItem>
+                    <SelectItem value="DELAYED">Chậm</SelectItem>
+                    <SelectItem value="CANCELED">Đã hủy</SelectItem>
+                    <SelectItem value="DEPARTED">Khởi hành</SelectItem>
+                    <SelectItem value="COMPLETED">Hoàn thành</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -228,7 +234,7 @@ export function FlightOperations() {
           <CardHeader className="pb-3">
             <CardDescription>Bình thường</CardDescription>
             <CardTitle className="text-3xl text-green-600">
-              {flights.filter((f) => String(f.status).toLowerCase() === "open").length}
+              {flights.filter((f) => f.status === "OPEN").length}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -236,7 +242,7 @@ export function FlightOperations() {
           <CardHeader className="pb-3">
             <CardDescription>Hết chỗ</CardDescription>
             <CardTitle className="text-3xl text-blue-600">
-              {flights.filter((f) => String(f.status).toLowerCase() === "full").length}
+              {flights.filter((f) => f.status === "FULL").length}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -244,7 +250,7 @@ export function FlightOperations() {
           <CardHeader className="pb-3">
             <CardDescription>Chậm</CardDescription>
             <CardTitle className="text-3xl text-yellow-600">
-              {flights.filter((f) => String(f.status).toLowerCase() === "delayed").length}
+              {flights.filter((f) => f.status === "DELAYED").length}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -252,7 +258,7 @@ export function FlightOperations() {
           <CardHeader className="pb-3">
             <CardDescription>Đã hủy</CardDescription>
             <CardTitle className="text-3xl text-red-600">
-              {flights.filter((f) => String(f.status).toLowerCase() === "canceled").length}
+              {flights.filter((f) => f.status === "CANCELED").length}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -298,7 +304,7 @@ export function FlightOperations() {
                 </div>
               </div>
 
-              {flight.status === "delayed" && (
+              {flight.status === "DELAYED" && (
                 <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg flex items-start gap-2">
                   <Clock className="w-5 h-5 text-yellow-600 mt-0.5" />
                   <div>
@@ -310,7 +316,7 @@ export function FlightOperations() {
                 </div>
               )}
 
-              {flight.status === "canceled" && (
+              {flight.status === "CANCELED" && (
                 <div className="bg-red-50 border border-red-200 p-3 rounded-lg flex items-start gap-2">
                   <X className="w-5 h-5 text-red-600 mt-0.5" />
                   <div>
@@ -323,7 +329,7 @@ export function FlightOperations() {
               )}
 
               <div className="flex flex-wrap gap-2">
-                {String(flight.status).toLowerCase() === "open" && (
+                {flight.status === "OPEN" && (
                   <>
                     <Dialog>  
                       <DialogTrigger asChild>
@@ -423,8 +429,8 @@ export function FlightOperations() {
                   </>
                 )}
 
-                {(String(flight.status).toLowerCase() === "delayed" ||
-                  String(flight.status).toLowerCase() === "canceled") && (
+                {(flight.status === "DELAYED" ||
+                  flight.status === "CANCELED") && (
                   <Button
                     variant="outline"
                     onClick={() => handleReactivateFlight(flight)}

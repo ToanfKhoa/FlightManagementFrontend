@@ -34,8 +34,8 @@ export type Flight = BaseEntity & {
 import type { ApiResponse } from './commonType';
 
 export type CreateFlightRequest = {
-  route_id: number;
-  aircraft_id: number;
+  routeId: number;
+  aircraftId: number;
   status: FlightStatus;
 };
 
