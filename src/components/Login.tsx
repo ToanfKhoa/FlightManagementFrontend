@@ -34,7 +34,7 @@ export function Login({ onLogin, onRegister }: LoginProps) {
       // Map backend role (likely uppercase in `authType`) to app lowercase role
       const roleMap: Record<string, UserRole> = {
         PASSENGER: "passenger",
-        STAFF: "staff",
+        EMPLOYEE: "staff",
         ADMIN: "admin",
         CREW: "crew",
         PILOT: "crew",
@@ -114,7 +114,7 @@ export function Login({ onLogin, onRegister }: LoginProps) {
               />
             </div>
 
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label htmlFor="role">Vai trò</Label>
               <select
                 id="role"
@@ -127,7 +127,7 @@ export function Login({ onLogin, onRegister }: LoginProps) {
                 <option value="staff">Nhân viên</option>
                 <option value="admin">Quản trị viên</option>
               </select>
-            </div>
+            </div> */}
 
             <Button type="submit" className="w-full">
               Đăng nhập
@@ -156,7 +156,7 @@ export function Login({ onLogin, onRegister }: LoginProps) {
                 size="sm"
                 onClick={() => quickLogin("crew")}
               >
-                Phi viên
+                Phi hành viên
               </Button>
               <Button
                 variant="outline"
