@@ -249,6 +249,7 @@ export function CrewManagement() {
                   <Button
                     size="sm"
                     variant="outline"
+                    disabled={isOverLimit(member)}
                     onClick={() => {
                       setSelectedCrewMember(member);
                       setShowAssignDialog(true);
@@ -375,12 +376,17 @@ export function CrewManagement() {
                   <p className="text-blue-800">
                     💡 Mỗi chuyến bay ước tính 8 giờ. Giờ bay sau khi phân công: {selectedCrewMember.monthlyHours + 8} giờ
                   </p>
+                  <p className="text-blue-800">
+                    {isOverLimit(selectedCrewMember) || (selectedCrewMember.monthlyHours + 8 > selectedCrewMember.maxHours)
+                      ? "⚠️ Vượt quá giới hạn giờ bay!"
+                      : `✅ Phân công này vẫn trong giới hạn giờ bay (${selectedCrewMember.maxHours} giờ).`}
+                  </p>
                 </div>
 
                 <Button 
                   className="w-full" 
                   onClick={handleAssignFlight}
-                  disabled={!selectedFlightId}
+                  disabled={!selectedFlightId || selectedCrewMember.monthlyHours + 8 > selectedCrewMember.maxHours}
                 >
                   Xác nhận phân công
                 </Button>
