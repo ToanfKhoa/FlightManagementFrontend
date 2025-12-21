@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -7,18 +7,21 @@ import { Badge } from "../ui/badge";
 import { Progress } from "../ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { Users, Plus, AlertTriangle, Plane, PlaneTakeoff } from "lucide-react";
-import { mockCrew, mockFlights } from "../../lib/mockData";
+import { mockFlights } from "../../lib/mockData";
+import employeeService from "../../services/employeeService";
+import type { Employee } from "../../types/employeeType";
 import { toast } from "sonner";
 import type { CrewMember, Flight } from "../../lib/mockData";
 
 export function CrewManagement() {
-  const [crew, setCrew] = useState<CrewMember[]>(mockCrew);
+  const [crew, setCrew] = useState<CrewMember[]>([]);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [selectedCrewMember, setSelectedCrewMember] = useState<CrewMember | null>(null);
   const [newCrewName, setNewCrewName] = useState("");
   const [newCrewRole, setNewCrewRole] = useState<"pilot" | "attendant">("pilot");
   const [selectedFlightId, setSelectedFlightId] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleAddCrew = () => {
     const maxHours = newCrewRole === "pilot" ? 100 : 80;
@@ -36,6 +39,32 @@ export function CrewManagement() {
     setNewCrewName("");
     toast.success("Thêm thành viên mới thành công!");
   };
+
+  // Load employees from backend and map to CrewMember shape
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await employeeService.getAllEmployees(0, 100);
+        const employees: Employee[] = res?.data?.content ?? [];
+        const mapped: CrewMember[] = employees.map((e) => ({
+          id: `${e.id}`,
+          name: e.fullName,
+          role: e.position === "PILOT" || e.position === "COPILOT" ? "pilot" : "attendant",
+          monthlyHours: e.totalFlightHours ?? 0,
+          maxHours: e.position === "PILOT" || e.position === "COPILOT" ? 100 : 80,
+          assignments: [],
+        }));
+        setCrew(mapped);
+        //toast.success(`Đã tải ${mapped.length} nhân viên`);
+      } catch (err) {
+        console.error(err);
+        toast.error("Không thể tải danh sách nhân viên. Hiển thị dữ liệu mẫu.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   const handleAssignFlight = () => {
     if (!selectedCrewMember || !selectedFlightId) return;
@@ -160,6 +189,11 @@ export function CrewManagement() {
           </DialogContent>
         </Dialog>
       </div>
+      {loading && (
+        <div className="p-3 bg-gray-50 rounded-md">
+          <p className="text-sm text-gray-600">Đang tải danh sách nhân viên...</p>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -179,14 +213,14 @@ export function CrewManagement() {
             </CardTitle>
           </CardHeader>
         </Card>
-        <Card>
+        {/* <Card>
           <CardHeader className="pb-3">
             <CardDescription>Cảnh báo giờ bay</CardDescription>
             <CardTitle className="text-3xl text-yellow-600">
               {crew.filter((c) => isNearLimit(c) || isOverLimit(c)).length}
             </CardTitle>
           </CardHeader>
-        </Card>
+        </Card> */}
       </div>
 
       {/* Crew List */}
@@ -252,7 +286,7 @@ export function CrewManagement() {
                 )}
                 {isNearLimit(member) && (
                   <p className="text-sm text-yellow-600">
-                    ⚠️ Còn {member.maxHours - member.monthlyHours} giờ trước khi đạt giới hạn
+                    ⚠️ Gần đạt giới hạn: còn {member.maxHours - member.monthlyHours} giờ bay
                   </p>
                 )}
               </div>
@@ -260,7 +294,7 @@ export function CrewManagement() {
               {/* Assignments */}
               <div>
                 <p className="text-sm font-semibold mb-2">
-                  Chuyến bay phân công ({member.assignments.length})
+                  Chuyến bay đang phân công ({member.assignments.length})
                 </p>
                 {member.assignments.length === 0 ? (
                   <p className="text-sm text-gray-500">Chưa có chuyến bay nào</p>
