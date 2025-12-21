@@ -1,34 +1,47 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
-import { Plane, Wrench, Calendar, AlertCircle } from "lucide-react";
-import { mockAircraft } from "../../lib/mockData";
+import { Plane, Wrench } from "lucide-react";
 import { toast } from "sonner";
-import type { Aircraft } from "../../lib/mockData";
+import { aircraftService } from "../../services/aircraftService";
+import type { Aircraft } from "../../types/aircraftType";
 
 export function AircraftManagement() {
-  const [aircraft, setAircraft] = useState<Aircraft[]>(mockAircraft);
+  const [aircraft, setAircraft] = useState<Aircraft[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedAircraft, setSelectedAircraft] = useState<Aircraft | null>(null);
 
-  const handleStatusChange = (aircraftId: string, newStatus: Aircraft["status"]) => {
-    const updatedAircraft = aircraft.map((a) => {
-      if (a.id === aircraftId) {
-        return { ...a, status: newStatus };
-      }
-      return a;
-    });
+  useEffect(() => {
+    aircraftService
+      .getAll()
+      .then(setAircraft)
+      .catch(() => {
+        toast.error("Không tải được danh sách máy bay");
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
-    setAircraft(updatedAircraft);
-    toast.success("Cập nhật trạng thái thành công!");
+  const handleStatusChange = (aircraftId: number, newStatus: Aircraft["status"]) => {
+    aircraftService
+      .update(aircraftId, { status: newStatus })
+      .then((updatedAircraft) => {
+        setAircraft((prev) =>
+          prev.map((a) => (a.id === aircraftId ? updatedAircraft : a))
+        );
+        toast.success("Cập nhật trạng thái thành công!");
+      })
+      .catch(() => {
+        toast.error("Không thể cập nhật trạng thái máy bay");
+      });
   };
 
   const getStatusBadge = (status: Aircraft["status"]) => {
-    const variants: Record<Aircraft["status"], { variant: any; label: string; color: string }> = {
-      active: { variant: "default", label: "Hoạt động", color: "green" },
-      maintenance: { variant: "secondary", label: "Bảo trì", color: "yellow" },
-      inactive: { variant: "destructive", label: "Ngừng hoạt động", color: "red" },
+    const variants: Record<Aircraft["status"], { variant: any; label: string }> = {
+      ACTIVE: { variant: "default", label: "Hoạt động" },
+      MAINTENANCE: { variant: "secondary", label: "Bảo trì" },
+      INACTIVE: { variant: "destructive", label: "Ngừng hoạt động" },
     };
 
     return (
@@ -36,12 +49,14 @@ export function AircraftManagement() {
     );
   };
 
+  /*
   const isMaintenanceDue = (nextMaintenance: string) => {
     const next = new Date(nextMaintenance);
     const now = new Date();
     const daysUntil = Math.floor((next.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     return daysUntil <= 14;
   };
+  */
 
   return (
     <div className="space-y-6">
@@ -49,13 +64,13 @@ export function AircraftManagement() {
         <div>
           <h2>Quản lý máy bay</h2>
           <p className="text-sm text-gray-600 mt-1">
-            Theo dõi và quản lý trạng thái máy bay, lịch bảo trì
+            Theo dõi và quản lý trạng thái máy bay
           </p>
         </div>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-3">
             <CardDescription>Tổng số máy bay</CardDescription>
@@ -66,7 +81,7 @@ export function AircraftManagement() {
           <CardHeader className="pb-3">
             <CardDescription>Đang hoạt động</CardDescription>
             <CardTitle className="text-3xl text-green-600">
-              {aircraft.filter((a) => a.status === "active").length}
+              {aircraft.filter((a) => a.status === "ACTIVE").length}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -74,15 +89,7 @@ export function AircraftManagement() {
           <CardHeader className="pb-3">
             <CardDescription>Đang bảo trì</CardDescription>
             <CardTitle className="text-3xl text-yellow-600">
-              {aircraft.filter((a) => a.status === "maintenance").length}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Cần bảo trì sớm</CardDescription>
-            <CardTitle className="text-3xl text-red-600">
-              {aircraft.filter((a) => isMaintenanceDue(a.nextMaintenance)).length}
+              {aircraft.filter((a) => a.status === "MAINTENANCE").length}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -97,7 +104,7 @@ export function AircraftManagement() {
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Plane className="w-5 h-5" />
-                    {ac.registration}
+                    {ac.registrationNumber}
                   </CardTitle>
                   <CardDescription className="mt-1">{ac.type}</CardDescription>
                 </div>
@@ -105,26 +112,32 @@ export function AircraftManagement() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Seat Configuration */}
-              <div>
-                <p className="text-sm font-semibold mb-2">Cấu hình ghế</p>
-                <div className="grid grid-cols-3 gap-2 text-sm">
-                  <div className="bg-gray-50 p-2 rounded">
-                    <p className="text-gray-600">Phổ thông</p>
-                    <p className="font-semibold">{ac.totalSeats.economy}</p>
-                  </div>
-                  <div className="bg-gray-50 p-2 rounded">
-                    <p className="text-gray-600">Thương gia</p>
-                    <p className="font-semibold">{ac.totalSeats.business}</p>
-                  </div>
-                  <div className="bg-gray-50 p-2 rounded">
-                    <p className="text-gray-600">Hạng nhất</p>
-                    <p className="font-semibold">{ac.totalSeats.first}</p>
-                  </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Nhà sản xuất</p>
+                  <p className="font-semibold">{ac.manufacturer}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Model</p>
+                  <p className="font-semibold">{ac.model}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Năm sản xuất</p>
+                  <p className="font-semibold">{ac.manufactureYear}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Số serial</p>
+                  <p className="font-semibold">{ac.serialNumber}</p>
                 </div>
               </div>
 
-              {/* Maintenance Schedule */}
+              {/* Seat Capacity */}
+              <div>
+                <p className="text-sm font-semibold mb-2">Sức chứa ghế</p>
+                <p className="text-lg font-semibold">{ac.seatCapacity}</p>
+              </div>
+
+              {/* Maintenance Schedule 
               <div>
                 <p className="text-sm font-semibold mb-2 flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
@@ -143,7 +156,7 @@ export function AircraftManagement() {
                       {new Date(ac.nextMaintenance).toLocaleDateString("vi-VN")}
                     </span>
                   </div>
-                </div>
+                </div> 
 
                 {isMaintenanceDue(ac.nextMaintenance) && ac.status === "active" && (
                   <div className="bg-red-50 border border-red-200 p-2 rounded mt-2 flex items-start gap-2">
@@ -153,7 +166,7 @@ export function AircraftManagement() {
                     </p>
                   </div>
                 )}
-              </div>
+              </div> */}
 
               {/* Actions */}
               <div className="flex gap-2">
@@ -170,7 +183,7 @@ export function AircraftManagement() {
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>{ac.registration} - {ac.type}</DialogTitle>
+                      <DialogTitle>{ac.registrationNumber} - {ac.type}</DialogTitle>
                       <DialogDescription>
                         Cập nhật trạng thái và thông tin máy bay
                       </DialogDescription>
@@ -182,20 +195,20 @@ export function AircraftManagement() {
                         <p className="text-sm font-semibold mb-2">Thay đổi trạng thái</p>
                         <div className="grid grid-cols-3 gap-2">
                           <Button
-                            variant={ac.status === "active" ? "default" : "outline"}
-                            onClick={() => handleStatusChange(ac.id, "active")}
+                            variant={ac.status === "ACTIVE" ? "default" : "outline"}
+                            onClick={() => handleStatusChange(ac.id, "ACTIVE")}
                           >
                             Hoạt động
                           </Button>
                           <Button
-                            variant={ac.status === "maintenance" ? "default" : "outline"}
-                            onClick={() => handleStatusChange(ac.id, "maintenance")}
+                            variant={ac.status === "MAINTENANCE" ? "default" : "outline"}
+                            onClick={() => handleStatusChange(ac.id, "MAINTENANCE")}
                           >
                             Bảo trì
                           </Button>
                           <Button
-                            variant={ac.status === "inactive" ? "destructive" : "outline"}
-                            onClick={() => handleStatusChange(ac.id, "inactive")}
+                            variant={ac.status === "INACTIVE" ? "destructive" : "outline"}
+                            onClick={() => handleStatusChange(ac.id, "INACTIVE")}
                           >
                             Ngừng
                           </Button>
@@ -209,17 +222,31 @@ export function AircraftManagement() {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Số đăng ký:</span>
-                          <span className="font-semibold">{ac.registration}</span>
+                          <span className="font-semibold">{ac.registrationNumber}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Loại máy bay:</span>
                           <span className="font-semibold">{ac.type}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Tổng số ghế:</span>
-                          <span className="font-semibold">
-                            {ac.totalSeats.economy + ac.totalSeats.business + ac.totalSeats.first}
-                          </span>
+                          <span className="text-gray-600">Nhà sản xuất:</span>
+                          <span className="font-semibold">{ac.manufacturer}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Model:</span>
+                          <span className="font-semibold">{ac.model}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Năm sản xuất:</span>
+                          <span className="font-semibold">{ac.manufactureYear}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Số serial:</span>
+                          <span className="font-semibold">{ac.serialNumber}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Sức chứa ghế:</span>
+                          <span className="font-semibold">{ac.seatCapacity}</span>
                         </div>
                       </div>
                     </div>

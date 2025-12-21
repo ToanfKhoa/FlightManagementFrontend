@@ -1,4 +1,4 @@
-export type AircraftStatus = 'active' | 'maintenance' | 'inactive';
+export type AircraftStatus = 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE';
 
 export type Aircraft = {
   id: number;
@@ -32,6 +32,6 @@ export type AircraftUI = {
   manufacturer: string;
   model: string;
   seatCapacity: number;
-  status: 'active' | 'maintenance' | 'inactive';
+  status: 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE';
 };
 
