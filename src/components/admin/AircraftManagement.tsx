@@ -3,15 +3,29 @@ import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
-import { Plane, Wrench } from "lucide-react";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Plane, Wrench, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { aircraftService } from "../../services/aircraftService";
-import type { Aircraft } from "../../types/aircraftType";
+import type { Aircraft, CreateAircraftRequest } from "../../types/aircraftType";
 
 export function AircraftManagement() {
   const [aircraft, setAircraft] = useState<Aircraft[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAircraft, setSelectedAircraft] = useState<Aircraft | null>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [newAircraft, setNewAircraft] = useState<CreateAircraftRequest>({
+    type: '',
+    seatCapacity: 0,
+    registrationNumber: '',
+    manufacturer: '',
+    model: '',
+    manufactureYear: 0,
+    serialNumber: '',
+    status: 'ACTIVE'
+  });
 
   useEffect(() => {
     aircraftService
@@ -37,6 +51,30 @@ export function AircraftManagement() {
       });
   };
 
+  const handleCreateAircraft = () => {
+    aircraftService
+      .create(newAircraft)
+      .then(() => {
+        // Refresh the aircraft list
+        aircraftService.getAll().then(setAircraft);
+        toast.success("Tạo máy bay thành công!");
+        setIsCreateDialogOpen(false);
+        setNewAircraft({
+          type: '',
+          seatCapacity: 0,
+          registrationNumber: '',
+          manufacturer: '',
+          model: '',
+          manufactureYear: 0,
+          serialNumber: '',
+          status: 'ACTIVE'
+        });
+      })
+      .catch(() => {
+        toast.error("Không thể tạo máy bay");
+      });
+  };
+
   const getStatusBadge = (status: Aircraft["status"]) => {
     const variants: Record<Aircraft["status"], { variant: any; label: string }> = {
       ACTIVE: { variant: "default", label: "Hoạt động" },
@@ -44,8 +82,13 @@ export function AircraftManagement() {
       INACTIVE: { variant: "destructive", label: "Ngừng hoạt động" },
     };
 
+    const variantData = variants[status];
+    if (!variantData) {
+      return <Badge variant="outline">Không xác định</Badge>;
+    }
+
     return (
-      <Badge variant={variants[status].variant as any}>{variants[status].label}</Badge>
+      <Badge variant={variantData.variant as any}>{variantData.label}</Badge>
     );
   };
 
@@ -67,6 +110,10 @@ export function AircraftManagement() {
             Theo dõi và quản lý trạng thái máy bay
           </p>
         </div>
+        <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Thêm máy bay mới
+        </Button>
       </div>
 
       {/* Summary Cards */}
@@ -81,7 +128,7 @@ export function AircraftManagement() {
           <CardHeader className="pb-3">
             <CardDescription>Đang hoạt động</CardDescription>
             <CardTitle className="text-3xl text-green-600">
-              {aircraft.filter((a) => a.status === "ACTIVE").length}
+              {aircraft.filter((a) => a && a.status === "ACTIVE").length}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -89,15 +136,117 @@ export function AircraftManagement() {
           <CardHeader className="pb-3">
             <CardDescription>Đang bảo trì</CardDescription>
             <CardTitle className="text-3xl text-yellow-600">
-              {aircraft.filter((a) => a.status === "MAINTENANCE").length}
+              {aircraft.filter((a) => a && a.status === "MAINTENANCE").length}
             </CardTitle>
           </CardHeader>
         </Card>
       </div>
 
+      {/* Create Aircraft Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Thêm máy bay mới</DialogTitle>
+            <DialogDescription>
+              Nhập thông tin để tạo máy bay mới
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="type">Loại máy bay</Label>
+                <Input
+                  id="type"
+                  value={newAircraft.type}
+                  onChange={(e) => setNewAircraft(prev => ({ ...prev, type: e.target.value }))}
+                  placeholder="Ví dụ: Boeing 737"
+                />
+              </div>
+              <div>
+                <Label htmlFor="registrationNumber">Số đăng ký</Label>
+                <Input
+                  id="registrationNumber"
+                  value={newAircraft.registrationNumber}
+                  onChange={(e) => setNewAircraft(prev => ({ ...prev, registrationNumber: e.target.value }))}
+                  placeholder="Ví dụ: VN-A123"
+                />
+              </div>
+              <div>
+                <Label htmlFor="manufacturer">Nhà sản xuất</Label>
+                <Input
+                  id="manufacturer"
+                  value={newAircraft.manufacturer}
+                  onChange={(e) => setNewAircraft(prev => ({ ...prev, manufacturer: e.target.value }))}
+                  placeholder="Ví dụ: Boeing"
+                />
+              </div>
+              <div>
+                <Label htmlFor="model">Model</Label>
+                <Input
+                  id="model"
+                  value={newAircraft.model}
+                  onChange={(e) => setNewAircraft(prev => ({ ...prev, model: e.target.value }))}
+                  placeholder="Ví dụ: 737-800"
+                />
+              </div>
+              <div>
+                <Label htmlFor="manufactureYear">Năm sản xuất</Label>
+                <Input
+                  id="manufactureYear"
+                  type="number"
+                  value={newAircraft.manufactureYear}
+                  onChange={(e) => setNewAircraft(prev => ({ ...prev, manufactureYear: parseInt(e.target.value) || 0 }))}
+                  placeholder="Ví dụ: 2020"
+                />
+              </div>
+              <div>
+                <Label htmlFor="serialNumber">Số serial</Label>
+                <Input
+                  id="serialNumber"
+                  value={newAircraft.serialNumber}
+                  onChange={(e) => setNewAircraft(prev => ({ ...prev, serialNumber: e.target.value }))}
+                  placeholder="Ví dụ: 123456"
+                />
+              </div>
+              <div>
+                <Label htmlFor="seatCapacity">Sức chứa ghế</Label>
+                <Input
+                  id="seatCapacity"
+                  type="number"
+                  value={newAircraft.seatCapacity}
+                  onChange={(e) => setNewAircraft(prev => ({ ...prev, seatCapacity: parseInt(e.target.value) || 0 }))}
+                  placeholder="Ví dụ: 180"
+                />
+              </div>
+              <div>
+                <Label htmlFor="status">Trạng thái</Label>
+                <Select value={newAircraft.status} onValueChange={(value: Aircraft['status']) => setNewAircraft(prev => ({ ...prev, status: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn trạng thái" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ACTIVE">Hoạt động</SelectItem>
+                    <SelectItem value="MAINTENANCE">Bảo trì</SelectItem>
+                    <SelectItem value="INACTIVE">Ngừng hoạt động</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                Hủy
+              </Button>
+              <Button onClick={handleCreateAircraft}>
+                Tạo máy bay
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Aircraft List */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {aircraft.map((ac) => (
+        {aircraft.filter((a) => a).map((ac) => (
           <Card key={ac.id}>
             <CardHeader>
               <div className="flex justify-between items-start">
