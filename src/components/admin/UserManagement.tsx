@@ -18,12 +18,16 @@ export function UserManagement() {
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
-  const [searchQuery, setSearchQuery] = useState("");
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
+
+  const [searchTerm, setSearchTerm] = useState(""); 
+  const [debouncedSearch, setDebouncedSearch] = useState(""); 
+  const [selectedRole, setSelectedRole] = useState(""); 
+
   const handleDeleteUser = async (userId: number) => {
     if (!confirm('Bạn có chắc muốn xóa tài khoản này?')) return;
     try {
@@ -33,13 +37,18 @@ export function UserManagement() {
       if (ok) {
         // Refresh current page after delete
         try {
-          const res2: ApiResponse<UsersPageResponse> = await userService.getAllUsers(page, size);
-          setUsers(res2?.data?.content ?? []);
-          setTotalPages(res2?.data?.totalPages ?? 0);
+          if (users.length === 1 && page > 0) {
+            setPage(prev => prev - 1); 
+            // when set page, useEffect auto fetchUsers
+          } else {
+            fetchUsers();
+          }
+
         } catch (err) {
           // fallback: remove locally
           setUsers((prev) => prev.filter((u) => u.id !== userId));
         }
+
         toast.success("Đã xóa tài khoản");
       } else {
         console.warn('Delete user unexpected response:', res);
@@ -53,33 +62,41 @@ export function UserManagement() {
     }
   };
 
-  // Load users for current page
-  useEffect(() => {
-    let mounted = true;
-    const load = async (p: number) => {
-      try {
-        setLoading(true);
-        const res: ApiResponse<UsersPageResponse> = await userService.getAllUsers(p, size);
-        const items = res?.data?.content ?? [];
-        if (mounted) {
-          setUsers(items as User[]);
-          setTotalPages(res?.data?.totalPages ?? 0);
-        }
-      } catch (err: any) {
-        console.error(err);
-        toast.error(err?.message || "Không thể tải danh sách người dùng");
-      } finally {
-        if (mounted) setLoading(false);
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const res = await userService.getAllUsers({
+        page: page,
+        size: size,
+        search: debouncedSearch, 
+        role: selectedRole === "ALL" ? "" : selectedRole,
+        sort: "updatedAt,desc"
+      });
+    
+      // Set data
+      if (res?.data) {
+        setUsers(res.data.content || []);
+        setTotalPages(res.data.totalPages || 0);
       }
-    };
-    load(page);
-    return () => { mounted = false; };
-  }, [page, size]);
+    } catch (err: any) {
+      toast.error("Lỗi khi tải dữ liệu");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Lọc theo username
-  const filteredUsers = users.filter((u) =>
-    u.username.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(0); // reset to first page on new search
+    }, 500); // delay 500ms
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+  
+  useEffect(() => {
+    fetchUsers();
+  }, [page, size, debouncedSearch, selectedRole]);
 
   return (
     <div className="space-y-6">
@@ -96,23 +113,35 @@ export function UserManagement() {
       />
 
       {/* Search */}
-      <div className="flex gap-2 items-center">
-        <Input
-          placeholder="Tìm kiếm theo username..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <Button onClick={() => setSearchQuery("")}>Xóa</Button>
+      <div className="flex gap-2 items-center mb-4">
+      <Input
+        placeholder="Tìm kiếm theo username..."
+        value={searchTerm} // Bind vào searchTerm
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+  
+      {/* Dropdown Role mới */}
+      <select 
+        className="border p-2 rounded"
+        value={selectedRole}
+        onChange={(e) => { setSelectedRole(e.target.value); setPage(0); }}
+      >
+          <option value="">Tất cả</option>
+          <option value="PASSENGER">hành khách</option>
+          <option value="EMPLOYEE">nhân viên</option>
+          <option value="ADMIN">quản trị viên</option>
+        </select>
+
         <Button onClick={() => setShowCreateDialog(true)}>Tạo mới</Button>
         <UserFormDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} onCreated={(u: User) => { setPage(0); /* refresh first page to include new */ }} />
       </div>
 
       {/* User List */}
       <div className="space-y-4">
-        {filteredUsers.length === 0 ? (
+        {users.length === 0 ? (
           <p className="text-gray-500">Không tìm thấy tài khoản nào</p>
         ) : (
-          filteredUsers.map(user => (
+          users.map(user => (
             <Card key={user.id}>
               <CardHeader className="flex justify-between items-center">
                 <div>
