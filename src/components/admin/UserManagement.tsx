@@ -162,32 +162,10 @@ export function UserManagement() {
 
                 <div className="flex gap-2">
                   {/* View Details */}
-                  <Dialog open={showDetailDialog && selectedUser?.id === user.id} onOpenChange={setShowDetailDialog}>
-                    <DialogTrigger asChild>
-                      <Button size="sm" variant="outline" onClick={() => setSelectedUser(user)}>
-                        <Eye className="w-4 h-4 mr-1" />
-                        Xem
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Thông tin tài khoản</DialogTitle>
-                        <DialogDescription>Chi tiết tài khoản {user.username}</DialogDescription>
-                      </DialogHeader>
-                      {selectedUser && (
-                        <div className="space-y-2 text-sm">
-                          <p><strong>Username:</strong> {selectedUser.username}</p>
-                          <p><strong>Email:</strong> {selectedUser.email}</p>
-                          <p><strong>Phone:</strong> {selectedUser.phone}</p>
-                          <p><strong>Role:</strong> {selectedUser.role}</p>
-                          {selectedUser && (selectedUser as any).passenger_id && <p><strong>Passenger ID:</strong> {(selectedUser as any).passenger_id}</p>}
-                          {selectedUser && (selectedUser as any).employee_id && <p><strong>Employee ID:</strong> {(selectedUser as any).employee_id}</p>}
-                          <p><strong>Created at:</strong> {new Date((selectedUser as any).createdAt ?? (selectedUser as any).created_at ?? '').toLocaleString()}</p>
-                          <p><strong>Updated at:</strong> {new Date((selectedUser as any).updatedAt ?? (selectedUser as any).updated_at ?? '').toLocaleString()}</p>
-                        </div>
-                      )}
-                    </DialogContent>
-                  </Dialog>
+                  <Button size="sm" variant="outline" onClick={() => { setSelectedUser(user); setShowDetailDialog(true); }}>
+                    <Eye className="w-4 h-4 mr-1" />
+                    Xem
+                  </Button>
 
                   {/* Edit */}
                   <Button size="sm" variant="outline" onClick={() => { setEditUser(user); setShowEditDialog(true); }}>
@@ -214,6 +192,27 @@ export function UserManagement() {
           <Button disabled={page >= (totalPages - 1) || loading} onClick={() => setPage(p => Math.min((totalPages - 1) || p + 1, p + 1))}>Next</Button>
         </div>
       </div>
+
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Thông tin tài khoản</DialogTitle>
+              <DialogDescription>Chi tiết tài khoản {selectedUser?.username}</DialogDescription>
+            </DialogHeader>
+                {selectedUser && (
+                <div className="space-y-2 text-sm">
+                  <p><strong>Username:</strong> {selectedUser.username}</p>
+                  <p><strong>Email:</strong> {selectedUser.email}</p>
+                  <p><strong>Phone:</strong> {selectedUser.phone}</p>
+                  <p><strong>Role:</strong> {selectedUser.role}</p>
+                    {selectedUser && (selectedUser as any).passenger_id && <p><strong>Passenger ID:</strong> {(selectedUser as any).passenger_id}</p>}
+                    {selectedUser && (selectedUser as any).employee_id && <p><strong>Employee ID:</strong> {(selectedUser as any).employee_id}</p>}
+                  <p><strong>Created at:</strong> {new Date((selectedUser as any).createdAt ?? (selectedUser as any).created_at ?? '').toLocaleString()}</p>
+                  <p><strong>Updated at:</strong> {new Date((selectedUser as any).updatedAt ?? (selectedUser as any).updated_at ?? '').toLocaleString()}</p>
+                </div>
+                )}
+            </DialogContent>
+        </Dialog>
     </div>
   );
 }
