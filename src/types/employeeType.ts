@@ -10,8 +10,11 @@ export interface Employee {
   id: number;
   fullName: string;
   position: EmployeePosition;
-  workExperience: string; 
+  workExperience: string;
   totalFlightHours: number;
+  monthlyHours: number;
+  maxHours: number;
+  assignments: string[];
 
   version?: number;
   createdBy?: string | null;
