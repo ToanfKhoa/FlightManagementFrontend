@@ -6,7 +6,7 @@ import { Separator } from "../ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Calendar, Clock, Plane, Ticket, AlertCircle, CheckCircle2 } from "lucide-react";
 import { mockBookings, mockFlights, formatCurrency, getTimeRemaining } from "../../lib/mockData";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import type { Booking, Flight } from "../../lib/mockData";
 
 interface MyBookingsProps {
