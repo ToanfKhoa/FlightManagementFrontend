@@ -7,7 +7,7 @@ import { Badge } from "../ui/badge";
 import { Search, Plane, Clock, Calendar, Users, UserPlus } from "lucide-react";
 import { mockFlights, formatCurrency } from "../../lib/mockData";
 import { SeatSelection } from "./SeatSelection";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import type { Flight, WaitingListEntry } from "../../lib/mockData";
 
 interface FlightSearchProps {

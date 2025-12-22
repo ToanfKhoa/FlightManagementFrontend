@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Separator } from "../ui/separator";
 import { Search, Luggage, AlertTriangle } from "lucide-react";
 import { mockBookings, mockFlights, formatCurrency, calculateBaggageFee } from "../../lib/mockData";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import type { Booking, Flight } from "../../lib/mockData";
 
 export function BaggageDesk() {
