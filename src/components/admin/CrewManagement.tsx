@@ -22,6 +22,11 @@ export function CrewManagement() {
   const [newCrewRole, setNewCrewRole] = useState<"pilot" | "attendant">("pilot");
   const [selectedFlightId, setSelectedFlightId] = useState("");
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleAddCrew = () => {
     const maxHours = newCrewRole === "pilot" ? 100 : 80;
@@ -40,12 +45,13 @@ export function CrewManagement() {
     toast.success("Thêm thành viên mới thành công!");
   };
 
-  // Load employees from backend and map to CrewMember shape
+  // Load employees from backend and map to CrewMember shape (paged + search)
   useEffect(() => {
-    (async () => {
+    let mounted = true;
+    const load = async () => {
       try {
         setLoading(true);
-        const res = await employeeService.getAllEmployees(0, 100);
+        const res = await employeeService.getAllEmployees(page, size, searchQuery || undefined);
         const employees: Employee[] = res?.data?.content ?? [];
         const mapped: CrewMember[] = employees.map((e) => ({
           id: `${e.id}`,
@@ -55,16 +61,20 @@ export function CrewManagement() {
           maxHours: e.position === "PILOT" || e.position === "COPILOT" ? 100 : 80,
           assignments: [],
         }));
+        if (!mounted) return;
         setCrew(mapped);
-        //toast.success(`Đã tải ${mapped.length} nhân viên`);
+        setTotalPages(res?.data?.totalPages ?? 0);
+        setTotalElements(res?.data?.totalElements ?? 0);
       } catch (err) {
         console.error(err);
-        toast.error("Không thể tải danh sách nhân viên. Hiển thị dữ liệu mẫu.");
+        toast.error("Không thể tải danh sách nhân viên. Vui lòng thử lại.");
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
-    })();
-  }, []);
+    };
+    load();
+    return () => { mounted = false; };
+  }, [page, size, searchQuery]);
 
   const handleAssignFlight = () => {
     if (!selectedCrewMember || !selectedFlightId) return;
@@ -147,12 +157,12 @@ export function CrewManagement() {
           </p>
         </div>
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-          <DialogTrigger asChild>
-            <Button>
+          {/* <DialogTrigger asChild>
+             <Button>
               <Plus className="w-4 h-4 mr-2" />
               Thêm thành viên
             </Button>
-          </DialogTrigger>
+          </DialogTrigger> */}
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Thêm thành viên phi hành đoàn</DialogTitle>
@@ -195,8 +205,19 @@ export function CrewManagement() {
         </div>
       )}
 
+      {/* Search & actions */}
+      <div className="flex gap-2 items-center">
+        <Input
+          placeholder="Tìm kiếm theo họ tên..."
+          value={searchQuery}
+          onChange={(e) => { setSearchQuery(e.target.value); setPage(0); }}
+        />
+        <Button onClick={() => { setSearchQuery(""); setPage(0); }}>Xóa</Button>
+        <Button onClick={() => setShowAddDialog(true)}>Thêm thành viên</Button>
+      </div>
+
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-3">
             <CardDescription>Tổng số phi công</CardDescription>
@@ -213,15 +234,15 @@ export function CrewManagement() {
             </CardTitle>
           </CardHeader>
         </Card>
-        {/* <Card>
+        <Card>
           <CardHeader className="pb-3">
             <CardDescription>Cảnh báo giờ bay</CardDescription>
             <CardTitle className="text-3xl text-yellow-600">
               {crew.filter((c) => isNearLimit(c) || isOverLimit(c)).length}
             </CardTitle>
           </CardHeader>
-        </Card> */}
-      </div>
+        </Card>
+      </div> */}
 
       {/* Crew List */}
       <div className="space-y-4">
@@ -234,7 +255,7 @@ export function CrewManagement() {
                     <Users className="w-5 h-5" />
                     {member.name}
                     <Badge variant={member.role === "pilot" ? "default" : "secondary"}>
-                      {member.role === "pilot" ? "Phi công" : "Tiếp viên"}
+                      {member.role === "pilot" ? "Phi công" : member.role === "attendant" ? "Tiếp viên" : member.role === "copilot" ? "Cơ phó" : "Nhân viên quầy vé"}
                     </Badge>
                   </CardTitle>
                   <CardDescription className="mt-1">ID: {member.id}</CardDescription>
@@ -324,6 +345,15 @@ export function CrewManagement() {
         ))}
       </div>
 
+      {/* Pagination controls */}
+      <div className="flex items-center justify-between mt-4">
+        <div className="text-sm text-gray-600">Hiển thị {crew.length} / {totalElements} nhân viên — Trang {page + 1} / {totalPages || 1}</div>
+        <div className="flex gap-2">
+          <Button disabled={page <= 0 || loading} onClick={() => setPage(p => Math.max(0, p - 1))}>Prev</Button>
+          <Button disabled={page >= (totalPages - 1) || loading} onClick={() => setPage(p => Math.min((totalPages - 1) || p + 1, p + 1))}>Next</Button>
+        </div>
+      </div>
+
       {/* Assign Flight Dialog */}
       <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
         <DialogContent>
@@ -340,7 +370,7 @@ export function CrewManagement() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Vai trò:</span>
                     <span className="font-semibold">
-                      {selectedCrewMember.role === "pilot" ? "Phi công" : "Tiếp viên"}
+                      {selectedCrewMember.role === "pilot" ? "Phi công" : selectedCrewMember.role === "attendant" ? "Tiếp viên" : selectedCrewMember.role === "copilot" ? "Cơ phó" : "Nhân viên quầy vé"}
                     </span>
                   </div>
                   <div className="flex justify-between">
