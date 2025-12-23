@@ -22,8 +22,8 @@ export type AircraftSummary = {
 
 export type AircraftOption = {
   id: number;
-  label: string; 
-  disabled: boolean; 
+  label: string;
+  disabled: boolean;
 };
 
 export type AircraftUI = {
@@ -34,4 +34,8 @@ export type AircraftUI = {
   seatCapacity: number;
   status: 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE';
 };
+
+import type { ApiResponse, PageResponse } from './commonType';
+
+export type AircraftsPageResponse = PageResponse<Aircraft>;
 

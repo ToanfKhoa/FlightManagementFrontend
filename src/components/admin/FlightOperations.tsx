@@ -85,12 +85,12 @@ export function FlightOperations() {
     Promise.all([
       flightService.getAll({ all: true }),
       routeService.getAll(),
-      aircraftService.getAll(),
+      aircraftService.getAll({ all: true }),
     ])
       .then(([allFlightsData, routesData, aircraftsData]) => {
         setAllFlights(allFlightsData as Flight[]);
         setRoutes(routesData);
-        setAircrafts(aircraftsData);
+        setAircrafts(aircraftsData as Aircraft[]);
       })
       .catch(() => {
         toast.error("Không tải được dữ liệu");

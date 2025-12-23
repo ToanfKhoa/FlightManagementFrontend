@@ -9,11 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Plane, Wrench, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { aircraftService } from "../../services/aircraftService";
-import type { Aircraft, CreateAircraftRequest } from "../../types/aircraftType";
+import type { Aircraft, CreateAircraftRequest, AircraftsPageResponse } from "../../types/aircraftType";
+import type { ApiResponse } from "../../types/commonType";
 
 export function AircraftManagement() {
   const [aircraft, setAircraft] = useState<Aircraft[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [allAircraft, setAllAircraft] = useState<Aircraft[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(0);
   const [selectedAircraft, setSelectedAircraft] = useState<Aircraft | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newAircraft, setNewAircraft] = useState<CreateAircraftRequest>({
@@ -27,14 +32,52 @@ export function AircraftManagement() {
     status: 'ACTIVE'
   });
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+
+  const fetchAircrafts = async () => {
+    try {
+      setLoading(true);
+      const res = await aircraftService.getAll({
+        page: page,
+        size: size,
+        search: debouncedSearch,
+        status: selectedStatus === "ALL" ? "" : selectedStatus,
+        sort: "updatedAt,desc"
+      });
+
+      const response = res as ApiResponse<AircraftsPageResponse>;
+      if (response?.data) {
+        setAircraft(response.data.content || []);
+        setTotalPages(response.data.totalPages || 0);
+      }
+    } catch (err: any) {
+      toast.error("Lỗi khi tải dữ liệu");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    aircraftService
-      .getAll()
-      .then(setAircraft)
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(0); // reset to first page on new search
+    }, 500); // delay 500ms
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    fetchAircrafts();
+  }, [page, size, debouncedSearch, selectedStatus]);
+
+  useEffect(() => {
+    aircraftService.getAll({ all: true })
+      .then((data) => setAllAircraft(data as Aircraft[]))
       .catch(() => {
         toast.error("Không tải được danh sách máy bay");
-      })
-      .finally(() => setLoading(false));
+      });
   }, []);
 
   const handleStatusChange = (aircraftId: number, newStatus: Aircraft["status"]) => {
@@ -42,6 +85,9 @@ export function AircraftManagement() {
       .update(aircraftId, { status: newStatus })
       .then((updatedAircraft) => {
         setAircraft((prev) =>
+          prev.map((a) => (a.id === aircraftId ? updatedAircraft : a))
+        );
+        setAllAircraft((prev) =>
           prev.map((a) => (a.id === aircraftId ? updatedAircraft : a))
         );
         toast.success("Cập nhật trạng thái thành công!");
@@ -54,9 +100,10 @@ export function AircraftManagement() {
   const handleCreateAircraft = () => {
     aircraftService
       .create(newAircraft)
-      .then(() => {
+      .then((createdAircraft) => {
         // Refresh the aircraft list
-        aircraftService.getAll().then(setAircraft);
+        fetchAircrafts();
+        setAllAircraft(prev => [...prev, createdAircraft]);
         toast.success("Tạo máy bay thành công!");
         setIsCreateDialogOpen(false);
         setNewAircraft({
@@ -116,19 +163,40 @@ export function AircraftManagement() {
         </Button>
       </div>
 
+      {/* Search */}
+      <div className="flex gap-2 items-center mb-4">
+        <Input
+          placeholder="Tìm kiếm theo số đăng ký hoặc loại máy bay..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+
+        {/* Dropdown Status */}
+        <select
+          className="border p-2 rounded"
+          value={selectedStatus}
+          onChange={(e) => { setSelectedStatus(e.target.value); setPage(0); }}
+        >
+          <option value="">Tất cả</option>
+          <option value="ACTIVE">Hoạt động</option>
+          <option value="MAINTENANCE">Bảo trì</option>
+          <option value="INACTIVE">Ngừng hoạt động</option>
+        </select>
+      </div>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-3">
             <CardDescription>Tổng số máy bay</CardDescription>
-            <CardTitle className="text-3xl">{aircraft.length}</CardTitle>
+            <CardTitle className="text-3xl">{allAircraft.length}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-3">
             <CardDescription>Đang hoạt động</CardDescription>
             <CardTitle className="text-3xl text-green-600">
-              {aircraft.filter((a) => a && a.status === "ACTIVE").length}
+              {allAircraft.filter((a) => a && a.status === "ACTIVE").length}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -136,7 +204,7 @@ export function AircraftManagement() {
           <CardHeader className="pb-3">
             <CardDescription>Đang bảo trì</CardDescription>
             <CardTitle className="text-3xl text-yellow-600">
-              {aircraft.filter((a) => a && a.status === "MAINTENANCE").length}
+              {allAircraft.filter((a) => a && a.status === "MAINTENANCE").length}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -405,6 +473,14 @@ export function AircraftManagement() {
             </CardContent>
           </Card>
         ))}
+      </div>
+      {/* Pagination controls */}
+      <div className="flex items-center justify-between mt-4">
+        <div className="text-sm text-gray-600">Trang {page + 1} / {totalPages || 1}</div>
+        <div className="flex gap-2">
+          <Button disabled={page <= 0 || loading} onClick={() => setPage(p => Math.max(0, p - 1))}>Prev</Button>
+          <Button disabled={page >= (totalPages - 1) || loading} onClick={() => setPage(p => Math.min((totalPages - 1) || p + 1, p + 1))}>Next</Button>
+        </div>
       </div>
     </div>
   );
