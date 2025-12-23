@@ -1,5 +1,5 @@
 import type { Aircraft } from './aircraftType';
-import type { Seat, AvailableSeats} from './seatType';
+import type { Seat, AvailableSeats } from './seatType';
 import type { Schedule } from './scheduleType';
 
 export type FlightStatus = 'OPEN' | 'FULL' | 'DEPARTED' | 'COMPLETED' | 'DELAYED' | 'CANCELED';
@@ -30,9 +30,6 @@ export type Flight = BaseEntity & {
   seats?: Seat[];
   availableSeats?: AvailableSeats;
 };
-
-import type { ApiResponse } from './commonType';
-
 export type CreateFlightRequest = {
   routeId: number;
   aircraftId: number;
@@ -43,5 +40,8 @@ export type UpdateFlightRequest = {
   status: FlightStatus;
 };
 
+import type { ApiResponse, PageResponse } from './commonType';
+
+export type FlightsPageResponse = PageResponse<Flight>;
 
 

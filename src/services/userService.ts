@@ -6,9 +6,9 @@ export interface GetUsersParams {
   page?: number;
   size?: number;
   search?: string;
-  role?: string;  
-  sort?: string;  
-  all?: boolean;   
+  role?: string;
+  sort?: string;
+  all?: boolean;
 }
 
 export const userService = {
