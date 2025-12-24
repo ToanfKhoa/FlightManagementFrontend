@@ -12,7 +12,6 @@ import {
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Plane, AlertTriangle, Clock, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { flightService } from "../../services/flightService";
@@ -91,6 +90,14 @@ export function FlightOperations() {
         setAllFlights(allFlightsData as Flight[]);
         setRoutes(routesData);
         setAircrafts(aircraftsData as Aircraft[]);
+        // Set default values to first items
+        if (routesData.length > 0 && (aircraftsData as Aircraft[]).length > 0) {
+          setNewFlight({
+            routeId: routesData[0].id,
+            aircraftId: (aircraftsData as Aircraft[])[0].id,
+            status: 'OPEN',
+          });
+        }
       })
       .catch(() => {
         toast.error("Không tải được dữ liệu");
@@ -219,58 +226,46 @@ export function FlightOperations() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="route">Tuyến bay</Label>
-                <Select
-                  value={newFlight.routeId.toString()}
-                  onValueChange={(value: string) => setNewFlight({ ...newFlight, routeId: parseInt(value) })}
+                <select
+                  className="border p-2 rounded w-full"
+                  value={newFlight.routeId}
+                  onChange={(e) => setNewFlight({ ...newFlight, routeId: parseInt(e.target.value) })}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn tuyến bay" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {routes.map((route) => (
-                      <SelectItem key={route.id} value={route.id.toString()}>
-                        {route.origin} → {route.destination}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  {routes.map((route) => (
+                    <option key={route.id} value={route.id}>
+                      {route.origin} → {route.destination}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="aircraft">Máy bay</Label>
-                <Select
-                  value={newFlight.aircraftId.toString()}
-                  onValueChange={(value: string) => setNewFlight({ ...newFlight, aircraftId: parseInt(value) })}
+                <select
+                  className="border p-2 rounded w-full"
+                  value={newFlight.aircraftId}
+                  onChange={(e) => setNewFlight({ ...newFlight, aircraftId: parseInt(e.target.value) })}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn máy bay" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {aircrafts.map((aircraft) => (
-                      <SelectItem key={aircraft.id} value={aircraft.id.toString()}>
-                        {aircraft.type} ({aircraft.registrationNumber})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  {aircrafts.map((aircraft) => (
+                    <option key={aircraft.id} value={aircraft.id}>
+                      {aircraft.type} ({aircraft.registrationNumber})
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">Trạng thái</Label>
-                <Select
+                <select
+                  className="border p-2 rounded w-full"
                   value={newFlight.status}
-                  onValueChange={(value: string) => setNewFlight({ ...newFlight, status: value as FlightStatus })}
+                  onChange={(e) => setNewFlight({ ...newFlight, status: e.target.value as FlightStatus })}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn trạng thái" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="OPEN">Bình thường</SelectItem>
-                    <SelectItem value="FULL">Hết chỗ</SelectItem>
-                    <SelectItem value="DELAYED">Chậm</SelectItem>
-                    <SelectItem value="CANCELED">Đã hủy</SelectItem>
-                    <SelectItem value="DEPARTED">Khởi hành</SelectItem>
-                    <SelectItem value="COMPLETED">Hoàn thành</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <option value="OPEN">Bình thường</option>
+                  <option value="FULL">Hết chỗ</option>
+                  <option value="DELAYED">Chậm</option>
+                  <option value="CANCELED">Đã hủy</option>
+                  <option value="DEPARTED">Khởi hành</option>
+                  <option value="COMPLETED">Hoàn thành</option>
+                </select>
               </div>
               <Button className="w-full" onClick={handleCreateFlight}>
                 Tạo chuyến bay

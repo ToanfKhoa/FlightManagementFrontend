@@ -5,7 +5,6 @@ import { Badge } from "../ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Plane, Wrench, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { aircraftService } from "../../services/aircraftService";
@@ -288,16 +287,16 @@ export function AircraftManagement() {
               </div>
               <div>
                 <Label htmlFor="status">Trạng thái</Label>
-                <Select value={newAircraft.status} onValueChange={(value: Aircraft['status']) => setNewAircraft(prev => ({ ...prev, status: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn trạng thái" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ACTIVE">Hoạt động</SelectItem>
-                    <SelectItem value="MAINTENANCE">Bảo trì</SelectItem>
-                    <SelectItem value="INACTIVE">Ngừng hoạt động</SelectItem>
-                  </SelectContent>
-                </Select>
+
+                <select
+                  className="border p-2 rounded w-full"
+                  value={newAircraft.status}
+                  onChange={(e) => setNewAircraft(prev => ({ ...prev, status: e.target.value as Aircraft['status'] }))}
+                >
+                  <option value="ACTIVE">Hoạt động</option>
+                  <option value="MAINTENANCE">Bảo trì</option>
+                  <option value="INACTIVE">Ngừng hoạt động</option>
+                </select>
               </div>
             </div>
             <div className="flex justify-end gap-2">
