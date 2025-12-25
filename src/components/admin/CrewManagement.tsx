@@ -11,6 +11,7 @@ import { Users, Plus, AlertTriangle, Plane, PlaneTakeoff } from "lucide-react";
 import { flightService } from "../../services/flightService";
 import employeeService from "../../services/employeeService";
 import type { Employee, EmployeePosition } from "../../types/employeeType";
+import { AddEmployeeDialog } from "./AddEmployeeDialog";
 import type { Flight } from "../../types/flightType";
 import { toast } from "sonner";
 
@@ -77,7 +78,7 @@ export function CrewManagement() {
   const fetchFlights = async () => {
     try {
       const data = await flightService.getAll();
-      setFlights(data);
+      //setFlights(data);
     } catch (error) {
       toast.error("Lỗi khi tải danh sách chuyến bay");
     }
@@ -491,6 +492,16 @@ export function CrewManagement() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AddEmployeeDialog
+        onAddEmployee={handleAddCrew}
+        trigger={
+          <Button>
+            <Plus className="w-4 h-4 mr-2" />
+            Thêm thành viên
+          </Button>
+        }
+      />
     </div>
   );
 }
