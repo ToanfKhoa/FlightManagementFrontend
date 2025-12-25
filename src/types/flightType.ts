@@ -1,17 +1,9 @@
 import type { Aircraft } from './aircraftType';
 import type { Seat, AvailableSeats } from './seatType';
 import type { Schedule } from './scheduleType';
+import type { BaseEntity } from './commonType';
 
 export type FlightStatus = 'OPEN' | 'FULL' | 'DEPARTED' | 'COMPLETED' | 'DELAYED' | 'CANCELED';
-
-export type BaseEntity = {
-  id: number;
-  version: number;
-  createdBy: number;
-  updatedBy: number;
-  createdAt: string; // ISO timestamp
-  updatedAt: string; // ISO timestamp
-};
 
 export type Route = BaseEntity & {
   origin: string;
@@ -23,10 +15,10 @@ export type Flight = BaseEntity & {
   route: Route;
   aircraft: Aircraft;
   status: FlightStatus;
-  schedule?: Schedule | null;
+  schedule: Schedule;
   date?: string; // ISO date derived from schedule.departureTime
-  departureTime?: string; // formatted time "08:30"
-  arrivalTime?: string; // formatted time "11:15"
+  departureTime?: string; // formatted time "HH:mm"
+  arrivalTime?: string; // formatted time "HH:mm"
   seats?: Seat[];
   availableSeats?: AvailableSeats;
 };

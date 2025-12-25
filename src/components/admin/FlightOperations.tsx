@@ -57,7 +57,13 @@ export function FlightOperations() {
 
       const response = res as ApiResponse<FlightsPageResponse>;
       if (response?.data) {
-        setFlights(response.data.content || []);
+        const flightsWithComputed = response.data.content.map(flight => ({
+          ...flight,
+          date: new Date(flight.schedule.departureTime).toISOString().split('T')[0],
+          departureTime: new Date(flight.schedule.departureTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          arrivalTime: new Date(flight.schedule.arrivalTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        }));
+        setFlights(flightsWithComputed);
         setTotalPages(response.data.totalPages || 0);
       }
     } catch (err: any) {
@@ -87,7 +93,13 @@ export function FlightOperations() {
       aircraftService.getAll({ all: true }),
     ])
       .then(([allFlightsData, routesData, aircraftsData]) => {
-        setAllFlights(allFlightsData as Flight[]);
+        const allFlightsWithComputed = (allFlightsData as Flight[]).map(flight => ({
+          ...flight,
+          date: new Date(flight.schedule.departureTime).toISOString().split('T')[0],
+          departureTime: new Date(flight.schedule.departureTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          arrivalTime: new Date(flight.schedule.arrivalTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        }));
+        setAllFlights(allFlightsWithComputed);
         setRoutes(routesData);
         setAircrafts(aircraftsData as Aircraft[]);
         // Set default values to first items

@@ -1,9 +1,8 @@
-export type Schedule = {
-  id: number;
-  flightId: number;
+import type { BaseEntity } from './commonType';
+
+export type Schedule = BaseEntity & {
+  flight: string;
   departureTime: string; // ISO datetime
-  arrivalTime?: string; // ISO datetime
-  durationMinutes?: number;
-  origin?: string;
-  destination?: string;
+  arrivalTime: string; // ISO datetime
+  durationMinutes: number;
 };

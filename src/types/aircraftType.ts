@@ -1,7 +1,8 @@
+import type { BaseEntity } from './commonType';
+
 export type AircraftStatus = 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE';
 
-export type Aircraft = {
-  id: number;
+export type Aircraft = BaseEntity & {
   type: string;
   registrationNumber: string;
   manufacturer: string;
@@ -12,7 +13,7 @@ export type Aircraft = {
   status: AircraftStatus;
 };
 
-export type CreateAircraftRequest = Omit<Aircraft, 'id'>;
+export type CreateAircraftRequest = Omit<Aircraft, keyof BaseEntity>;
 
 export type AircraftSummary = {
   id: number;
