@@ -1,3 +1,5 @@
+import { RegisterRequest } from "./authType"
+
 export type EmployeePosition =
   | 'PILOT'
   | 'COPILOT'
@@ -21,6 +23,14 @@ export interface Employee {
   updatedBy?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
+}
+
+export interface RegisterEmployee {
+  accountRequest: RegisterRequest;
+  fullName: string,
+  position: EmployeePosition,
+  workExperience: string,
+  totalFlightHours: number;
 }
 
 export default Employee;

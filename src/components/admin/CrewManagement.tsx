@@ -202,53 +202,7 @@ export function CrewManagement() {
             Phân công và theo dõi giờ bay của phi công và tiếp viên
           </p>
         </div>
-        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-          {/* <DialogTrigger asChild>
-             <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Thêm thành viên
-            </Button>
-          </DialogTrigger> */}
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Thêm thành viên phi hành đoàn</DialogTitle>
-              <DialogDescription>
-                Nhập thông tin thành viên mới
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Họ và tên</Label>
-                <Input
-                  id="name"
-                  value={newCrewName}
-                  onChange={(e) => setNewCrewName(e.target.value)}
-                  placeholder="Nguyễn Văn A"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">Vai trò</Label>
-                <select
-                  id="role"
-                  className="w-full px-3 py-2 border rounded-md"
-                  value={newCrewRole}
-                  onChange={(e) => setNewCrewRole(e.target.value as EmployeePosition)}
-                >
-                  <option value="PILOT">Phi công</option>
-                  <option value="COPILOT">Cơ phó</option>
-                  <option value="ATTENDANT">Tiếp viên</option>
-                  <option value="OPERATOR">Nhân viên điều hành</option>
-                  <option value="TICKETING">Nhân viên vé</option>
-                  <option value="OTHER">Khác</option>
-                </select>
-              </div>
 
-              <Button className="w-full" onClick={handleAddCrew} disabled={!newCrewName}>
-                Thêm thành viên
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
 
       {/* Search & actions */}
@@ -273,8 +227,16 @@ export function CrewManagement() {
           <option value="OTHER">Khác</option>
         </select>
 
-        {/* <Button onClick={() => { setSearchQuery(""); setPage(0); }}>Xóa</Button> */}
-        <Button onClick={() => setShowAddDialog(true)}>Thêm thành viên</Button>
+        <AddEmployeeDialog
+          onAddEmployee={handleAddCrew}
+          trigger={
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Thêm thành viên
+            </Button>
+          }
+        />
+
       </div>
 
       {/* Summary Cards */}
@@ -492,16 +454,6 @@ export function CrewManagement() {
           </div>
         </DialogContent>
       </Dialog>
-
-      <AddEmployeeDialog
-        onAddEmployee={handleAddCrew}
-        trigger={
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Thêm thành viên
-          </Button>
-        }
-      />
     </div>
   );
 }

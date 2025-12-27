@@ -1,5 +1,5 @@
 import axiosClient from '../api/axiosClient';
-import type { Employee } from '../types/employeeType';
+import type { Employee, RegisterEmployee } from '../types/employeeType';
 import type { ApiResponse, PageResponse } from '../types/commonType';
 
 export interface GetEmployeesParams {
@@ -12,14 +12,6 @@ export interface GetEmployeesParams {
 }
 
 export const employeeService = {
-  // getAllEmployees(page = 0, size = 10, search?: string): Promise<ApiResponse<PageResponse<Employee>>> {
-  //   const params = new URLSearchParams();
-  //   params.append('page', String(page));
-  //   params.append('size', String(size));
-  //   if (search) params.append('q', search);
-  //   return axiosClient.get(`/employees/all?${params.toString()}`) as Promise<ApiResponse<PageResponse<Employee>>>;
-  // },
-
   getAllEmployees(params: GetEmployeesParams): Promise<ApiResponse<PageResponse<Employee>>> {
     const queryParams = new URLSearchParams();
 
@@ -55,7 +47,7 @@ export const employeeService = {
     return axiosClient.get(`/employees/${id}`) as Promise<ApiResponse<Employee>>;
   },
 
-  createEmployee(payload: Partial<Employee>): Promise<ApiResponse<Employee>> {
+  createEmployee(payload: Partial<RegisterEmployee>): Promise<ApiResponse<Employee>> {
     return axiosClient.post('/employees', payload) as Promise<ApiResponse<Employee>>;
   },
 

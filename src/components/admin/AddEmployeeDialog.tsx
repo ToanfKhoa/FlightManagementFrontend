@@ -2,44 +2,16 @@ import { useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-    DialogFooter,
-} from "../ui/dialog";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "../ui/select";
-import { Separator } from "../ui/separator";
-import { UserPlus, User, Mail, Phone, Briefcase, Clock, Plane } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "../ui/dialog";
+import { UserPlus, User, Mail, Phone, Briefcase, Clock, Plane, Key } from "lucide-react";
 import { toast } from "sonner";
+import { RegisterEmployee, Employee } from "../../types/employeeType";
+import { employeeService } from "../../services/employeeService";
 
 export type EmployeePosition = "PILOT" | "COPILOT" | "ATTENDANT" | "OPERATOR" | "TICKETING" | "OTHER";
 
-export interface NewEmployeeData {
-    account: {
-        username: string;
-        email: string;
-        phone: string;
-    };
-    employee: {
-        fullName: string;
-        position: EmployeePosition;
-        workExperience: string;
-        totalFlightHours: number;
-    };
-}
-
 interface AddEmployeeDialogProps {
-    onAddEmployee?: (data: NewEmployeeData) => void;
+    onAddEmployee?: (data: Employee) => void;
     trigger?: React.ReactNode;
 }
 
@@ -60,6 +32,8 @@ export function AddEmployeeDialog({ onAddEmployee, trigger }: AddEmployeeDialogP
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
 
     // Employee info state
     const [fullName, setFullName] = useState("");
@@ -71,6 +45,8 @@ export function AddEmployeeDialog({ onAddEmployee, trigger }: AddEmployeeDialogP
         setUsername("");
         setEmail("");
         setPhone("");
+        setPassword("");
+        setConfirmPassword("");
         setFullName("");
         setPosition("PILOT");
         setWorkExperience("");
@@ -107,6 +83,16 @@ export function AddEmployeeDialog({ onAddEmployee, trigger }: AddEmployeeDialogP
             return false;
         }
 
+        if (!password.trim()) {
+            toast.error("Vui lòng nhập mật khẩu");
+            return false;
+        }
+
+        if (password !== confirmPassword) {
+            toast.error("Mật khẩu xác nhận không khớp");
+            return false;
+        }
+
         if (!fullName.trim()) {
             toast.error("Vui lòng nhập họ tên nhân viên");
             return false;
@@ -126,35 +112,41 @@ export function AddEmployeeDialog({ onAddEmployee, trigger }: AddEmployeeDialogP
         return true;
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!validateForm()) return;
 
         setIsSubmitting(true);
 
-        const newEmployeeData: NewEmployeeData = {
-            account: {
+        const employeeData: RegisterEmployee = {
+            accountRequest: {
                 username: username.trim(),
                 email: email.trim().toLowerCase(),
                 phone: phone.trim(),
+                password: password.trim(),
             },
-            employee: {
-                fullName: fullName.trim(),
-                position,
-                workExperience: workExperience.trim(),
-                totalFlightHours: parseInt(totalFlightHours),
-            },
+            fullName: fullName.trim(),
+            position,
+            workExperience: workExperience.trim(),
+            totalFlightHours: parseInt(totalFlightHours),
         };
 
-        // Simulate API call
-        setTimeout(() => {
-            onAddEmployee?.(newEmployeeData);
-            toast.success("Thêm nhân viên thành công!", {
-                description: `${fullName} đã được thêm vào hệ thống.`
-            });
-            resetForm();
-            setOpen(false);
+        try {
+            const response = await employeeService.createEmployee(employeeData);
+            if (response.code === 200 || response.message === "message") {
+                onAddEmployee?.(response.data);
+                toast.success("Thêm nhân viên thành công!", {
+                    description: `${fullName} đã được thêm vào hệ thống.`
+                });
+                resetForm();
+                setOpen(false);
+            } else {
+                toast.error(response.message || "Có lỗi xảy ra khi thêm nhân viên");
+            }
+        } catch (error) {
+            toast.error("Có lỗi xảy ra khi thêm nhân viên");
+        } finally {
             setIsSubmitting(false);
-        }, 500);
+        }
     };
 
     const handleCancel = () => {
@@ -233,6 +225,38 @@ export function AddEmployeeDialog({ onAddEmployee, trigger }: AddEmployeeDialogP
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value)}
                                     disabled={isSubmitting}
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="password" className="flex items-center gap-2">
+                                    <Key className="h-4 w-4 text-muted-foreground" />
+                                    Mật khẩu
+                                    <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    placeholder="Nhập mật khẩu"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    disabled={isSubmitting}
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="confirmPassword" className="flex items-center gap-2">
+                                    <Key className="h-4 w-4 text-muted-foreground" />
+                                    Xác nhận mật khẩu
+                                    <span className="text-red-500">*</span>
+                                </Label>
+                                <Input
+                                    id="confirmPassword"
+                                    type="password"
+                                    placeholder="Nhập lại mật khẩu"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    required
                                 />
                             </div>
                         </div>
