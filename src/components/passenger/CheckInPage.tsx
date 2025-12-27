@@ -7,7 +7,7 @@ import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
 import { Search, Check, Calendar, Clock, Plane, QrCode, Download } from "lucide-react";
 import { mockBookings, mockFlights, formatCurrency } from "../../lib/mockData";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import type { Booking, Flight } from "../../lib/mockData";
 
 interface CheckInPageProps {
