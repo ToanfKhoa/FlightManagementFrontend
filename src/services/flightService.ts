@@ -10,38 +10,42 @@ export interface GetFlightsParams {
   status?: string;
   sort?: string;
   all?: boolean;
+  origin?: string;
+  destination?: string;
+  date?: string;
 }
 
 export const flightService = {
-  getAll(params: GetFlightsParams = {}): Promise<Flight[] | ApiResponse<FlightsPageResponse>> {
+  getAll(params: GetFlightsParams = {}): Promise< /*Flight[] | */ApiResponse<FlightsPageResponse>> {
     const queryParams = new URLSearchParams();
 
     if (params.all) {
       queryParams.append('all', 'true');
-      return axiosClient
-        .get(`/flights/all?${queryParams.toString()}`)
-        .then(res => res.data.content);
+      // return axiosClient
+      //   .get(`/flights/all?${queryParams.toString()}`)
+      //   .then(res => res.data.content);
     } else {
       queryParams.append('page', String(params.page || 0));
       queryParams.append('size', String(params.size || 10));
-      if (params.sort) {
-        queryParams.append('sort', params.sort);
-      }
-      // Add search/filter if needed
-      const rsqlConditions: string[] = [];
-      if (params.status) {
-        rsqlConditions.push(`status=='${params.status}'`);
-      }
-      if (params.search) {
-        const k = params.search.trim();
-        rsqlConditions.push(`(id=='*${k}*')`); // assuming search by id
-      }
-      if (rsqlConditions.length > 0) {
-        queryParams.append('filter', rsqlConditions.join(';'));
-      }
-
-      return axiosClient.get(`/flights/all?${queryParams.toString()}`) as Promise<ApiResponse<FlightsPageResponse>>;
     }
+
+    if (params.sort) {
+      queryParams.append('sort', params.sort);
+    }
+    // Add search/filter if needed
+    const rsqlConditions: string[] = [];
+    if (params.status) {
+      rsqlConditions.push(`status=='${params.status}'`);
+    }
+    if (params.search) {
+      const k = params.search.trim();
+      rsqlConditions.push(`(id=='*${k}*')`); // assuming search by id
+    }
+    if (rsqlConditions.length > 0) {
+      queryParams.append('filter', rsqlConditions.join(';'));
+    }
+
+    return axiosClient.get(`/flights/all?${queryParams.toString()}`) as Promise<ApiResponse<FlightsPageResponse>>;
   },
 
   getById(id: string): Promise<Flight> {

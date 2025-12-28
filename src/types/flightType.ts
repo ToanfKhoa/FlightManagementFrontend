@@ -10,6 +10,11 @@ export type Route = BaseEntity & {
   destination: string;
 };
 
+export const defaultPrices = {
+  economy: 1500000,
+  business: 2500000,
+  first: 4000000
+};
 
 export type Flight = BaseEntity & {
   route: Route;
@@ -21,6 +26,7 @@ export type Flight = BaseEntity & {
   arrivalTime?: string; // formatted time "HH:mm"
   seats?: Seat[];
   availableSeats?: AvailableSeats;
+  prices?: typeof defaultPrices;
 };
 export type CreateFlightRequest = {
   routeId: number;
