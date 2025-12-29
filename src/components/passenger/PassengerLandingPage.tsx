@@ -17,6 +17,8 @@ import {
     Instagram
 } from "lucide-react";
 
+import backgroundImage from "../../assets/images/airplane-wallpaper.jpg";
+
 interface PassengerLandingPageProps {
     onLogin: () => void;
     onRegister: () => void;
@@ -49,30 +51,40 @@ export function PassengerLandingPage({ onLogin, onRegister }: PassengerLandingPa
             </header>
 
             {/* Hero Section */}
-            <section className="py-20 px-4">
-                <div className="max-w-7xl mx-auto text-center">
-                    <div className="mb-8">
-                        <Badge variant="secondary" className="mb-4">
-                            ✈️ Chuyến bay an toàn - Giá cả phải chăng
-                        </Badge>
-                        <h1 className="text-5xl font-bold text-gray-900 mb-6">
-                            Khám phá thế giới cùng
-                            <span className="text-blue-600"> SkyWings</span>
-                        </h1>
-                        <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-                            Trải nghiệm dịch vụ hàng không hiện đại với đội bay hiện đại,
-                            mạng lưới đường bay rộng khắp và dịch vụ khách hàng tận tâm.
-                        </p>
-                    </div>
-                    <div className="flex justify-center gap-4">
-                        <Button size="lg" onClick={onRegister} className="px-8 py-3">
+            <section
+                className="relative min-h-screen px-4 flex items-center justify-center bg-fixed"
+                style={{
+                    backgroundImage: `url(${backgroundImage})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundAttachment: 'fixed'
+                }}
+            >
+                {/* Overlay */}
+                <div className="absolute inset-0 bg-black/50"></div>
+
+                {/* Content */}
+                <div className="relative max-w-4xl mx-auto text-center pt-24">
+
+                    <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-white mb-8 leading-tight">
+                        Khám phá thế giới cùng <br></br>
+                        <span className="text-black">
+                            SkyWings
+                        </span>
+                    </h1>
+
+                    <p className="text-2xl text-white mb-12 max-w-3xl mx-auto drop-shadow">
+                        Trải nghiệm dịch vụ hàng không hiện đại với đội ngũ chuyên nghiệp,
+                        mạng lưới đường bay rộng khắp và dịch vụ khách hàng tận tâm.
+                    </p>
+
+                    <div className="flex justify-center gap-4 flex-wrap mt-10">
+                        <Button size="lg" onClick={onRegister} className="px-10 py-4 text-lg">
                             <Search className="w-5 h-5 mr-2" />
-                            Đặt vé ngay
+                            Đăng ký miễn phí
                         </Button>
-                        <Button size="lg" variant="outline" onClick={onLogin} className="px-8 py-3">
-                            <Ticket className="w-5 h-5 mr-2" />
-                            Quản lý vé
-                        </Button>
+
+
                     </div>
                 </div>
             </section>
@@ -208,7 +220,7 @@ export function PassengerLandingPage({ onLogin, onRegister }: PassengerLandingPa
                                 </div>
                                 <p className="text-gray-600 mb-4">
                                     "Quy trình check-in nhanh chóng, giá vé hợp lý.
-                                    Ứng dụng di động rất tiện lợi để theo dõi chuyến bay."
+                                    Rất tiện lợi để theo dõi chuyến bay."
                                 </p>
                                 <div className="font-semibold">Trần Thị B</div>
                                 <div className="text-sm text-gray-500">TP.HCM</div>
@@ -223,8 +235,7 @@ export function PassengerLandingPage({ onLogin, onRegister }: PassengerLandingPa
                                     ))}
                                 </div>
                                 <p className="text-gray-600 mb-4">
-                                    "Bay cùng SkyWings luôn an tâm. Đội bay hiện đại,
-                                    thức ăn ngon và giải trí đa dạng trên máy bay."
+                                    "Bay cùng SkyWings luôn an tâm. Chỗ ngồi thoải mái và các dịch vụ trên máy bay đều vô cùng hài lòng."
                                 </p>
                                 <div className="font-semibold">Lê Văn C</div>
                                 <div className="text-sm text-gray-500">Đà Nẵng</div>
@@ -241,20 +252,15 @@ export function PassengerLandingPage({ onLogin, onRegister }: PassengerLandingPa
                         Sẵn sàng cho chuyến đi tiếp theo?
                     </h2>
                     <p className="text-xl mb-8 text-blue-100">
-                        Đăng ký tài khoản ngay để nhận ưu đãi đặc biệt và theo dõi chuyến bay dễ dàng
+                        Đặt vé ngay để tận hưởng một trải nghiệm hoàn toàn khác biệt
                     </p>
                     <div className="flex justify-center gap-4">
-                        <Button size="lg" variant="secondary" onClick={onRegister} className="px-8 py-3">
-                            Đăng ký miễn phí
-                        </Button>
-                        <Button size="lg" variant="outline" onClick={onLogin} className="px-8 py-3 border-white text-white hover:bg-white hover:text-blue-600">
-                            Đăng nhập
-                        </Button>
+
                     </div>
                 </div>
             </section>
 
-            {/* Footer */}
+            {/* Footer 
             <footer className="bg-gray-900 text-white py-12 px-4">
                 <div className="max-w-7xl mx-auto">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -265,10 +271,7 @@ export function PassengerLandingPage({ onLogin, onRegister }: PassengerLandingPa
                                 </div>
                                 <span className="font-bold text-lg">SkyWings Airlines</span>
                             </div>
-                            <p className="text-gray-400 mb-4">
-                                Hãng hàng không hàng đầu Việt Nam với dịch vụ chất lượng cao
-                                và mạng lưới đường bay rộng khắp.
-                            </p>
+
                             <div className="flex gap-4">
                                 <Facebook className="w-5 h-5 text-gray-400 hover:text-white cursor-pointer" />
                                 <Twitter className="w-5 h-5 text-gray-400 hover:text-white cursor-pointer" />
@@ -276,15 +279,7 @@ export function PassengerLandingPage({ onLogin, onRegister }: PassengerLandingPa
                             </div>
                         </div>
 
-                        <div>
-                            <h3 className="font-semibold mb-4">Dịch vụ</h3>
-                            <ul className="space-y-2 text-gray-400">
-                                <li><a href="#" className="hover:text-white">Đặt vé máy bay</a></li>
-                                <li><a href="#" className="hover:text-white">Quản lý đặt chỗ</a></li>
-                                <li><a href="#" className="hover:text-white">Check-in online</a></li>
-                                <li><a href="#" className="hover:text-white">Dịch vụ hành lý</a></li>
-                            </ul>
-                        </div>
+
 
                         <div>
                             <h3 className="font-semibold mb-4">Hỗ trợ</h3>
@@ -321,7 +316,8 @@ export function PassengerLandingPage({ onLogin, onRegister }: PassengerLandingPa
                         <p>&copy; 2024 SkyWings Airlines. Tất cả quyền được bảo lưu.</p>
                     </div>
                 </div>
-            </footer>
+            </footer>   */}
         </div>
+
     );
 }
