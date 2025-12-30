@@ -1,23 +1,16 @@
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
-import { Badge } from "../ui/badge";
 import {
     Plane,
     Search,
-    Ticket,
     Shield,
     Clock,
     MapPin,
     Star,
-    Users,
-    Phone,
-    Mail,
-    Facebook,
-    Twitter,
-    Instagram
+    Users
 } from "lucide-react";
 
-import backgroundImage from "../../assets/images/airplane-wallpaper.jpg";
+const backgroundImage = new URL("../../assets/images/airplane-wallpaper.jpg", import.meta.url).href;
 
 interface PassengerLandingPageProps {
     onLogin: () => void;
@@ -79,7 +72,8 @@ export function PassengerLandingPage({ onLogin, onRegister }: PassengerLandingPa
                     </p>
 
                     <div className="flex justify-center gap-4 flex-wrap mt-10">
-                        <Button size="lg" onClick={onRegister} className="px-10 py-4 text-lg">
+                        <Button variant="ghost" size="lg" onClick={onRegister}
+                            className="px-10 py-4 text-lg text-white">
                             <Search className="w-5 h-5 mr-2" />
                             Đăng ký miễn phí
                         </Button>

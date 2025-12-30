@@ -9,6 +9,9 @@ import { CheckInPage } from "./passenger/CheckInPage";
 import { BaggageCalculator } from "./passenger/BaggageCalculator";
 import type { User } from "../App";
 
+// Use a relative path that should work with Vite's asset handling
+const backgroundImage = new URL('../assets/images/passenger-wallpaper.jpg', import.meta.url).href;
+
 interface PassengerDashboardProps {
   user: User;
   onLogout: () => void;
@@ -68,34 +71,18 @@ export function PassengerDashboard({ user, onLogout }: PassengerDashboardProps) 
       {/* Main Content */}
       <div className="relative z-10">
         {/* Hero Section */}
-        <section className="py-20 px-4 text-center text-white">
-          <div className="max-w-4xl mx-auto">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 drop-shadow-lg">
-              Khám phá thế giới cùng SkyWings
-            </h1>
-            <p className="text-xl md:text-2xl mb-8 drop-shadow-md">
-              Đặt vé máy bay dễ dàng, nhanh chóng và an toàn
-            </p>
-            <div className="flex justify-center gap-4">
-              <Button
-                size="lg"
-                onClick={() => setActiveTab("search")}
-                className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
-              >
-                <Search className="w-5 h-5 mr-2" />
-                Tìm chuyến bay
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => setActiveTab("bookings")}
-                className="px-8 py-3 border-white text-white hover:bg-white hover:text-blue-600 shadow-lg"
-              >
-                <Ticket className="w-5 h-5 mr-2" />
-                Vé của tôi
-              </Button>
-            </div>
-          </div>
+        <section className="min-h-[1600px] px-4 py-8 relative overflow-hiddenmin-h-[200vh] px-4 py-8 relative overflow-hidden"
+          style={{
+            backgroundImage: `url(${backgroundImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundAttachment: 'fixed'
+          }} >
+          {/* Overlay gradient for better text visibility */}
+          <div className="absolute inset-0 bg-black/60" />
+
+          {/* Content area to ensure section has height */}
+          <div className="h-full w-full"></div>
         </section>
 
         {/* Tabs Section */}
