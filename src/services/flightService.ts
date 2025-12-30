@@ -4,15 +4,15 @@ import type { Flight, CreateFlightRequest, FlightsPageResponse } from '../types/
 import type { ApiResponse } from '../types/commonType';
 
 export interface GetFlightsParams {
+  all?: boolean;
   page?: number;
   size?: number;
-  search?: string;
-  status?: string;
-  sort?: string;
-  all?: boolean;
   origin?: string;
   destination?: string;
   date?: string;
+  search?: string;
+  status?: string;
+  sort?: string;
 }
 
 export const flightService = {
@@ -41,6 +41,16 @@ export const flightService = {
       const k = params.search.trim();
       rsqlConditions.push(`(id=='*${k}*')`); // assuming search by id
     }
+    if (params.origin) {
+      rsqlConditions.push(`route.origin=='*${params.origin}*'`);
+    }
+    if (params.destination) {
+      rsqlConditions.push(`route.destination=='*${params.destination}*'`);
+    }
+    if (params.date) {
+      rsqlConditions.push(`schedule.departureTime>='${params.date}'`);
+    }
+
     if (rsqlConditions.length > 0) {
       queryParams.append('filter', rsqlConditions.join(';'));
     }

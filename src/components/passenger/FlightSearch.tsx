@@ -8,47 +8,29 @@ import { Search, Plane, Clock, Calendar, Users, UserPlus } from "lucide-react";
 import { formatCurrency } from "../../lib/mockData";
 import { toast } from "sonner";
 import SeatClassSelection from "./SeatClassSelection";
-import type { Flight, FlightsPageResponse } from "../../types/flightType";
+import type { Flight, FlightsPageResponse, Route } from "../../types/flightType";
 import type { WaitingListEntry } from "../../lib/mockData";
 import { flightService } from "../../services/flightService";
+import { routeService } from "../../services/routeService";
 import ApiResponse from "../../types/commonType";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 interface FlightSearchProps {
   userId: string;
 }
 
 export function FlightSearch({ userId }: FlightSearchProps) {
+  const [origins, setOrigins] = useState<string[]>([]);
+  const [destinations, setDestinations] = useState<string[]>([]);
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
+
   const [searchDate, setSearchDate] = useState("");
-  const [debouncedOrigin, setDebouncedOrigin] = useState("");
-  const [debouncedDestination, setDebouncedDestination] = useState("");
-  const [debouncedDate, setDebouncedDate] = useState("");
   const [searchResults, setSearchResults] = useState<Flight[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
+
   const [hasSearched, setHasSearched] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedOrigin(origin);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [origin]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedDestination(destination);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [destination]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedDate(searchDate);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchDate]);
 
   // useEffect(() => {
   //   if (debouncedOrigin || debouncedDestination || debouncedDate) {
@@ -56,13 +38,33 @@ export function FlightSearch({ userId }: FlightSearchProps) {
   //   }
   // }, [debouncedOrigin, debouncedDestination, debouncedDate]);
 
+  useEffect(() => {
+    const fetchRoutes = async () => {
+      try {
+        const routes: Route[] = await routeService.getAll();
+        const uniqueOrigins = [...new Set(routes.map(r => r.origin))];
+        const uniqueDestinations = [...new Set(routes.map(r => r.destination))];
+        setOrigins(uniqueOrigins);
+        setDestinations(uniqueDestinations);
+      } catch (error) {
+        toast.error("Lỗi khi tải danh sách địa điểm");
+      }
+    };
+    fetchRoutes();
+  }, []);
+
   const handleSearch = async () => {
+    if (!origin.trim() || !destination.trim() || !searchDate.trim()) {
+      toast.error("Vui lòng điền đầy đủ nơi đi, nơi đến và ngày bay");
+      return;
+    }
+
     setIsSearching(true);
     try {
       const res = await flightService.getAll({
-        origin: debouncedOrigin,
-        destination: debouncedDestination,
-        date: debouncedDate
+        origin: origin,
+        destination: destination,
+        date: searchDate ? `${searchDate}T00:00:00Z` : ""
       });
 
       const response = res.data.content as Flight[]//ApiResponse<FlightsPageResponse>;
@@ -157,24 +159,32 @@ export function FlightSearch({ userId }: FlightSearchProps) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="origin">Nơi đi</Label>
-              <Input
+              <select
                 id="origin"
-                placeholder="Hà Nội, SGN, Nội Bài..."
                 value={origin}
                 onChange={(e) => setOrigin(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              />
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">Chọn nơi đi</option>
+                {origins.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="destination">Nơi đến</Label>
-              <Input
+              <select
                 id="destination"
-                placeholder="TP.HCM, DAD, Tân Sơn Nhất..."
                 value={destination}
                 onChange={(e) => setDestination(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              />
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">Chọn nơi đến</option>
+                {destinations.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-2">
@@ -184,15 +194,26 @@ export function FlightSearch({ userId }: FlightSearchProps) {
                 type="date"
                 value={searchDate}
                 onChange={(e) => setSearchDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
               />
             </div>
           </div>
-          <Button onClick={handleSearch} className="w-full md:w-auto mt-4" disabled={isSearching}>
-            <Search className="w-4 h-4 mr-2" />
-            {isSearching ? "Đang tìm..." : "Tìm kiếm"}
-          </Button>
+
+          <div className="flex justify-end mt-4">
+            <Button onClick={handleSearch} className="w-full md:w-auto mt-4" disabled={isSearching}>
+              <Search className="w-4 h-4 mr-2" />
+              {isSearching ? "Đang tìm..." : "Tìm kiếm"}
+            </Button>
+          </div>
+
         </CardContent>
       </Card>
+
+      {isSearching && (
+        <div className="p-3 bg-gray-50 rounded-md">
+          <p className="text-sm text-gray-600">Đang tìm chuyến bay...</p>
+        </div>
+      )}
 
       {hasSearched && (
         <div className="space-y-4">
