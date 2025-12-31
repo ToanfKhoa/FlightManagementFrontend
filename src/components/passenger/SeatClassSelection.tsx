@@ -42,13 +42,12 @@ export function SeatClassSelection({ flight, userId, onBack }: Props) {
     };
   }
 
-
   const priceFor = (c: string) =>
     c === "first"
-      ? flight.prices.first
+      ? flight.prices!.first
       : c === "business"
-        ? flight.prices.business
-        : flight.prices.economy;
+        ? flight.prices!.business
+        : flight.prices!.economy;
 
   const startBooking = (c: 'BUSINESS' | 'FIRST_CLASS' | 'ECONOMY') => {
     setSelectedClass(c);
@@ -59,50 +58,24 @@ export function SeatClassSelection({ flight, userId, onBack }: Props) {
     if (!selectedClass) return;
     setIsProcessing(true);
 
-    // try {
-    //   const bookingData: BookingRequest = {
-    //     flightId: flight.id,
-    //     seatClass: selectedClass
-    //   };
+    try {
+      const bookingData: BookingRequest = {
+        flightId: flight.id,
+        seatClass: selectedClass
+      };
 
-    //   const response: BookingResponse = await ticketService.booking(bookingData);
+      const response: BookingResponse = await ticketService.booking(bookingData);
 
-    //   // Giả sử response có ticketCode hoặc id
-    //   setTicketCode(`ID${response.id}`);
-    //   setBookingComplete(true);
-    //   toast.success("Đặt vé thành công!");
-    // } catch (error) {
-    //   toast.error("Lỗi khi đặt vé. Vui lòng thử lại.");
-    //   console.error("Booking error:", error);
-    // } finally {
-    //   setIsProcessing(false);
-    // }
-
-    setTimeout(() => {
-      const code = "TK" + Math.random().toString().slice(2, 11);
-      setTicketCode(code);
-
-      // const newBooking: Booking = {
-      //   id: "b" + Date.now(),
-      //   ticketCode: code,
-      //   passengerId: userId,
-      //   passengerName,
-      //   flightId: flight.id,
-      //   id: flight.id,
-      //   seatNumber: `AUTO-${selectedClass.toUpperCase()}-${Date.now()}`,
-      //   seatClass: selectedClass,
-      //   status: "reserved",
-      //   bookingDate: new Date().toISOString(),
-      //   paymentDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      //   price: priceFor(selectedClass),
-      // };
-
-      // mockBookings.push(newBooking);
-
-      setIsProcessing(false);
+      // Giả sử response có ticketCode hoặc id
+      setTicketCode(`ID${response.id}`);
       setBookingComplete(true);
       toast.success("Đặt vé thành công!");
-    }, 1000);
+    } catch (error) {
+      toast.error("Lỗi khi đặt vé. Vui lòng thử lại.");
+      console.error("Booking error:", error);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (bookingComplete) {
