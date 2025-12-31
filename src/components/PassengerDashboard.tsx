@@ -35,22 +35,9 @@ export function PassengerDashboard({ user, onLogout }: PassengerDashboardProps) 
 
   return (
     <div className="min-h-screen">
-      {/* Background Image Section */}
-      <div
-        className="fixed top-0 left-0 w-full h-screen bg-cover bg-center bg-no-repeat transition-all duration-300"
-        style={{
-          backgroundImage: "url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2074&q=80')",
-          opacity: 1 - backgroundOpacity * 0.7,
-          filter: `blur(${backgroundBlur}px)`,
-          transform: `translateY(${scrollY * 0.5}px)`,
-        }}
-      />
-
-      {/* Overlay */}
-      <div className="fixed top-0 left-0 w-full h-screen bg-black bg-opacity-40" />
 
       {/* Header */}
-      <header className="relative bg-white/95 backdrop-blur-sm border-b sticky top-0 z-20 shadow-lg">
+      <header className="relative bg-white sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="bg-blue-600 p-2 rounded-lg">
@@ -71,12 +58,13 @@ export function PassengerDashboard({ user, onLogout }: PassengerDashboardProps) 
       {/* Main Content */}
       <div className="relative z-10">
         {/* Hero Section */}
-        <section className="min-h-[1600px] px-4 py-8 relative overflow-hiddenmin-h-[200vh] px-4 py-8 relative overflow-hidden"
+        <section className="px-4 py-0 relative overflow-hidden"
           style={{
             backgroundImage: `url(${backgroundImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundAttachment: 'fixed'
+            backgroundSize: 'contain',
+            backgroundPosition: 'center top',
+            backgroundAttachment: 'fixed',
+            minHeight: '40vh'
           }} >
           {/* Overlay gradient for better text visibility */}
           <div className="absolute inset-0 bg-black/60" />
