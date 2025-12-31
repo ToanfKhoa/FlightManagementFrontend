@@ -21,6 +21,13 @@ export function PassengerDashboard({ user, onLogout }: PassengerDashboardProps) 
   const [activeTab, setActiveTab] = useState("search");
   const [scrollY, setScrollY] = useState(0);
 
+  const tabIndexMap: Record<string, number> = {
+    search: 0,
+    bookings: 1,
+    checkin: 2,
+    baggage: 3,
+  };
+
   useEffect(() => {
     const handleScroll = () => {
       setScrollY(window.scrollY);
@@ -77,20 +84,38 @@ export function PassengerDashboard({ user, onLogout }: PassengerDashboardProps) 
         <div className="bg-white/95 backdrop-blur-sm sticky top-20 z-20 shadow-lg">
           <div className="max-w-7xl mx-auto px-4 py-4">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-4 bg-gray-100">
-                <TabsTrigger value="search" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+              <TabsList className="grid w-full grid-cols-4 bg-light-blue">
+
+                {/* Indicator */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: `calc(20px + ${tabIndexMap[activeTab]} * ((100% - 40px) / 4))`,
+                    width: 24,
+                    height: 24,
+                    backgroundColor: "#19006dff",
+                    transform: `translateY(-50%) rotate(${45 + tabIndexMap[activeTab] * 180}deg)`,
+                    borderRadius: 4,
+                    transition: "left 0.35s ease, transform 0.35s ease",
+                    zIndex: 1,
+                    pointerEvents: "none",
+                  }}
+                />
+
+                <TabsTrigger value="search" className="flex-1 flex justify-center items-center">
                   <Search className="w-4 h-4 mr-2" />
                   Tìm chuyến bay
                 </TabsTrigger>
-                <TabsTrigger value="bookings" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                <TabsTrigger value="bookings" className="flex-1 flex justify-center items-center">
                   <Ticket className="w-4 h-4 mr-2" />
                   Vé của tôi
                 </TabsTrigger>
-                <TabsTrigger value="checkin" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                <TabsTrigger value="checkin" className="flex-1 flex justify-center items-center">
                   <FileText className="w-4 h-4 mr-2" />
                   Check-in
                 </TabsTrigger>
-                <TabsTrigger value="baggage" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                <TabsTrigger value="baggage" className="flex-1 flex justify-center items-center">
                   <Luggage className="w-4 h-4 mr-2" />
                   Tính hành lý
                 </TabsTrigger>
