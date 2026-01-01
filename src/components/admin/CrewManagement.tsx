@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -6,106 +6,191 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Badge } from "../ui/badge";
 import { Progress } from "../ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Users, Plus, AlertTriangle, Plane, PlaneTakeoff } from "lucide-react";
-import { mockCrew, mockFlights } from "../../lib/mockData";
+import { flightService } from "../../services/flightService";
+import employeeService from "../../services/employeeService";
+import type { Employee, EmployeePosition } from "../../types/employeeType";
+import { AddEmployeeDialog } from "./AddEmployeeDialog";
+import type { Flight } from "../../types/flightType";
 import { toast } from "sonner";
-import type { CrewMember, Flight } from "../../lib/mockData";
 
 export function CrewManagement() {
-  const [crew, setCrew] = useState<CrewMember[]>(mockCrew);
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [flights, setFlights] = useState<Flight[]>([])
+  const [selectedPosition, setSelectedPosition] = useState<EmployeePosition | "ALL">("ALL");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
-  const [selectedCrewMember, setSelectedCrewMember] = useState<CrewMember | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [newCrewName, setNewCrewName] = useState("");
-  const [newCrewRole, setNewCrewRole] = useState<"pilot" | "attendant">("pilot");
+  const [newCrewRole, setNewCrewRole] = useState<EmployeePosition>("PILOT");
   const [selectedFlightId, setSelectedFlightId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const handleAddCrew = () => {
-    const maxHours = newCrewRole === "pilot" ? 100 : 80;
-    const newCrew: CrewMember = {
-      id: "c" + (crew.length + 1),
-      name: newCrewName,
-      role: newCrewRole,
-      monthlyHours: 0,
-      maxHours,
-      assignments: [],
-    };
+  const handleAddCrew = async () => {
+    if (!newCrewName.trim()) return;
 
-    setCrew([...crew, newCrew]);
-    setShowAddDialog(false);
-    setNewCrewName("");
-    toast.success("Thêm thành viên mới thành công!");
+    try {
+      const maxHours = getMaxHoursByPosition(newCrewRole);
+      const newEmployee: Partial<Employee> = {
+        fullName: newCrewName.trim(),
+        position: newCrewRole,
+        monthlyHours: 0,
+        maxHours,
+        assignments: [],
+        workExperience: "",
+        totalFlightHours: 0,
+      };
+
+      await employeeService.createEmployee(newEmployee);
+      setShowAddDialog(false);
+      setNewCrewName("");
+      setNewCrewRole("PILOT");
+      toast.success("Thêm thành viên mới thành công!");
+      fetchEmployees(); // Refresh the list
+    } catch (error) {
+      toast.error("Lỗi khi thêm thành viên mới");
+    }
   };
 
-  const handleAssignFlight = () => {
-    if (!selectedCrewMember || !selectedFlightId) return;
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500); // Delay 500ms
 
-    const flight = mockFlights.find(f => f.id === selectedFlightId);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    fetchEmployees();
+  }, [page, size, debouncedSearch, selectedPosition]);
+
+  useEffect(() => {
+    fetchFlights();
+  }, []);
+
+  const fetchFlights = async () => {
+    try {
+      const data = await flightService.getAll();
+      //setFlights(data);
+    } catch (error) {
+      toast.error("Lỗi khi tải danh sách chuyến bay");
+    }
+  };
+
+  const getMaxHoursByPosition = (position: EmployeePosition): number => {
+    switch (position) {
+      case 'PILOT':
+      case 'COPILOT':
+        return 100;
+      case 'ATTENDANT':
+        return 80;
+      default:
+        return 80;
+    }
+  };
+
+  const fetchEmployees = async () => {
+    try {
+      setLoading(true)
+      const res = await employeeService.getAllEmployees({
+        page: page,
+        size: size,
+        search: debouncedSearch,
+        position: selectedPosition === "ALL" ? "" : selectedPosition,
+        sort: "id,desc"
+      })
+
+      if (res?.data) {
+        setEmployees(res.data.content || [])
+        setTotalPages(res.data.totalPages || 0)
+        setTotalElements(res.data.totalElements || 0)
+      }
+    } catch {
+      toast.error("Lỗi khi tải dữ liệu");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleAssignFlight = async () => {
+    if (!selectedEmployee || !selectedFlightId) return;
+
+    const flight = flights.find(f => f.id.toString() === selectedFlightId);
     if (!flight) return;
 
     // Check if already assigned
-    if (selectedCrewMember.assignments.includes(flight.flightCode)) {
+    if (selectedEmployee.assignments.includes(flight.id.toString())) {
       toast.error("Thành viên đã được phân công cho chuyến bay này!");
       return;
     }
 
     // Check hour limits
     const estimatedHours = 8; // Estimate 8 hours per flight
-    const newTotalHours = selectedCrewMember.monthlyHours + estimatedHours;
-    
-    if (newTotalHours > selectedCrewMember.maxHours) {
-      toast.error(`Không thể phân công! Sẽ vượt quá giới hạn giờ bay (${selectedCrewMember.maxHours}h)`);
+    const newTotalHours = selectedEmployee.monthlyHours + estimatedHours;
+
+    if (newTotalHours > selectedEmployee.maxHours) {
+      toast.error(`Không thể phân công! Sẽ vượt quá giới hạn giờ bay (${selectedEmployee.maxHours}h)`);
       return;
     }
 
-    const updatedCrew = crew.map((c) => {
-      if (c.id === selectedCrewMember.id) {
-        return {
-          ...c,
-          assignments: [...c.assignments, flight.flightCode],
-          monthlyHours: newTotalHours,
-        };
-      }
-      return c;
-    });
+    try {
+      const updatedEmployee: Partial<Employee> = {
+        ...selectedEmployee,
+        assignments: [...selectedEmployee.assignments, flight.id.toString()],
+        monthlyHours: newTotalHours,
+      };
 
-    setCrew(updatedCrew);
-    setShowAssignDialog(false);
-    setSelectedCrewMember(null);
-    setSelectedFlightId("");
-    toast.success(`Đã phân công ${selectedCrewMember.name} cho chuyến bay ${flight.flightCode}`);
+      await employeeService.updateEmployee(selectedEmployee.id.toString(), updatedEmployee);
+      setShowAssignDialog(false);
+      setSelectedEmployee(null);
+      setSelectedFlightId("");
+      toast.success(`Đã phân công ${selectedEmployee.fullName} cho chuyến bay ${flight.id}`);
+      fetchEmployees(); // Refresh the list
+    } catch (error) {
+      toast.error("Lỗi khi phân công chuyến bay");
+    }
   };
 
-  const handleRemoveAssignment = (crewId: string, flightCode: string) => {
-    const updatedCrew = crew.map((c) => {
-      if (c.id === crewId) {
-        return {
-          ...c,
-          assignments: c.assignments.filter((a) => a !== flightCode),
-          monthlyHours: Math.max(0, c.monthlyHours - 8), // Rough estimate
-        };
-      }
-      return c;
-    });
+  const handleRemoveAssignment = async (crewId: number, flightCode: string) => {
+    const employee = employees.find(e => e.id === crewId);
+    if (!employee) return;
 
-    setCrew(updatedCrew);
-    toast.success("Đã xóa phân công");
+    try {
+      const updatedEmployee: Partial<Employee> = {
+        ...employee,
+        assignments: employee.assignments.filter((a) => a !== flightCode),
+        monthlyHours: Math.max(0, employee.monthlyHours - 8), // Rough estimate
+      };
+
+      await employeeService.updateEmployee(crewId.toString(), updatedEmployee);
+      toast.success("Đã xóa phân công");
+      fetchEmployees(); // Refresh the list
+    } catch (error) {
+      toast.error("Lỗi khi xóa phân công");
+    }
   };
 
-  const getHoursPercentage = (member: CrewMember) => {
+  const getHoursPercentage = (member: Employee) => {
     return (member.monthlyHours / member.maxHours) * 100;
   };
 
-  const isOverLimit = (member: CrewMember) => {
+  const isOverLimit = (member: Employee) => {
     return member.monthlyHours > member.maxHours;
   };
 
-  const isNearLimit = (member: CrewMember) => {
+  const isNearLimit = (member: Employee) => {
     return member.monthlyHours >= member.maxHours * 0.9 && member.monthlyHours <= member.maxHours;
   };
 
   const getAvailableFlights = () => {
-    return mockFlights.filter(f => f.status === "open" || f.status === "full");
+    return flights.filter(f => f.status === "OPEN" || f.status === "FULL");
   };
 
   return (
@@ -117,57 +202,50 @@ export function CrewManagement() {
             Phân công và theo dõi giờ bay của phi công và tiếp viên
           </p>
         </div>
-        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-          <DialogTrigger asChild>
+
+      </div>
+
+      {/* Search & actions */}
+      <div className="flex gap-2 items-center">
+        <Input
+          placeholder="Tìm kiếm theo họ tên..."
+          value={searchQuery}
+          onChange={(e) => { setSearchQuery(e.target.value); setPage(0); }}
+        />
+        {/*filter*/}
+        <select
+          className="border p-2 rounded"
+          value={selectedPosition}
+          onChange={(e) => { setSelectedPosition(e.target.value as EmployeePosition); setPage(0); }}
+        >
+          <option value="ALL">Tất cả</option>
+          <option value="PILOT">Phi công</option>
+          <option value="COPILOT">Cơ phó</option>
+          <option value="ATTENDANT">Tiếp viên</option>
+          <option value="OPERATOR">Nhân viên điều hành</option>
+          <option value="TICKETING">Nhân viên vé</option>
+          <option value="OTHER">Khác</option>
+        </select>
+
+        <AddEmployeeDialog
+          onAddEmployee={handleAddCrew}
+          trigger={
             <Button>
               <Plus className="w-4 h-4 mr-2" />
               Thêm thành viên
             </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Thêm thành viên phi hành đoàn</DialogTitle>
-              <DialogDescription>
-                Nhập thông tin thành viên mới
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Họ và tên</Label>
-                <Input
-                  id="name"
-                  value={newCrewName}
-                  onChange={(e) => setNewCrewName(e.target.value)}
-                  placeholder="Nguyễn Văn A"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">Vai trò</Label>
-                <select
-                  id="role"
-                  className="w-full px-3 py-2 border rounded-md"
-                  value={newCrewRole}
-                  onChange={(e) => setNewCrewRole(e.target.value as "pilot" | "attendant")}
-                >
-                  <option value="pilot">Phi công</option>
-                  <option value="attendant">Tiếp viên</option>
-                </select>
-              </div>
-              <Button className="w-full" onClick={handleAddCrew} disabled={!newCrewName}>
-                Thêm thành viên
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+          }
+        />
+
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-3">
             <CardDescription>Tổng số phi công</CardDescription>
             <CardTitle className="text-3xl">
-              {crew.filter((c) => c.role === "pilot").length}
+              {employees.filter((c) => c.position === "PILOT" || c.position === "COPILOT").length}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -175,7 +253,7 @@ export function CrewManagement() {
           <CardHeader className="pb-3">
             <CardDescription>Tổng số tiếp viên</CardDescription>
             <CardTitle className="text-3xl">
-              {crew.filter((c) => c.role === "attendant").length}
+              {employees.filter((c) => c.position === "ATTENDANT").length}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -183,24 +261,24 @@ export function CrewManagement() {
           <CardHeader className="pb-3">
             <CardDescription>Cảnh báo giờ bay</CardDescription>
             <CardTitle className="text-3xl text-yellow-600">
-              {crew.filter((c) => isNearLimit(c) || isOverLimit(c)).length}
+              {employees.filter((c) => isNearLimit(c) || isOverLimit(c)).length}
             </CardTitle>
           </CardHeader>
         </Card>
-      </div>
+      </div> */}
 
       {/* Crew List */}
       <div className="space-y-4">
-        {crew.map((member) => (
+        {employees.map((member) => (
           <Card key={member.id}>
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Users className="w-5 h-5" />
-                    {member.name}
-                    <Badge variant={member.role === "pilot" ? "default" : "secondary"}>
-                      {member.role === "pilot" ? "Phi công" : "Tiếp viên"}
+                    {member.fullName}
+                    <Badge variant={member.position === "PILOT" ? "default" : "secondary"}>
+                      {member.position === "PILOT" ? "Phi công" : member.position === "ATTENDANT" ? "Tiếp viên" : member.position === "COPILOT" ? "Cơ phó" : "Nhân viên quầy vé"}
                     </Badge>
                   </CardTitle>
                   <CardDescription className="mt-1">ID: {member.id}</CardDescription>
@@ -215,8 +293,9 @@ export function CrewManagement() {
                   <Button
                     size="sm"
                     variant="outline"
+                    disabled={isOverLimit(member)}
                     onClick={() => {
-                      setSelectedCrewMember(member);
+                      setSelectedEmployee(member);
                       setShowAssignDialog(true);
                     }}
                   >
@@ -241,8 +320,8 @@ export function CrewManagement() {
                     isOverLimit(member)
                       ? "bg-red-100"
                       : isNearLimit(member)
-                      ? "bg-yellow-100"
-                      : ""
+                        ? "bg-yellow-100"
+                        : ""
                   }
                 />
                 {isOverLimit(member) && (
@@ -252,7 +331,7 @@ export function CrewManagement() {
                 )}
                 {isNearLimit(member) && (
                   <p className="text-sm text-yellow-600">
-                    ⚠️ Còn {member.maxHours - member.monthlyHours} giờ trước khi đạt giới hạn
+                    ⚠️ Gần đạt giới hạn: còn {member.maxHours - member.monthlyHours} giờ bay
                   </p>
                 )}
               </div>
@@ -260,13 +339,13 @@ export function CrewManagement() {
               {/* Assignments */}
               <div>
                 <p className="text-sm font-semibold mb-2">
-                  Chuyến bay phân công ({member.assignments.length})
+                  Chuyến bay đang phân công ({member.assignments?.length})
                 </p>
-                {member.assignments.length === 0 ? (
+                {member.assignments?.length === 0 ? (
                   <p className="text-sm text-gray-500">Chưa có chuyến bay nào</p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
-                    {member.assignments.map((flightCode) => (
+                    {member.assignments?.map((flightCode) => (
                       <div
                         key={flightCode}
                         className="flex items-center gap-1 bg-gray-100 px-3 py-1 rounded-full"
@@ -289,34 +368,49 @@ export function CrewManagement() {
         ))}
       </div>
 
+      {loading && (
+        <div className="p-3 bg-gray-50 rounded-md">
+          <p className="text-sm text-gray-600">Đang tải danh sách nhân viên...</p>
+        </div>
+      )}
+
+      {/* Pagination controls */}
+      <div className="flex items-center justify-between mt-4">
+        <div className="text-sm text-gray-600">Hiển thị {employees.length} / {totalElements} nhân viên — Trang {page + 1} / {totalPages || 1}</div>
+        <div className="flex gap-2">
+          <Button disabled={page <= 0 || loading} onClick={() => setPage(p => Math.max(0, p - 1))}>Prev</Button>
+          <Button disabled={page >= (totalPages - 1) || loading} onClick={() => setPage(p => Math.min((totalPages - 1) || p + 1, p + 1))}>Next</Button>
+        </div>
+      </div>
+
       {/* Assign Flight Dialog */}
       <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Phân công chuyến bay</DialogTitle>
             <DialogDescription>
-              Phân công chuyến bay cho {selectedCrewMember?.name}
+              Phân công chuyến bay cho {selectedEmployee?.fullName}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            {selectedCrewMember && (
+            {selectedEmployee && (
               <>
                 <div className="bg-gray-50 p-3 rounded-lg space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Vai trò:</span>
                     <span className="font-semibold">
-                      {selectedCrewMember.role === "pilot" ? "Phi công" : "Tiếp viên"}
+                      {selectedEmployee.position === "PILOT" ? "Phi công" : selectedEmployee.position === "ATTENDANT" ? "Tiếp viên" : selectedEmployee.position === "COPILOT" ? "Cơ phó" : "Nhân viên quầy vé"}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Giờ bay hiện tại:</span>
                     <span className="font-semibold">
-                      {selectedCrewMember.monthlyHours} / {selectedCrewMember.maxHours} giờ
+                      {selectedEmployee.monthlyHours} / {selectedEmployee.maxHours} giờ
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Chuyến bay đã phân công:</span>
-                    <span className="font-semibold">{selectedCrewMember.assignments.length}</span>
+                    <span className="font-semibold">{selectedEmployee.assignments?.length}</span>
                   </div>
                 </div>
 
@@ -331,7 +425,7 @@ export function CrewManagement() {
                     <option value="">-- Chọn chuyến bay --</option>
                     {getAvailableFlights().map((flight) => (
                       <option key={flight.id} value={flight.id}>
-                        {flight.flightCode} - {flight.route} ({new Date(flight.date).toLocaleDateString("vi-VN")} {flight.departureTime})
+                        {flight.id} - {flight.route.origin} - {flight.route.destination} ({flight.date ? new Date(flight.date).toLocaleDateString("vi-VN") : 'N/A'} {flight.departureTime})
                       </option>
                     ))}
                   </select>
@@ -339,14 +433,19 @@ export function CrewManagement() {
 
                 <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg text-sm">
                   <p className="text-blue-800">
-                    💡 Mỗi chuyến bay ước tính 8 giờ. Giờ bay sau khi phân công: {selectedCrewMember.monthlyHours + 8} giờ
+                    💡 Mỗi chuyến bay ước tính 8 giờ. Giờ bay sau khi phân công: {selectedEmployee.monthlyHours + 8} giờ
+                  </p>
+                  <p className="text-blue-800">
+                    {isOverLimit(selectedEmployee) || (selectedEmployee.monthlyHours + 8 > selectedEmployee.maxHours)
+                      ? "⚠️ Vượt quá giới hạn giờ bay!"
+                      : `✅ Phân công này vẫn trong giới hạn giờ bay (${selectedEmployee.maxHours} giờ).`}
                   </p>
                 </div>
 
-                <Button 
-                  className="w-full" 
+                <Button
+                  className="w-full"
                   onClick={handleAssignFlight}
-                  disabled={!selectedFlightId}
+                  disabled={!selectedFlightId || selectedEmployee.monthlyHours + 8 > selectedEmployee.maxHours}
                 >
                   Xác nhận phân công
                 </Button>
