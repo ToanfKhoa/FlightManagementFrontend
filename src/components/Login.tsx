@@ -34,13 +34,15 @@ export function Login({ onLogin, onRegister }: LoginProps) {
       // Map backend role (likely uppercase in `authType`) to app lowercase role
       const roleMap: Record<string, UserRole> = {
         PASSENGER: "passenger",
-        EMPLOYEE: "staff",
+        EMPLOYEE: "crew",
         ADMIN: "admin",
-        CREW: "crew",
-        PILOT: "crew",
       };
-      const mappedRole = (roleMap[apiUser.role as string] ?? (apiUser.role as unknown as UserRole)) as UserRole;
-
+      let mappedRole = (roleMap[apiUser.role as string] ?? (apiUser.role as unknown as UserRole)) as UserRole;
+      if (response.data.employee != null) {
+        if (response.data.employee.position === "TICKETING") {
+          mappedRole = "staff";
+        }
+      }
       const user: User = {
         id: String(apiUser.id),
         name: apiUser.username ?? apiUser.email,
@@ -66,7 +68,7 @@ export function Login({ onLogin, onRegister }: LoginProps) {
       staff: "Nhân viên",
       admin: "Quản trị viên",
     };
-    
+
     const user: User = {
       id: role === "crew" ? "c1" : "demo-" + role,
       name: roleNames[role || "passenger"],
@@ -95,13 +97,13 @@ export function Login({ onLogin, onRegister }: LoginProps) {
               <Input
                 id="email"
                 type="text"
-                  placeholder="email@example.com hoặc tên đăng nhập"
+                placeholder="email@example.com hoặc tên đăng nhập"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="password">Mật khẩu</Label>
               <Input
