@@ -1,5 +1,5 @@
 // types/seat/seat.type.ts
-export type SeatClass = 'economy' | 'business' | 'first';
+export type SeatClass = 'BUSINESS' | 'FIRST_CLASS' | 'ECONOMY';
 export type SeatStatus = 'available' | 'reserved' | 'booked';
 
 export type Seat = {

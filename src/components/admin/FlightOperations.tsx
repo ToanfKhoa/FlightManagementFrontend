@@ -93,7 +93,7 @@ export function FlightOperations() {
       aircraftService.getAll({ all: true }),
     ])
       .then(([allFlightsData, routesData, aircraftsData]) => {
-        const allFlightsWithComputed = (allFlightsData as Flight[]).map(flight => ({
+        const allFlightsWithComputed = (allFlightsData.data.content as Flight[]).map(flight => ({
           ...flight,
           date: new Date(flight.schedule.departureTime).toISOString().split('T')[0],
           departureTime: new Date(flight.schedule.departureTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
