@@ -59,9 +59,9 @@ export function FlightOperations() {
       if (response?.data) {
         const flightsWithComputed = response.data.content.map(flight => ({
           ...flight,
-          date: new Date(flight.schedule.departureTime).toISOString().split('T')[0],
-          departureTime: new Date(flight.schedule.departureTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-          arrivalTime: new Date(flight.schedule.arrivalTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          date: new Date(flight.departureTime).toISOString().split('T')[0],
+          departureTime: new Date(flight.departureTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          arrivalTime: new Date(flight.arrivalTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         }));
         setFlights(flightsWithComputed);
         setTotalPages(response.data.totalPages || 0);
@@ -95,9 +95,9 @@ export function FlightOperations() {
       .then(([allFlightsData, routesData, aircraftsData]) => {
         const allFlightsWithComputed = (allFlightsData.data.content as Flight[]).map(flight => ({
           ...flight,
-          date: new Date(flight.schedule.departureTime).toISOString().split('T')[0],
-          departureTime: new Date(flight.schedule.departureTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-          arrivalTime: new Date(flight.schedule.arrivalTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          date: new Date(flight.departureTime).toISOString().split('T')[0],
+          departureTime: new Date(flight.departureTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          arrivalTime: new Date(flight.arrivalTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         }));
         setAllFlights(allFlightsWithComputed);
         setRoutes(routesData);
