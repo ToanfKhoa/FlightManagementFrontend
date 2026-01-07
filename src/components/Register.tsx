@@ -5,8 +5,9 @@ import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Plane, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { authService } from "../services/authService";
+import { passengerService } from "../services/passengerService";
 import type { RegisterRequest, LoginResponse } from "../types/authType";
+import Passenger from "../types/passengerType";
 
 interface RegisterProps {
   onBack: () => void;
@@ -16,46 +17,45 @@ interface RegisterProps {
 export function Register({ onBack, onRegisterSuccess }: RegisterProps) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  
+
   // User Account fields
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  
+
   // Passenger fields
   const [fullName, setFullName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [nationality, setNationality] = useState("Việt Nam");
   const [idNumber, setIdNumber] = useState("");
   const [address, setAddress] = useState("");
-  const [tier, setTier] = useState<"economy" | "business" | "first">("economy");
 
   const handleStep1Submit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate passwords match
     if (password !== confirmPassword) {
       toast.error("Mật khẩu không khớp!");
       return;
     }
-    
+
     // Validate password length
     if (password.length < 6) {
       toast.error("Mật khẩu phải có ít nhất 6 ký tự!");
       return;
     }
-    
+
     // Username uniqueness should be validated server-side. We rely on API error responses for duplicates.
-    
+
     setStep(2);
   };
 
   const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     // Validate age (must be at least 12 years old)
     const birthDate = new Date(dateOfBirth);
     const today = new Date();
@@ -64,9 +64,9 @@ export function Register({ onBack, onRegisterSuccess }: RegisterProps) {
       toast.error("Hành khách phải từ 12 tuổi trở lên để đăng ký tài khoản!");
       return;
     }
-    
+
     try {
-      const payload: RegisterRequest = {
+      const registerRequest: RegisterRequest = {
         //fullName,
         username,
         email,
@@ -74,8 +74,17 @@ export function Register({ onBack, onRegisterSuccess }: RegisterProps) {
         password,
         //dateOfBirth,
       };
+      const payload: Passenger = {
+        accountRequest: registerRequest,
+        fullName: fullName,
+        dateOfBirth: dateOfBirth,
+        nationality: nationality,
+        idNumber: idNumber,
+        address: address,
+        phone: phone
+      }
 
-      const response = (await authService.register(payload)) as LoginResponse | any;
+      const response = (await passengerService.createPassenger(payload)) as LoginResponse | any;
 
       // If the API returned a token and user, persist and auto login, else just show success
       if (response?.token && response?.user) {
@@ -126,7 +135,7 @@ export function Register({ onBack, onRegisterSuccess }: RegisterProps) {
                 />
               </div>
 
-              <div className="space-y-2"> 
+              <div className="space-y-2">
                 <Label htmlFor="email">
                   Email <span className="text-red-500">*</span>
                 </Label>
@@ -266,23 +275,6 @@ export function Register({ onBack, onRegisterSuccess }: RegisterProps) {
                   onChange={(e) => setAddress(e.target.value)}
                   required
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="tier">Hạng thành viên</Label>
-                <select
-                  id="tier"
-                  className="w-full px-3 py-2 border rounded-md"
-                  value={tier}
-                  onChange={(e) => setTier(e.target.value as "economy" | "business" | "first")}
-                >
-                  <option value="economy">Phổ thông (Economy)</option>
-                  <option value="business">Thương gia (Business)</option>
-                  <option value="first">Hạng nhất (First)</option>
-                </select>
-                <p className="text-sm text-gray-600">
-                  Hạng thành viên xác định quyền lợi và ưu đãi của bạn
-                </p>
               </div>
 
               <div className="flex gap-2">
