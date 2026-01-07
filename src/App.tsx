@@ -1,4 +1,5 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { Login } from "./components/Login";
 import { Register } from "./components/Register";
 import { PassengerDashboard } from "./components/PassengerDashboard";
@@ -17,84 +18,95 @@ export interface User {
   role: UserRole;
 }
 
+const ProtectedRoute = ({ user, children }: { user: User | null, children: React.JSX.Element }) => {
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
+
 function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [showAuth, setShowAuth] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const showRegister = location.state?.showRegister || false;
 
   const handleLogin = (userData: User) => {
     setUser(userData);
-    setShowAuth(false);
-    setShowRegister(false);
+    navigate(`/${userData.role}`);
   };
 
   const handleLogout = () => {
     setUser(null);
+    navigate("/");
   };
-
-  const handleShowLogin = () => {
-    setShowAuth(true);
-    setShowRegister(false);
-  };
-
-  const handleShowRegister = () => {
-    setShowAuth(true);
-    setShowRegister(true);
-  };
-
-  const handleBackToLanding = () => {
-    setShowAuth(false);
-    setShowRegister(false);
-  };
-
-  const handleRegisterSuccess = () => {
-    setShowAuth(false);
-    setShowRegister(false);
-  };
-
-  if (!user) {
-    if (showAuth) {
-      if (showRegister) {
-        return (
-          <>
-            <Register onBack={handleBackToLanding} onRegisterSuccess={handleRegisterSuccess} />
-            <Toaster />
-          </>
-        );
-      }
-
-      return (
-        <>
-          <Login onLogin={handleLogin} onRegister={handleShowRegister} />
-          <Toaster />
-        </>
-      );
-    }
-
-    return (
-      <>
-        <PassengerLandingPage onLogin={handleShowLogin} onRegister={handleShowRegister} />
-        <Toaster />
-      </>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {user.role === "passenger" && (
-        <PassengerDashboard user={user} onLogout={handleLogout} />
-      )}
-      {user.role === "staff" && (
-        <StaffDashboard user={user} onLogout={handleLogout} />
-      )}
-      {user.role === "admin" && (
-        <AdminDashboard user={user} onLogout={handleLogout} />
-      )}
-      {user.role === "crew" && (
-        <CrewDashboard user={user} onLogout={handleLogout} />
-      )}
+    <>
+      <Routes>
+        {/* Public routes */}
+        <Route
+          path="/"
+          element={
+            user ? (
+              <Navigate to={`/${user.role}`} replace />
+            ) : (
+              <PassengerLandingPage />
+            )
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            user ? (
+              <Navigate to={`/${user.role}`} replace />
+            ) : showRegister ? (
+              <Register />
+            ) : (
+              <Login onLogin={handleLogin} />
+            )
+          }
+        />
+
+        {/* Protected routes */}
+        <Route
+          path="/passenger"
+          element={
+            <ProtectedRoute user={user}>
+              <PassengerDashboard user={user as User} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff"
+          element={
+            <ProtectedRoute user={user}>
+              <StaffDashboard user={user as User} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute user={user}>
+              <AdminDashboard user={user as User} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/crew"
+          element={
+            <ProtectedRoute user={user}>
+              <CrewDashboard user={user as User} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Fallback route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
       <Toaster />
-    </div>
+    </>
   );
 }
 

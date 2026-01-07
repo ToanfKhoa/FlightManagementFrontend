@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -11,10 +12,10 @@ import type { LoginResponse } from "../types/authType";
 
 interface LoginProps {
   onLogin: (user: User) => void;
-  onRegister: () => void;
 }
 
-export function Login({ onLogin, onRegister }: LoginProps) {
+export function Login({ onLogin }: LoginProps) {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [selectedRole, setSelectedRole] = useState<UserRole>("passenger");
@@ -137,7 +138,7 @@ export function Login({ onLogin, onRegister }: LoginProps) {
           </form>
 
           <div className="mt-4">
-            <Button variant="outline" className="w-full" onClick={onRegister}>
+            <Button variant="outline" className="w-full" onClick={() => navigate("/login", { state: { showRegister: true } })}>
               <UserPlus className="w-4 h-4 mr-2" />
               Đăng ký tài khoản hành khách
             </Button>

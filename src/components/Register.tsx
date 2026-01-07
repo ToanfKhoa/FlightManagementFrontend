@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -9,12 +10,8 @@ import { passengerService } from "../services/passengerService";
 import type { RegisterRequest, LoginResponse } from "../types/authType";
 import Passenger from "../types/passengerType";
 
-interface RegisterProps {
-  onBack: () => void;
-  onRegisterSuccess: () => void;
-}
-
-export function Register({ onBack, onRegisterSuccess }: RegisterProps) {
+export function Register() {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
@@ -90,11 +87,11 @@ export function Register({ onBack, onRegisterSuccess }: RegisterProps) {
       if (response?.token && response?.user) {
         localStorage.setItem("user", JSON.stringify({ token: response.token, user: response.user }));
         toast.success("Đăng ký thành công và đã đăng nhập tự động");
-        // We can notify parent app to update UI. If onRegisterSuccess should hide the register screen, we call it.
-        onRegisterSuccess();
+        // Navigate to passenger dashboard or home
+        navigate("/");
       } else {
         toast.success(response?.message || "Đăng ký thành công! Vui lòng đăng nhập.");
-        onRegisterSuccess();
+        navigate("/");
       }
     } catch (error: any) {
       const msg = error?.response?.data?.message || error?.message || "Đăng ký thất bại";
@@ -195,7 +192,7 @@ export function Register({ onBack, onRegisterSuccess }: RegisterProps) {
               </div>
 
               <div className="flex gap-2">
-                <Button type="button" variant="outline" onClick={onBack} className="flex-1">
+                <Button type="button" variant="outline" onClick={() => navigate("/login")} className="flex-1">
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Quay lại
                 </Button>
@@ -293,7 +290,7 @@ export function Register({ onBack, onRegisterSuccess }: RegisterProps) {
             <p className="text-sm text-gray-600">
               Đã có tài khoản?{" "}
               <button
-                onClick={onBack}
+                onClick={() => navigate("/login")}
                 className="text-blue-600 hover:underline"
               >
                 Đăng nhập ngay
