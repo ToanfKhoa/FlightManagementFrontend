@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const axiosClient = axios.create({
-  // Port 8080 là mặc định của Java Spring Boot
-  baseURL: 'http://localhost:8080', 
+  // Port server 8080
+  baseURL: 'http://localhost:8080',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -10,12 +10,10 @@ const axiosClient = axios.create({
 
 // Interceptor Request: Tự động gắn Token vào header nếu đã đăng nhập
 axiosClient.interceptors.request.use(async (config) => {
-  // Lấy token từ localStorage (hoặc Redux store)
-  //const user = JSON.parse(localStorage.getItem('user'));
-  const userString = localStorage.getItem('user');
-  const user = userString ? JSON.parse(userString) : null;
-  if (user?.token) {
-    config.headers.Authorization = `Bearer ${user.token}`;
+  // Lấy token từ localStorage
+  const token = localStorage.getItem('JX_TOKEN');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
@@ -30,8 +28,8 @@ axiosClient.interceptors.response.use(
   (error) => {
     // Xử lý lỗi chung (Ví dụ: Token hết hạn -> Tự logout)
     if (error.response?.status === 401) {
-        localStorage.removeItem('user');
-        window.location.href = '/login';
+      localStorage.removeItem('JX_TOKEN');
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }

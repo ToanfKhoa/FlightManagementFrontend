@@ -6,77 +6,27 @@ import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Plane, UserPlus } from "lucide-react";
 import { toast } from "sonner";
-import type { User, UserRole } from "../App";
-import { authService } from "../services/authService";
-import type { LoginResponse } from "../types/authType";
+import { useAuth } from "../context/AuthContext";
 
-interface LoginProps {
-  onLogin: (user: User) => void;
-}
-
-export function Login({ onLogin }: LoginProps) {
+export function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const { login } = useAuth();
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedRole, setSelectedRole] = useState<UserRole>("passenger");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = (await authService.login(email, password)) as LoginResponse;
-
-      // Store response for axios interceptors (expected shape: { token, user })
-      localStorage.setItem("user", JSON.stringify({ token: response.data.accessToken, user: response.data.user }));
-
-      // Map API user (LoginResponse.user) to frontend `User` used in App.tsx
-      const apiUser = response.data.user;
-      // Map backend role (likely uppercase in `authType`) to app lowercase role
-      const roleMap: Record<string, UserRole> = {
-        PASSENGER: "passenger",
-        EMPLOYEE: "crew",
-        ADMIN: "admin",
-      };
-      let mappedRole = (roleMap[apiUser.role as string] ?? (apiUser.role as unknown as UserRole)) as UserRole;
-      if (response.data.employee != null) {
-        if (response.data.employee.position === "TICKETING") {
-          mappedRole = "staff";
-        }
-      }
-      const user: User = {
-        id: String(apiUser.id),
-        name: apiUser.username ?? apiUser.email,
-        email: apiUser.email,
-        role: mappedRole,
-      };
-
-      toast.success(`Đăng nhập thành công (${user.name})`);
-      onLogin(user);
+      await login(username, password);
+      toast.success("Đăng nhập thành công");
     } catch (error: any) {
-      // Axios errors often hold `error.response.data.message` or similar
-      const msg = error?.response?.message || error?.message || "Đăng nhập thất bại";
+      const msg = error?.response?.data?.message || error?.message || "Đăng nhập thất bại";
       toast.error(String(msg));
     } finally {
       setLoading(false);
     }
-  };
-
-  const quickLogin = (role: UserRole) => {
-    const roleNames: Record<string, string> = {
-      passenger: "Nguyễn Văn A",
-      crew: "Trần Văn B",
-      staff: "Nhân viên",
-      admin: "Quản trị viên",
-    };
-
-    const user: User = {
-      id: role === "crew" ? "c1" : "demo-" + role,
-      name: roleNames[role || "passenger"],
-      email: `${role}@example.com`,
-      role,
-    };
-    onLogin(user);
   };
 
   return (
@@ -94,13 +44,13 @@ export function Login({ onLogin }: LoginProps) {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email / Tên đăng nhập</Label>
+              <Label htmlFor="username">Tên đăng nhập</Label>
               <Input
-                id="email"
+                id="username"
                 type="text"
-                placeholder="email@example.com hoặc tên đăng nhập"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tên đăng nhập"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
               />
             </div>
@@ -117,23 +67,8 @@ export function Login({ onLogin }: LoginProps) {
               />
             </div>
 
-            {/* <div className="space-y-2">
-              <Label htmlFor="role">Vai trò</Label>
-              <select
-                id="role"
-                className="w-full px-3 py-2 border rounded-md"
-                value={selectedRole || ""}
-                onChange={(e) => setSelectedRole(e.target.value as UserRole)}
-              >
-                <option value="passenger">Hành khách</option>
-                <option value="crew">Phi hành viên</option>
-                <option value="staff">Nhân viên</option>
-                <option value="admin">Quản trị viên</option>
-              </select>
-            </div> */}
-
-            <Button type="submit" className="w-full">
-              Đăng nhập
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Đang đăng nhập..." : "Đăng nhập"}
             </Button>
           </form>
 
@@ -142,40 +77,6 @@ export function Login({ onLogin }: LoginProps) {
               <UserPlus className="w-4 h-4 mr-2" />
               Đăng ký tài khoản hành khách
             </Button>
-          </div>
-
-          <div className="mt-6 pt-6 border-t">
-            <p className="text-sm text-center text-gray-600 mb-3">Đăng nhập nhanh:</p>
-            <div className="grid grid-cols-4 gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => quickLogin("passenger")}
-              >
-                Hành khách
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => quickLogin("crew")}
-              >
-                Phi hành viên
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => quickLogin("staff")}
-              >
-                Nhân viên
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => quickLogin("admin")}
-              >
-                Quản trị
-              </Button>
-            </div>
           </div>
         </CardContent>
       </Card>

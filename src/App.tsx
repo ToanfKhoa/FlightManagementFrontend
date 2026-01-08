@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import React from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { Login } from "./components/Login";
 import { Register } from "./components/Register";
 import { PassengerDashboard } from "./components/PassengerDashboard";
@@ -8,6 +8,7 @@ import { StaffDashboard } from "./components/StaffDashboard";
 import { AdminDashboard } from "./components/AdminDashboard";
 import { CrewDashboard } from "./components/CrewDashboard";
 import { Toaster } from "./components/ui/sonner";
+import { useAuth } from "./context/AuthContext";
 
 export type UserRole = "passenger" | "staff" | "admin" | "crew" | null;
 
@@ -18,28 +19,24 @@ export interface User {
   role: UserRole;
 }
 
-const ProtectedRoute = ({ user, children }: { user: User | null, children: React.JSX.Element }) => {
+const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) return <div className="p-4">Loading...</div>;
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-  return children;
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
 };
 
 function App() {
-  const [user, setUser] = useState<User | null>(null);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const showRegister = location.state?.showRegister || false;
-
-  const handleLogin = (userData: User) => {
-    setUser(userData);
-    navigate(`/${userData.role}`);
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    navigate("/");
-  };
+  const { user } = useAuth();
 
   return (
     <>
@@ -58,13 +55,7 @@ function App() {
         <Route
           path="/login"
           element={
-            user ? (
-              <Navigate to={`/${user.role}`} replace />
-            ) : showRegister ? (
-              <Register />
-            ) : (
-              <Login onLogin={handleLogin} />
-            )
+            user ? <Navigate to={`/${user.role}`} replace /> : <Login />
           }
         />
 
@@ -72,32 +63,32 @@ function App() {
         <Route
           path="/passenger"
           element={
-            <ProtectedRoute user={user}>
-              <PassengerDashboard user={user as User} onLogout={handleLogout} />
+            <ProtectedRoute>
+              <PassengerDashboard />
             </ProtectedRoute>
           }
         />
         <Route
           path="/staff"
           element={
-            <ProtectedRoute user={user}>
-              <StaffDashboard user={user as User} onLogout={handleLogout} />
+            <ProtectedRoute>
+              <StaffDashboard />
             </ProtectedRoute>
           }
         />
         <Route
           path="/admin"
           element={
-            <ProtectedRoute user={user}>
-              <AdminDashboard user={user as User} onLogout={handleLogout} />
+            <ProtectedRoute>
+              <AdminDashboard />
             </ProtectedRoute>
           }
         />
         <Route
           path="/crew"
           element={
-            <ProtectedRoute user={user}>
-              <CrewDashboard user={user as User} onLogout={handleLogout} />
+            <ProtectedRoute>
+              <CrewDashboard />
             </ProtectedRoute>
           }
         />
@@ -109,5 +100,4 @@ function App() {
     </>
   );
 }
-
 export default App;
