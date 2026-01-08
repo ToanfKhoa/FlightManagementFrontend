@@ -73,8 +73,8 @@ export function FlightOperations() {
         const flightsWithComputed = response.data.content.map(flight => ({
           ...flight,
           date: new Date(flight.departureTime).toISOString().split('T')[0],
-          departureTimeDisplay: new Date(flight.departureTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-          arrivalTimeDisplay: new Date(flight.arrivalTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          departureTimeDisplay: computeDisplayTime(flight.departureTime),
+          arrivalTimeDisplay: computeDisplayTime(flight.arrivalTime),
         }));
         setFlights(flightsWithComputed);
         setTotalPages(response.data.totalPages || 0);
@@ -196,6 +196,15 @@ export function FlightOperations() {
     toast.success(`Chuyến bay ${flight.id} đã được kích hoạt lại`);
   };
 
+  const computeDisplayTime = (iso: string) =>
+    new Date(iso).toLocaleString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
   const handleCreateFlight = async () => {
     try {
       const formatToISO = (datetime: string) => {
@@ -219,6 +228,8 @@ export function FlightOperations() {
         route,
         aircraft,
         status: newFlight.status,
+        departureTimeDisplay: computeDisplayTime(newFlightData.departureTime),
+        arrivalTimeDisplay: computeDisplayTime(newFlightData.arrivalTime),
       };
       setFlights((prev) => [...prev, flightWithDetails]);
       setAllFlights((prev) => [...prev, flightWithDetails]);
@@ -233,7 +244,7 @@ export function FlightOperations() {
         arrivalTime: '',
       });
     } catch (error) {
-      toast.error("Không thể tạo chuyến bay mới");
+      toast.error("Vui lòng nhập đầy đủ thông tin");
     }
   };
 
@@ -650,17 +661,11 @@ export function FlightOperations() {
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
-                        <p className="text-sm text-gray-600">Ngày bay</p>
-                        <p className="font-semibold">
-                          {flight.date ? new Date(flight.date).toLocaleDateString("vi-VN") : '—'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Giờ khởi hành</p>
+                        <p className="text-sm text-gray-600">Thời điểm khởi hành</p>
                         <p className="font-semibold">{flight.departureTimeDisplay ?? '—'}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Giờ đến</p>
+                        <p className="text-sm text-gray-600">Thời điểm hạ cánh</p>
                         <p className="font-semibold">{flight.arrivalTimeDisplay ?? '—'}</p>
                       </div>
                       <div>
