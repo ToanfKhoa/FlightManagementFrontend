@@ -1,6 +1,6 @@
 // src/services/flightService.ts
 import axiosClient from '../api/axiosClient';
-import type { Flight, CreateFlightRequest, FlightsPageResponse } from '../types/flightType.ts';
+import type { Flight, CreateFlightRequest, FlightsPageResponse, FlightResponse } from '../types/flightType.ts';
 import type { ApiResponse } from '../types/commonType';
 
 export interface GetFlightsParams {
@@ -58,7 +58,7 @@ export const flightService = {
     return axiosClient.get(`/flights/all?${queryParams.toString()}`) as Promise<ApiResponse<FlightsPageResponse>>;
   },
 
-  getById(id: string): Promise<Flight> {
+  getById(id: string): Promise<FlightResponse> {
     return axiosClient.get(`/flights/${id}`);
   },
 
