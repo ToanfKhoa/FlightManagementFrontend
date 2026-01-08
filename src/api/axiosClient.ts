@@ -11,7 +11,7 @@ const axiosClient = axios.create({
 // Interceptor Request: Tự động gắn Token vào header nếu đã đăng nhập
 axiosClient.interceptors.request.use(async (config) => {
   // Lấy token từ localStorage
-  const token = localStorage.getItem('JX_TOKEN');
+  const token = localStorage.getItem('access_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -28,7 +28,7 @@ axiosClient.interceptors.response.use(
   (error) => {
     // Xử lý lỗi chung (Ví dụ: Token hết hạn -> Tự logout)
     if (error.response?.status === 401) {
-      localStorage.removeItem('JX_TOKEN');
+      localStorage.removeItem('access_token');
       window.location.href = '/login';
     }
     return Promise.reject(error);
