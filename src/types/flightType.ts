@@ -24,11 +24,23 @@ export type Flight = BaseEntity & {
   seats?: Seat[];
   availableSeats?: AvailableSeats;
   prices?: typeof defaultPrices;
+  date?: string; // Computed field for display
+  departureTimeDisplay?: string; // Computed field for display
+  arrivalTimeDisplay?: string; // Computed field for display
 };
+
+export type PriceSeatClassDto = {
+  seatClass: string;
+  price: number;
+};
+
 export type CreateFlightRequest = {
   routeId: number;
   aircraftId: number;
   status: FlightStatus;
+  priceSeatClass: PriceSeatClassDto[];
+  departureTime: string;
+  arrivalTime: string;
 };
 
 export type UpdateFlightRequest = {

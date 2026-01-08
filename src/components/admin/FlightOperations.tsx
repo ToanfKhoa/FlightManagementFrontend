@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { flightService } from "../../services/flightService";
 import { aircraftService } from "../../services/aircraftService";
 import { routeService } from "../../services/routeService";
-import type { Flight, Route, FlightStatus, FlightsPageResponse } from "../../types/flightType";
+import type { Flight, Route, FlightStatus, FlightsPageResponse, PriceSeatClassDto } from "../../types/flightType";
 import type { Aircraft } from "../../types/aircraftType";
 import type { ApiResponse } from "../../types/commonType";
 
@@ -38,6 +38,9 @@ export function FlightOperations() {
     routeId: 0,
     aircraftId: 0,
     status: 'OPEN' as FlightStatus,
+    priceSeatClass: [{ seatClass: 'ECONOMY', price: 1500000 }] as PriceSeatClassDto[],
+    departureTime: '',
+    arrivalTime: '',
   });
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -108,6 +111,9 @@ export function FlightOperations() {
             routeId: routesData[0].id,
             aircraftId: (aircraftsData as Aircraft[])[0].id,
             status: 'OPEN',
+            priceSeatClass: [{ seatClass: 'ECONOMY', price: 1500000 }],
+            departureTime: '',
+            arrivalTime: '',
           });
         }
       })
@@ -170,10 +176,20 @@ export function FlightOperations() {
 
   const handleCreateFlight = async () => {
     try {
+      // Convert datetime-local to ISO 8601 format with timezone
+      const formatToISO = (datetime: string) => {
+        if (!datetime) return '';
+        const date = new Date(datetime);
+        return date.toISOString();
+      };
+
       const newFlightData = await flightService.create({
         routeId: newFlight.routeId,
         aircraftId: newFlight.aircraftId,
         status: newFlight.status,
+        priceSeatClass: newFlight.priceSeatClass,
+        departureTime: formatToISO(newFlight.departureTime),
+        arrivalTime: formatToISO(newFlight.arrivalTime),
       });
       const route = routes.find(r => r.id === (newFlightData as any).routeId) || newFlightData.route;
       const aircraft = aircrafts.find(a => a.id === (newFlightData as any).aircraftId) || newFlightData.aircraft;
@@ -187,7 +203,14 @@ export function FlightOperations() {
       setAllFlights((prev) => [...prev, flightWithDetails]);
       toast.success("Chuyến bay mới đã được tạo thành công");
       setShowCreateDialog(false);
-      setNewFlight({ routeId: 0, aircraftId: 0, status: 'OPEN' });
+      setNewFlight({
+        routeId: routes[0]?.id || 0,
+        aircraftId: aircrafts[0]?.id || 0,
+        status: 'OPEN' as FlightStatus,
+        priceSeatClass: [{ seatClass: 'ECONOMY', price: 1500000 }],
+        departureTime: '',
+        arrivalTime: '',
+      });
     } catch (error) {
       toast.error("Không thể tạo chuyến bay mới");
     }
@@ -236,33 +259,98 @@ export function FlightOperations() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="route">Tuyến bay</Label>
-                <select
-                  className="border p-2 rounded w-full"
-                  value={newFlight.routeId}
-                  onChange={(e) => setNewFlight({ ...newFlight, routeId: parseInt(e.target.value) })}
-                >
-                  {routes.map((route) => (
-                    <option key={route.id} value={route.id}>
-                      {route.origin} → {route.destination}
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="route">Tuyến bay</Label>
+                  <select
+                    className="border p-2 rounded w-full"
+                    value={newFlight.routeId}
+                    onChange={(e) => setNewFlight({ ...newFlight, routeId: parseInt(e.target.value) })}
+                  >
+                    {routes.map((route) => (
+                      <option key={route.id} value={route.id}>
+                        {route.origin} → {route.destination}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="aircraft">Máy bay</Label>
+                  <select
+                    className="border p-2 rounded w-full"
+                    value={newFlight.aircraftId}
+                    onChange={(e) => setNewFlight({ ...newFlight, aircraftId: parseInt(e.target.value) })}
+                  >
+                    {aircrafts.map((aircraft) => (
+                      <option key={aircraft.id} value={aircraft.id}>
+                        {aircraft.type} ({aircraft.registrationNumber})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="departureTime">Thời gian khởi hành</Label>
+                  <Input
+                    type="datetime-local"
+                    id="departureTime"
+                    value={newFlight.departureTime}
+                    onChange={(e) => setNewFlight({ ...newFlight, departureTime: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="arrivalTime">Thời gian đến</Label>
+                  <Input
+                    type="datetime-local"
+                    id="arrivalTime"
+                    value={newFlight.arrivalTime}
+                    onChange={(e) => setNewFlight({ ...newFlight, arrivalTime: e.target.value })}
+                  />
+                </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="aircraft">Máy bay</Label>
-                <select
-                  className="border p-2 rounded w-full"
-                  value={newFlight.aircraftId}
-                  onChange={(e) => setNewFlight({ ...newFlight, aircraftId: parseInt(e.target.value) })}
-                >
-                  {aircrafts.map((aircraft) => (
-                    <option key={aircraft.id} value={aircraft.id}>
-                      {aircraft.type} ({aircraft.registrationNumber})
-                    </option>
+                <Label>Giá theo hạng ghế</Label>
+                <div className="space-y-2 border p-3 rounded">
+                  {newFlight.priceSeatClass.map((price, index) => (
+                    <div key={index} className="grid grid-cols-2 gap-2 items-center">
+                      <select
+                        className="border p-2 rounded"
+                        value={price.seatClass}
+                        onChange={(e) => {
+                          const updated = [...newFlight.priceSeatClass];
+                          updated[index].seatClass = e.target.value;
+                          setNewFlight({ ...newFlight, priceSeatClass: updated });
+                        }}
+                      >
+                        <option value="ECONOMY">Phổ thông</option>
+                        <option value="BUSINESS">Thương gia</option>
+                        <option value="FIRST">Hạng nhất</option>
+                      </select>
+                      <Input
+                        type="number"
+                        value={price.price}
+                        onChange={(e) => {
+                          const updated = [...newFlight.priceSeatClass];
+                          updated[index].price = parseInt(e.target.value) || 0;
+                          setNewFlight({ ...newFlight, priceSeatClass: updated });
+                        }}
+                        placeholder="Giá"
+                      />
+                    </div>
                   ))}
-                </select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setNewFlight({
+                      ...newFlight,
+                      priceSeatClass: [...newFlight.priceSeatClass, { seatClass: 'ECONOMY', price: 0 }]
+                    })}
+                  >
+                    <Plus className="w-4 h-4 mr-1" /> Thêm hạng ghế
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">Trạng thái</Label>
