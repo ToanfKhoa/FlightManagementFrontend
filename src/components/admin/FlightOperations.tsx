@@ -708,10 +708,13 @@ export function FlightOperations() {
                         onClick={() => {
                           setEditingFlight(flight);
 
-                          // Format datetime for input fields
-                          const formatDateTime = (isoString: string) => {
-                            if (!isoString) return '';
-                            return isoString.substring(0, 16);
+                          // Formart datetime
+                          const isoToLocalInput = (iso: string) => {
+                            if (!iso) return '';
+                            const date = new Date(iso);
+                            const pad = (n: number) => n.toString().padStart(2, '0');
+
+                            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
                           };
 
                           // Convert prices object to priceSeatClass array
@@ -734,8 +737,8 @@ export function FlightOperations() {
                                 price: price as number,
                               })
                             ),
-                            departureTime: formatDateTime(flight.departureTime),
-                            arrivalTime: formatDateTime(flight.arrivalTime),
+                            departureTime: isoToLocalInput(flight.departureTime),
+                            arrivalTime: isoToLocalInput(flight.arrivalTime),
                           });
 
                           setShowEditDialog(true);
