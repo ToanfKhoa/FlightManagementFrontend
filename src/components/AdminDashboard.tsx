@@ -24,7 +24,7 @@ export function AdminDashboard() {
             </div>
             <div>
               <h1>Hệ Thống Quản Trị</h1>
-              <p className="text-sm text-gray-600">Xin chào, {user?.name}</p>
+              <p className="text-sm text-gray-600">Xin chào, {user?.username}</p>
             </div>
           </div>
           <Button variant="outline" onClick={logout}>

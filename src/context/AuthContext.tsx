@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axiosClient';
-import type { User, UserRole } from '../App';
+import { User, UserRole } from "../types/authType"
+import { authService } from '../services/authService';
+import { LoginResponse } from '../types/authType';
 
 interface AuthContextType {
     user: User | null;
@@ -22,10 +24,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const token = localStorage.getItem('access_token');
             if (token) {
                 try {
-                    const response = await api.get('/auth/me');
+                    const response = (await authService.getMe()) as LoginResponse;
                     const userData = response.data;
                     // Map role based on employee
-                    let mappedRole: UserRole = userData.role as UserRole;
+                    let mappedRole = userData.user.role as UserRole;
                     if (userData.employee != null) {
                         if (userData.employee.position === "TICKETING") {
                             mappedRole = "staff";
@@ -33,7 +35,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                             mappedRole = "crew";
                         }
                     }
-                    setUser({ ...userData, role: mappedRole });
+                    setUser({ ...userData.user, role: mappedRole });
                 } catch (error) {
                     logout();
                 }
@@ -43,9 +45,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         checkAuth();
     }, []);
 
-    const login = async (username: string, password: string) => {
+    const login = async (credentialId: string, password: string) => {
         try {
-            const res = await api.post('/auth/login', { username, password });
+            const res = (await authService.login(credentialId, password)) as LoginResponse;
+
             const { accessToken, refreshToken, user, employee } = res.data;
 
             // Map role based on employee

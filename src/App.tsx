@@ -1,7 +1,6 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Login } from "./components/Login";
-import { Register } from "./components/Register";
 import { PassengerDashboard } from "./components/PassengerDashboard";
 import { PassengerLandingPage } from "./components/passenger/PassengerLandingPage";
 import { StaffDashboard } from "./components/StaffDashboard";
@@ -9,15 +8,6 @@ import { AdminDashboard } from "./components/AdminDashboard";
 import { CrewDashboard } from "./components/CrewDashboard";
 import { Toaster } from "./components/ui/sonner";
 import { useAuth } from "./context/AuthContext";
-
-export type UserRole = "passenger" | "staff" | "admin" | "crew" | null;
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-}
 
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
   const { user, isLoading } = useAuth();
@@ -28,7 +18,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
+  if (allowedRoles && !allowedRoles.includes(user.role!)) {
     return <Navigate to="/" replace />;
   }
 

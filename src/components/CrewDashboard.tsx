@@ -60,7 +60,7 @@ export function CrewDashboard() {
             <div>
               <h1>Hệ Thống Phi Hành Viên</h1>
               <p className="text-sm text-gray-600">
-                Xin chào, {user?.name} ({crewMember.role === "pilot" ? "Phi công" : "Tiếp viên"})
+                Xin chào, {user?.username} ({crewMember.role === "pilot" ? "Phi công" : "Tiếp viên"})
               </p>
             </div>
           </div>

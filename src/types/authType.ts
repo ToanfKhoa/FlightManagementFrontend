@@ -4,7 +4,8 @@ import type { ApiResponse, PageResponse } from './commonType';
 import Employee from './employeeType';
 import Passenger from './passengerType';
 
-export type UserRole = 'PASSENGER' | 'EMPLOYEE' | 'ADMIN';
+//export type UserRole = 'PASSENGER' | 'EMPLOYEE' | 'ADMIN';
+export type UserRole = "passenger" | "staff" | "admin" | "crew";
 
 export interface User {
   id: number;

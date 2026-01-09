@@ -48,7 +48,7 @@ export function PassengerDashboard() {
             </div>
             <div>
               <h1 className="text-gray-900 font-bold">Hệ Thống Chuyến Bay</h1>
-              <p className="text-sm text-gray-600">Xin chào, {user?.name}</p>
+              <p className="text-sm text-gray-600">Xin chào, {user?.username}</p>
             </div>
           </div>
           <Button variant="outline" onClick={logout}>

@@ -13,7 +13,7 @@ import ticketService from "../../services/ticketService";
 
 interface Props {
   flight: Flight;
-  userId: string;
+  userId: number;
   onBack: () => void;
 }
 
