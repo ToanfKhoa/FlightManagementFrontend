@@ -68,7 +68,7 @@ export const flightService = {
       .then(res => res.data);
   },
 
-  update(id: string, payload: CreateFlightRequest): Promise<Flight> {
+  update(id: string, payload: CreateFlightRequest): Promise<FlightResponse> {
     return axiosClient.put(`/flights/${id}`, payload);
   },
 

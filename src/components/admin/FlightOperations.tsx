@@ -267,17 +267,25 @@ export function FlightOperations() {
         arrivalTime: formatToISO(editFlightData.arrivalTime),
       });
 
-      const route = routes.find(r => r.id === (updatedData as any).routeId) || updatedData.route;
-      const aircraft = aircrafts.find(a => a.id === (updatedData as any).aircraftId) || updatedData.aircraft;
+      const route = routes.find(r => r.id === (updatedData as any).data.routeId) || updatedData.data.route;
+      const aircraft = aircrafts.find(a => a.id === (updatedData as any).data.aircraftId) || updatedData.data.aircraft;
 
       setFlights((prev) =>
         prev.map((f) =>
-          f.id === editingFlight.id ? { ...updatedData, route, aircraft } : f
+          f.id === editingFlight.id ? {
+            ...updatedData.data, route, aircraft,
+            departureTimeDisplay: computeDisplayTime(editFlightData.departureTime),
+            arrivalTimeDisplay: computeDisplayTime(editFlightData.arrivalTime),
+          } : f
         )
       );
       setAllFlights((prev) =>
         prev.map((f) =>
-          f.id === editingFlight.id ? { ...updatedData, route, aircraft } : f
+          f.id === editingFlight.id ? {
+            ...updatedData.data, route, aircraft,
+            departureTimeDisplay: computeDisplayTime(editFlightData.departureTime),
+            arrivalTimeDisplay: computeDisplayTime(editFlightData.arrivalTime),
+          } : f
         )
       );
 
@@ -308,6 +316,7 @@ export function FlightOperations() {
   };
 
 
+  console.log("Current Flight IDs:", flights.map(f => f.id));
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -654,7 +663,16 @@ export function FlightOperations() {
                       {getStatusBadge(flight.status)}
                     </CardTitle>
                     <CardDescription>
-                      {flight.route ? `${flight.route.origin} → ${flight.route.destination}` : '—'} • {flight.aircraft ? flight.aircraft.type : '—'}
+                      <div className="mb-1">
+                        <span className="text-lg font-extrabold text-foreground tracking-tight">
+                          {flight.route ? `${flight.route.origin} → ${flight.route.destination}` : '—'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs uppercase tracking-wider">
+                        <span>{flight.aircraft?.type}</span>
+                        <span>•</span>
+                        <span>{flight.aircraft?.registrationNumber}</span>
+                      </div>
                     </CardDescription>
                   </CardHeader>
 
@@ -731,12 +749,7 @@ export function FlightOperations() {
                             routeId: flight.route?.id ?? 0,
                             aircraftId: flight.aircraft?.id ?? 0,
                             status: flight.status,
-                            priceSeatClass: Object.entries(flight.prices ?? {}).map(
-                              ([seatClass, price]) => ({
-                                seatClass,
-                                price: price as number,
-                              })
-                            ),
+                            priceSeatClass: priceSeatClass,
                             departureTime: isoToLocalInput(flight.departureTime),
                             arrivalTime: isoToLocalInput(flight.arrivalTime),
                           });
