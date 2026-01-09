@@ -89,7 +89,7 @@
     --color-green-700: oklch(.527 .154 150.069);
     --color-green-800: oklch(.448 .119 151.328);
     --color-blue-50: oklch(.97 .014 254.604);
-    --color-blue-100: oklch(.932 .032 255.585);
+    --color-blue-100: oklch(60.483% 0.21664 257.23);
     --color-blue-200: oklch(.882 .059 254.128);
     --color-blue-300: oklch(.809 .105 251.813);
     --color-blue-500: oklch(.623 .214 259.815);
@@ -1066,7 +1066,7 @@
   }
 
   .bg-light-blue {
-    background: linear-gradient(0deg, #baf0ff, #85b6ff);
+    background: linear-gradient(0deg, #b9ecff, #e8f6ff);
   }
 
   .bg-border {
@@ -1411,6 +1411,10 @@
 
   .text-white {
     color: var(--color-white);
+  }
+
+  .text-blue-100 {
+    color: var(--color-blue-100);
   }
 
   .text-yellow-600 {

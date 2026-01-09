@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { LogOut, Search, Ticket, Luggage, FileText } from "lucide-react";
+import { LogOut, Search, Ticket, Luggage, FileText, Star } from "lucide-react";
 import { FlightSearch } from "./passenger/FlightSearch";
 import { MyBookings } from "./passenger/MyBookings";
 import { CheckInPage } from "./passenger/CheckInPage";
@@ -91,30 +91,33 @@ export function PassengerDashboard({ user, onLogout }: PassengerDashboardProps) 
                     position: "absolute",
                     top: "50%",
                     left: `calc(20px + ${tabIndexMap[activeTab]} * ((100% - 40px) / 4))`,
-                    width: 24,
-                    height: 24,
-                    backgroundColor: "#19006dff",
-                    transform: `translateY(-50%) rotate(${45 + tabIndexMap[activeTab] * 180}deg)`,
-                    borderRadius: 4,
+                    width: 32,
+                    height: 32,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transform: `translate(-50%, -50%) rotate(${tabIndexMap[activeTab] * 180}deg)`,
                     transition: "left 0.35s ease, transform 0.35s ease",
                     zIndex: 1,
                     pointerEvents: "none",
                   }}
-                />
+                >
+                  <Star size={32} fill="#ffffffff" color="#0481ffff" strokeWidth={0.9} />
+                </div>
 
-                <TabsTrigger value="search" className="flex-1 flex justify-center items-center">
+                <TabsTrigger value="search" className="flex-1 flex justify-center items-center text-blue-100">
                   <Search className="w-4 h-4 mr-2" />
                   Tìm chuyến bay
                 </TabsTrigger>
-                <TabsTrigger value="bookings" className="flex-1 flex justify-center items-center">
+                <TabsTrigger value="bookings" className="flex-1 flex justify-center items-center text-blue-100">
                   <Ticket className="w-4 h-4 mr-2" />
                   Vé của tôi
                 </TabsTrigger>
-                <TabsTrigger value="checkin" className="flex-1 flex justify-center items-center">
+                <TabsTrigger value="checkin" className="flex-1 flex justify-center items-center text-blue-100">
                   <FileText className="w-4 h-4 mr-2" />
                   Check-in
                 </TabsTrigger>
-                <TabsTrigger value="baggage" className="flex-1 flex justify-center items-center">
+                <TabsTrigger value="baggage" className="flex-1 flex justify-center items-center text-blue-100">
                   <Luggage className="w-4 h-4 mr-2" />
                   Tính hành lý
                 </TabsTrigger>
