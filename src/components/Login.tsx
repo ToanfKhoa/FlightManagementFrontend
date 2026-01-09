@@ -3,11 +3,12 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Plane, UserPlus } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import type { User, UserRole } from "../App";
 import { authService } from "../services/authService";
 import type { LoginResponse } from "../types/authType";
+import logoIcon from "../assets/images/logo-icon.png";
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -66,7 +67,7 @@ export function Login({ onLogin, onRegister }: LoginProps) {
       staff: "Nhân viên",
       admin: "Quản trị viên",
     };
-    
+
     const user: User = {
       id: role === "crew" ? "c1" : "demo-" + role,
       name: roleNames[role || "passenger"],
@@ -81,9 +82,7 @@ export function Login({ onLogin, onRegister }: LoginProps) {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="bg-blue-600 p-3 rounded-full">
-              <Plane className="w-8 h-8 text-white" />
-            </div>
+            <img src={logoIcon} alt="SkyWings Logo" className="w-16 h-16" />
           </div>
           <CardTitle>Hệ Thống Quản Lý Chuyến Bay</CardTitle>
           <CardDescription>Đăng nhập để tiếp tục</CardDescription>
@@ -95,13 +94,13 @@ export function Login({ onLogin, onRegister }: LoginProps) {
               <Input
                 id="email"
                 type="text"
-                  placeholder="email@example.com hoặc tên đăng nhập"
+                placeholder="email@example.com hoặc tên đăng nhập"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="password">Mật khẩu</Label>
               <Input

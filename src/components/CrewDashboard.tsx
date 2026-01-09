@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { LogOut, Calendar, Clock, Plane, PlaneTakeoff } from "lucide-react";
+import { LogOut, Calendar, Clock, Plane } from "lucide-react";
 import { mockCrew, mockFlights } from "../lib/mockData";
 import type { User } from "../App";
 import type { CrewMember, Flight } from "../lib/mockData";
+import logoIcon from "../assets/images/logo-icon.png";
 
 interface CrewDashboardProps {
   user: User;
@@ -22,7 +23,7 @@ export function CrewDashboard({ user, onLogout }: CrewDashboardProps) {
     setCrewMember(member);
 
     // Get flights assigned to this crew member
-    const flights = mockFlights.filter(f => 
+    const flights = mockFlights.filter(f =>
       member.assignments.includes(f.flightCode)
     );
     setAssignedFlights(flights);
@@ -56,9 +57,7 @@ export function CrewDashboard({ user, onLogout }: CrewDashboardProps) {
       <header className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="bg-indigo-600 p-2 rounded-lg">
-              <PlaneTakeoff className="w-6 h-6 text-white" />
-            </div>
+            <img src={logoIcon} alt="SkyWings Logo" className="w-12 h-12" />
             <div>
               <h1>Hệ Thống Phi Hành Viên</h1>
               <p className="text-sm text-gray-600">
