@@ -436,21 +436,6 @@ export function FlightOperations() {
                   </Button>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="status">Trạng thái</Label>
-                <select
-                  className="border p-2 rounded w-full"
-                  value={newFlight.status}
-                  onChange={(e) => setNewFlight({ ...newFlight, status: e.target.value as FlightStatus })}
-                >
-                  <option value="OPEN">Bình thường</option>
-                  <option value="FULL">Hết chỗ</option>
-                  <option value="DELAYED">Chậm</option>
-                  <option value="CANCELED">Đã hủy</option>
-                  <option value="DEPARTED">Khởi hành</option>
-                  <option value="COMPLETED">Hoàn thành</option>
-                </select>
-              </div>
               <Button className="w-full" onClick={handleCreateFlight}>
                 Tạo chuyến bay
               </Button>
@@ -561,21 +546,6 @@ export function FlightOperations() {
                   <Plus className="w-4 h-4 mr-1" /> Thêm hạng ghế
                 </Button>
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-status">Trạng thái</Label>
-              <select
-                className="border p-2 rounded w-full"
-                value={editFlightData.status}
-                onChange={(e) => setEditFlightData({ ...editFlightData, status: e.target.value as FlightStatus })}
-              >
-                <option value="OPEN">Bình thường</option>
-                <option value="FULL">Hết chỗ</option>
-                <option value="DELAYED">Chậm</option>
-                <option value="CANCELED">Đã hủy</option>
-                <option value="DEPARTED">Khởi hành</option>
-                <option value="COMPLETED">Hoàn thành</option>
-              </select>
             </div>
             <Button className="w-full" onClick={handleUpdateFlight}>
               Lưu thay đổi
