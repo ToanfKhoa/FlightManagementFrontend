@@ -304,7 +304,7 @@ export function FlightOperations() {
       string,
       { variant: any; label: string }
     > = {
-      open: { variant: "default", label: "Bình thường" },
+      open: { variant: "default", label: "Đang mở" },
       full: { variant: "secondary", label: "Hết chỗ" },
       delayed: { variant: "destructive", label: "Chậm" },
       canceled: { variant: "destructive", label: "Đã hủy" },
@@ -411,16 +411,31 @@ export function FlightOperations() {
                         <option value="BUSINESS">Thương gia</option>
                         <option value="FIRST">Hạng nhất</option>
                       </select>
-                      <Input
-                        type="number"
-                        value={price.price}
-                        onChange={(e) => {
-                          const updated = [...newFlight.priceSeatClass];
-                          updated[index].price = parseInt(e.target.value) || 0;
-                          setNewFlight({ ...newFlight, priceSeatClass: updated });
-                        }}
-                        placeholder="Giá"
-                      />
+                      <div className="flex gap-2 items-center">
+                        <Input
+                          type="number"
+                          value={price.price}
+                          onChange={(e) => {
+                            const updated = [...newFlight.priceSeatClass];
+                            updated[index].price = parseInt(e.target.value) || 0;
+                            setNewFlight({ ...newFlight, priceSeatClass: updated });
+                          }}
+                          placeholder="Giá"
+                        />
+                        {newFlight.priceSeatClass.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const updated = newFlight.priceSeatClass.filter((_, i) => i !== index);
+                              setNewFlight({ ...newFlight, priceSeatClass: updated });
+                            }}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))}
                   <Button
@@ -522,16 +537,31 @@ export function FlightOperations() {
                       <option value="BUSINESS">Thương gia</option>
                       <option value="FIRST">Hạng nhất</option>
                     </select>
-                    <Input
-                      type="number"
-                      value={price.price}
-                      onChange={(e) => {
-                        const updated = [...editFlightData.priceSeatClass];
-                        updated[index].price = parseInt(e.target.value) || 0;
-                        setEditFlightData({ ...editFlightData, priceSeatClass: updated });
-                      }}
-                      placeholder="Giá"
-                    />
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        type="number"
+                        value={price.price}
+                        onChange={(e) => {
+                          const updated = [...editFlightData.priceSeatClass];
+                          updated[index].price = parseInt(e.target.value) || 0;
+                          setEditFlightData({ ...editFlightData, priceSeatClass: updated });
+                        }}
+                        placeholder="Giá"
+                      />
+                      {editFlightData.priceSeatClass.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const updated = editFlightData.priceSeatClass.filter((_, i) => i !== index);
+                            setEditFlightData({ ...editFlightData, priceSeatClass: updated });
+                          }}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))}
                 <Button
@@ -569,7 +599,7 @@ export function FlightOperations() {
           onChange={(e) => { setSelectedStatus(e.target.value); setPage(0); }}
         >
           <option value="">Tất cả</option>
-          <option value="OPEN">Bình thường</option>
+          <option value="OPEN">Đang mở</option>
           <option value="FULL">Hết chỗ</option>
           <option value="DELAYED">Chậm</option>
           <option value="CANCELED">Đã hủy</option>
@@ -588,7 +618,7 @@ export function FlightOperations() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>Bình thường</CardDescription>
+            <CardDescription>Đang mở</CardDescription>
             <CardTitle className="text-3xl text-green-600">
               {allFlights.filter((f) => f.status === "OPEN").length}
             </CardTitle>
