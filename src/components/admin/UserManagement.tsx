@@ -4,7 +4,7 @@ import { Input } from "../ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "../ui/dialog";
-import { Users, Eye, Edit, Trash } from "lucide-react";
+import { Users, Eye, Edit, Trash, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import type { User, UsersPageResponse } from "../../types/authType";
 import type { ApiResponse } from "../../types/commonType";
@@ -23,13 +23,14 @@ export function UserManagement() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
-  const [searchTerm, setSearchTerm] = useState(""); 
-  const [debouncedSearch, setDebouncedSearch] = useState(""); 
-  const [selectedRole, setSelectedRole] = useState(""); 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selectedRole, setSelectedRole] = useState("");
 
   const handleDeleteUser = async (userId: number) => {
-    if (!confirm('Bạn có chắc muốn xóa tài khoản này?')) return;
     try {
       setLoading(true);
       const res: ApiResponse<any> = await userService.deleteUser(userId);
@@ -38,7 +39,7 @@ export function UserManagement() {
         // Refresh current page after delete
         try {
           if (users.length === 1 && page > 0) {
-            setPage(prev => prev - 1); 
+            setPage(prev => prev - 1);
             // when set page, useEffect auto fetchUsers
           } else {
             fetchUsers();
@@ -59,7 +60,14 @@ export function UserManagement() {
       toast.error(err?.message || "Xóa tài khoản thất bại");
     } finally {
       setLoading(false);
+      setShowDeleteDialog(false);
+      setUserToDelete(null);
     }
+  };
+
+  const confirmDeleteUser = (user: User) => {
+    setUserToDelete(user);
+    setShowDeleteDialog(true);
   };
 
   const fetchUsers = async () => {
@@ -68,11 +76,11 @@ export function UserManagement() {
       const res = await userService.getAllUsers({
         page: page,
         size: size,
-        search: debouncedSearch, 
+        search: debouncedSearch,
         role: selectedRole === "ALL" ? "" : selectedRole,
         sort: "updatedAt,desc"
       });
-    
+
       // Set data
       if (res?.data) {
         setUsers(res.data.content || []);
@@ -93,7 +101,7 @@ export function UserManagement() {
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
-  
+
   useEffect(() => {
     fetchUsers();
   }, [page, size, debouncedSearch, selectedRole]);
@@ -114,18 +122,18 @@ export function UserManagement() {
 
       {/* Search */}
       <div className="flex gap-2 items-center mb-4">
-      <Input
-        placeholder="Tìm kiếm theo username..."
-        value={searchTerm} // Bind vào searchTerm
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
-  
-      {/* Dropdown Role mới */}
-      <select 
-        className="border p-2 rounded"
-        value={selectedRole}
-        onChange={(e) => { setSelectedRole(e.target.value); setPage(0); }}
-      >
+        <Input
+          placeholder="Tìm kiếm theo username..."
+          value={searchTerm} // Bind vào searchTerm
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+
+        {/* Dropdown Role mới */}
+        <select
+          className="border p-2 rounded"
+          value={selectedRole}
+          onChange={(e) => { setSelectedRole(e.target.value); setPage(0); }}
+        >
           <option value="">Tất cả</option>
           <option value="PASSENGER">hành khách</option>
           <option value="EMPLOYEE">nhân viên</option>
@@ -150,7 +158,7 @@ export function UserManagement() {
                     {user.username}
                     <Badge variant={
                       String(user.role).toLowerCase() === "admin" ? "destructive" :
-                      String(user.role).toLowerCase() === "employee" || String(user.role).toLowerCase() === "staff" ? "default" : "secondary"
+                        String(user.role).toLowerCase() === "employee" || String(user.role).toLowerCase() === "staff" ? "default" : "secondary"
                     }>
                       {user.role}
                     </Badge>
@@ -174,7 +182,7 @@ export function UserManagement() {
                   </Button>
 
                   {/* Delete */}
-                  <Button size="sm" variant="destructive" onClick={() => handleDeleteUser(user.id)}>
+                  <Button size="sm" variant="destructive" onClick={() => confirmDeleteUser(user)}>
                     <Trash className="w-4 h-4 mr-1" />
                     Xóa
                   </Button>
@@ -193,26 +201,58 @@ export function UserManagement() {
         </div>
       </div>
 
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xác nhận xóa tài khoản</DialogTitle>
+            <DialogDescription>
+              Bạn có chắc chắn muốn xóa tài khoản <strong>{userToDelete?.username}</strong>?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-red-50 border border-red-200 p-3 rounded-lg">
+              <p className="text-sm text-red-800">
+                <AlertTriangle className="w-4 h-4 inline mr-1" />
+                Hành động này không thể hoàn tác. Tài khoản sẽ bị xóa vĩnh viễn.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => { setShowDeleteDialog(false); setUserToDelete(null); }}>
+                Hủy
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => handleDeleteUser(userToDelete?.id ?? 0)}
+                className="flex-1"
+              >
+                Xác nhận xóa
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Thông tin tài khoản</DialogTitle>
-              <DialogDescription>Chi tiết tài khoản {selectedUser?.username}</DialogDescription>
-            </DialogHeader>
-                {selectedUser && (
-                <div className="space-y-2 text-sm">
-                  <p><strong>Username:</strong> {selectedUser.username}</p>
-                  <p><strong>Email:</strong> {selectedUser.email}</p>
-                  <p><strong>Phone:</strong> {selectedUser.phone}</p>
-                  <p><strong>Role:</strong> {selectedUser.role}</p>
-                    {selectedUser && (selectedUser as any).passenger_id && <p><strong>Passenger ID:</strong> {(selectedUser as any).passenger_id}</p>}
-                    {selectedUser && (selectedUser as any).employee_id && <p><strong>Employee ID:</strong> {(selectedUser as any).employee_id}</p>}
-                  <p><strong>Created at:</strong> {new Date((selectedUser as any).createdAt ?? (selectedUser as any).created_at ?? '').toLocaleString()}</p>
-                  <p><strong>Updated at:</strong> {new Date((selectedUser as any).updatedAt ?? (selectedUser as any).updated_at ?? '').toLocaleString()}</p>
-                </div>
-                )}
-            </DialogContent>
-        </Dialog>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Thông tin tài khoản</DialogTitle>
+            <DialogDescription>Chi tiết tài khoản {selectedUser?.username}</DialogDescription>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="space-y-2 text-sm">
+              <p><strong>Username:</strong> {selectedUser.username}</p>
+              <p><strong>Email:</strong> {selectedUser.email}</p>
+              <p><strong>Phone:</strong> {selectedUser.phone}</p>
+              <p><strong>Role:</strong> {selectedUser.role}</p>
+              {selectedUser && (selectedUser as any).passenger_id && <p><strong>Passenger ID:</strong> {(selectedUser as any).passenger_id}</p>}
+              {selectedUser && (selectedUser as any).employee_id && <p><strong>Employee ID:</strong> {(selectedUser as any).employee_id}</p>}
+              <p><strong>Created at:</strong> {new Date((selectedUser as any).createdAt ?? (selectedUser as any).created_at ?? '').toLocaleString()}</p>
+              <p><strong>Updated at:</strong> {new Date((selectedUser as any).updatedAt ?? (selectedUser as any).updated_at ?? '').toLocaleString()}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

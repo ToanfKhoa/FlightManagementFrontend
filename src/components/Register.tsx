@@ -4,11 +4,12 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Plane, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { passengerService } from "../services/passengerService";
 import type { RegisterRequest, LoginResponse } from "../types/authType";
 import Passenger from "../types/passengerType";
+import logoIcon from "../assets/images/logo-icon.png";
 
 export function Register() {
   const navigate = useNavigate();
@@ -106,9 +107,7 @@ export function Register() {
       <Card className="w-full max-w-2xl">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="bg-blue-600 p-3 rounded-full">
-              <Plane className="w-8 h-8 text-white" />
-            </div>
+            <img src={logoIcon} alt="SkyWings Logo" className="w-16 h-16" />
           </div>
           <CardTitle>Đăng ký tài khoản hành khách</CardTitle>
           <CardDescription>

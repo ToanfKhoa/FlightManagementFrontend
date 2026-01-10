@@ -33,10 +33,9 @@ export function CrewManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const handleAddCrew = async () => {
-    if (!newCrewName.trim()) return;
-
+  const handleAddCrew = async (employeeData: Employee) => {
     try {
+      /*
       const maxHours = getMaxHoursByPosition(newCrewRole);
       const newEmployee: Partial<Employee> = {
         fullName: newCrewName.trim(),
@@ -52,6 +51,8 @@ export function CrewManagement() {
       setShowAddDialog(false);
       setNewCrewName("");
       setNewCrewRole("PILOT");
+      */
+      // The employee is already created by AddEmployeeDialog
       toast.success("Thêm thành viên mới thành công!");
       fetchEmployees(); // Refresh the list
     } catch (error) {

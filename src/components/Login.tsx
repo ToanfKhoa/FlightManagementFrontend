@@ -4,9 +4,13 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Plane, UserPlus } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
+import type { User, UserRole } from "../App";
+import { authService } from "../services/authService";
+import type { LoginResponse } from "../types/authType";
+import logoIcon from "../assets/images/logo-icon.png";
 
 export function Login() {
   const navigate = useNavigate();
@@ -29,14 +33,29 @@ export function Login() {
     }
   };
 
+  const quickLogin = (role: UserRole) => {
+    const roleNames: Record<string, string> = {
+      passenger: "Nguyễn Văn A",
+      crew: "Trần Văn B",
+      staff: "Nhân viên",
+      admin: "Quản trị viên",
+    };
+
+    const user: User = {
+      id: role === "crew" ? "c1" : "demo-" + role,
+      name: roleNames[role || "passenger"],
+      email: `${role}@example.com`,
+      role,
+    };
+    onLogin(user);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="bg-blue-600 p-3 rounded-full">
-              <Plane className="w-8 h-8 text-white" />
-            </div>
+            <img src={logoIcon} alt="SkyWings Logo" className="w-16 h-16" />
           </div>
           <CardTitle>Hệ Thống Quản Lý Chuyến Bay</CardTitle>
           <CardDescription>Đăng nhập để tiếp tục</CardDescription>
