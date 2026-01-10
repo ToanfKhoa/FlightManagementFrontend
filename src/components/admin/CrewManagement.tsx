@@ -6,8 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Badge } from "../ui/badge";
 import { Progress } from "../ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
+import { Textarea } from "../ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Users, Plus, AlertTriangle, Plane, PlaneTakeoff } from "lucide-react";
+import { Users, Plus, AlertTriangle, Plane, PlaneTakeoff, Edit } from "lucide-react";
 import { flightService } from "../../services/flightService";
 import employeeService from "../../services/employeeService";
 import type { Employee, EmployeePosition } from "../../types/employeeType";
@@ -25,6 +26,7 @@ export function CrewManagement() {
   const [newCrewName, setNewCrewName] = useState("");
   const [newCrewRole, setNewCrewRole] = useState<EmployeePosition>("PILOT");
   const [selectedFlightId, setSelectedFlightId] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
@@ -32,6 +34,12 @@ export function CrewManagement() {
   const [totalElements, setTotalElements] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [selectedEmployeeForEdit, setSelectedEmployeeForEdit] = useState<Employee | null>(null);
+  const [editFullName, setEditFullName] = useState("");
+  const [editPosition, setEditPosition] = useState<EmployeePosition>("PILOT");
+  const [editWorkExperience, setEditWorkExperience] = useState("");
 
   const handleAddCrew = async (employeeData: Employee) => {
     try {
@@ -178,6 +186,28 @@ export function CrewManagement() {
     }
   };
 
+  const handleEditEmployee = async () => {
+    if (!selectedEmployeeForEdit) return;
+
+    const maxHours = getMaxHoursByPosition(editPosition);
+    const updatedEmployee: Partial<Employee> = {
+      fullName: editFullName.trim(),
+      position: editPosition,
+      workExperience: editWorkExperience,
+      maxHours,
+    };
+
+    try {
+      await employeeService.updateEmployee(selectedEmployeeForEdit.id.toString(), updatedEmployee);
+      setShowEditDialog(false);
+      setSelectedEmployeeForEdit(null);
+      toast.success("Cập nhật thông tin thành công!");
+      fetchEmployees();
+    } catch (error) {
+      toast.error("Lỗi khi cập nhật thông tin");
+    }
+  };
+
   const getHoursPercentage = (member: Employee) => {
     return (member.monthlyHours / member.maxHours) * 100;
   };
@@ -291,6 +321,20 @@ export function CrewManagement() {
                       {isOverLimit(member) ? "Vượt giới hạn" : "Gần đạt giới hạn"}
                     </Badge>
                   )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedEmployeeForEdit(member);
+                      setEditFullName(member.fullName);
+                      setEditPosition(member.position);
+                      setEditWorkExperience(member.workExperience || "");
+                      setShowEditDialog(true);
+                    }}
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Chỉnh sửa
+                  </Button>
                   <Button
                     size="sm"
                     variant="outline"
@@ -452,6 +496,67 @@ export function CrewManagement() {
                 </Button>
               </>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Employee Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Chỉnh sửa thông tin nhân viên</DialogTitle>
+            <DialogDescription>
+              Chỉnh sửa thông tin cho {selectedEmployeeForEdit?.fullName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="editFullName">Họ tên</Label>
+              <Input
+                id="editFullName"
+                value={editFullName}
+                onChange={(e) => setEditFullName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editPosition">Vị trí</Label>
+              {/* <Select value={editPosition} onValueChange={(value) => setEditPosition(value as EmployeePosition)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PILOT">Phi công</SelectItem>
+                  <SelectItem value="COPILOT">Cơ phó</SelectItem>
+                  <SelectItem value="ATTENDANT">Tiếp viên</SelectItem>
+                  <SelectItem value="OPERATOR">Nhân viên điều hành</SelectItem>
+                  <SelectItem value="TICKETING">Nhân viên vé</SelectItem>
+                  <SelectItem value="OTHER">Khác</SelectItem>
+                </SelectContent>
+              </Select> */}
+
+              <select
+                className="border p-2 rounded"
+                value={editPosition}
+                onChange={(e) => { setEditPosition(e.target.value as EmployeePosition); setPage(0); }}
+              >
+                <option value="PILOT">Phi công</option>
+                <option value="COPILOT">Cơ phó</option>
+                <option value="ATTENDANT">Tiếp viên</option>
+                <option value="OPERATOR">Nhân viên điều hành</option>
+                <option value="TICKETING">Nhân viên vé</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editWorkExperience">Kinh nghiệm làm việc</Label>
+              <Textarea
+                id="editWorkExperience"
+                value={editWorkExperience}
+                onChange={(e) => setEditWorkExperience(e.target.value)}
+              />
+            </div>
+            <Button className="w-full" onClick={handleEditEmployee}>
+              Cập nhật
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
