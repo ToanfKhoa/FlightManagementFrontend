@@ -24,7 +24,7 @@ interface PassengerProfile {
     role: "ADMIN" | "USER" | "STAFF";
 }
 
-export default function PassengerDetailView() {
+export default function PassengerProfile() {
     const [isEditing, setIsEditing] = useState(true); // Default state as requested
 
     // Mock Data

@@ -2,13 +2,15 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { LogOut, Search, Ticket, Luggage, FileText, Star } from "lucide-react";
+import { LogOut, Search, Ticket, Luggage, PlaneTakeoff, FileText, Star, User } from "lucide-react";
 import { FlightSearch } from "./passenger/FlightSearch";
 import { MyBookings } from "./passenger/MyBookings";
 import { CheckInPage } from "./passenger/CheckInPage";
 import { BaggageCalculator } from "./passenger/BaggageCalculator";
 import type { User } from "../App";
 import logoIcon from "../assets/images/logo-icon.png";
+import PassengerProfile from "./passenger/PassengerProfile";
+import { useAuth } from "../context/AuthContext";
 
 // Use a relative path that should work with Vite's asset handling
 const backgroundImage = new URL('../assets/images/passenger-wallpaper.jpg', import.meta.url).href;
@@ -121,6 +123,10 @@ export function PassengerDashboard({ user, onLogout }: PassengerDashboardProps) 
                   <Luggage className="w-4 h-4 mr-2" />
                   Tính hành lý
                 </TabsTrigger>
+                <TabsTrigger value="profile" className="flex-1 flex justify-center items-center">
+                  <User className="w-4 h-4 mr-2" />
+                  Thông tin cá nhân
+                </TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -144,6 +150,11 @@ export function PassengerDashboard({ user, onLogout }: PassengerDashboardProps) 
             <TabsContent value="baggage" className="mt-0">
               <BaggageCalculator />
             </TabsContent>
+
+            <TabsContent value="profile" className="mt-0">
+              <PassengerProfile />
+            </TabsContent>
+
           </Tabs>
         </div>
       </div>
