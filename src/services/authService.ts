@@ -8,4 +8,7 @@ export const authService = {
   register(payload: RegisterRequest): Promise<any> {
     return axiosClient.post('/auth/register', payload);
   },
+  changePassword(oldPassword: string, newPassword: string): Promise<LoginResponse> {
+    return axiosClient.post('/auth/change-password', { oldPassword, newPassword });
+  }
 };

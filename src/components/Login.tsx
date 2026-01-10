@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import type { User, UserRole } from "../App";
 import { authService } from "../services/authService";
 import type { LoginResponse } from "../types/authType";
+import { RequestResetScreen } from "./passenger/RequestNewPassword";
+import { SuccessScreen } from "./passenger/SuccessRequestNewPassword";
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -20,6 +22,8 @@ export function Login({ onLogin, onRegister }: LoginProps) {
   const [selectedRole, setSelectedRole] = useState<UserRole>("passenger");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [view, setView] = useState<'login' | 'request' | 'success'>('login');
+  const [resetEmail, setResetEmail] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,120 +83,126 @@ export function Login({ onLogin, onRegister }: LoginProps) {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="bg-blue-600 p-3 rounded-full">
-              <Plane className="w-8 h-8 text-white" />
+      {view === 'login' ? (
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="bg-blue-600 p-3 rounded-full">
+                <Plane className="w-8 h-8 text-white" />
+              </div>
             </div>
-          </div>
-          <CardTitle>Hệ Thống Quản Lý Chuyến Bay</CardTitle>
-          <CardDescription>Đăng nhập để tiếp tục</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email / Tên đăng nhập</Label>
-              <Input
-                id="email"
-                type="text"
-                placeholder="email@example.com hoặc tên đăng nhập"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+            <CardTitle>Hệ Thống Quản Lý Chuyến Bay</CardTitle>
+            <CardDescription>Đăng nhập để tiếp tục</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email / Tên đăng nhập</Label>
+                <Input
+                  id="email"
+                  type="text"
+                  placeholder="email@example.com hoặc tên đăng nhập"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Mật khẩu</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-0 h-full px-4 flex items-center justify-center hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="text-right">
+                <button onClick={() => setView('request')} className="text-sm text-blue-600 hover:underline">Forgot your password?</button>
+              </div>
+
+              {/* <div className="space-y-2">
+                <Label htmlFor="role">Vai trò</Label>
+                <select
+                  id="role"
+                  className="w-full px-3 py-2 border rounded-md"
+                  value={selectedRole || ""}
+                  onChange={(e) => setSelectedRole(e.target.value as UserRole)}
+                >
+                  <option value="passenger">Hành khách</option>
+                  <option value="crew">Phi hành viên</option>
+                  <option value="staff">Nhân viên</option>
+                  <option value="admin">Quản trị viên</option>
+                </select>
+              </div> */}
+
+              <Button type="submit" className="w-full">
+                Đăng nhập
+              </Button>
+            </form>
+
+            <div className="mt-4">
+              <Button variant="outline" className="w-full" onClick={onRegister}>
+                <UserPlus className="w-4 h-4 mr-2" />
+                Đăng ký tài khoản hành khách
+              </Button>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Mật khẩu</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="pr-10"
-                />
+            <div className="mt-6 pt-6 border-t">
+              <p className="text-sm text-center text-gray-600 mb-3">Đăng nhập nhanh:</p>
+              <div className="grid grid-cols-4 gap-2">
                 <Button
-                  type="button"
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  className="absolute right-2 top-0 h-full px-4 flex items-center justify-center hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => quickLogin("passenger")}
                 >
-                  {showPassword ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                  Hành khách
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => quickLogin("crew")}
+                >
+                  Phi hành viên
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => quickLogin("staff")}
+                >
+                  Nhân viên
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => quickLogin("admin")}
+                >
+                  Quản trị
                 </Button>
               </div>
             </div>
-
-            <div className="text-right">
-              <a href="#" className="text-sm text-blue-600 hover:underline">Forgot your password?</a>
-            </div>
-
-            {/* <div className="space-y-2">
-              <Label htmlFor="role">Vai trò</Label>
-              <select
-                id="role"
-                className="w-full px-3 py-2 border rounded-md"
-                value={selectedRole || ""}
-                onChange={(e) => setSelectedRole(e.target.value as UserRole)}
-              >
-                <option value="passenger">Hành khách</option>
-                <option value="crew">Phi hành viên</option>
-                <option value="staff">Nhân viên</option>
-                <option value="admin">Quản trị viên</option>
-              </select>
-            </div> */}
-
-            <Button type="submit" className="w-full">
-              Đăng nhập
-            </Button>
-          </form>
-
-          <div className="mt-4">
-            <Button variant="outline" className="w-full" onClick={onRegister}>
-              <UserPlus className="w-4 h-4 mr-2" />
-              Đăng ký tài khoản hành khách
-            </Button>
-          </div>
-
-          <div className="mt-6 pt-6 border-t">
-            <p className="text-sm text-center text-gray-600 mb-3">Đăng nhập nhanh:</p>
-            <div className="grid grid-cols-4 gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => quickLogin("passenger")}
-              >
-                Hành khách
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => quickLogin("crew")}
-              >
-                Phi hành viên
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => quickLogin("staff")}
-              >
-                Nhân viên
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => quickLogin("admin")}
-              >
-                Quản trị
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      ) : view === 'request' ? (
+        <RequestResetScreen onSubmit={(email) => { setResetEmail(email); setView('success'); }} onBack={() => setView('login')} />
+      ) : (
+        <SuccessScreen email={resetEmail} onBackToLogin={() => setView('login')} />
+      )}
     </div>
   );
 }

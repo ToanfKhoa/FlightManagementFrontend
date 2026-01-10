@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Eye, EyeOff, Lock, Check, X } from "lucide-react";
 import { motion } from "motion/react";
 import { Progress } from "../ui/progress";
+import { authService } from "../../services/authService";
 
 interface CreateNewPasswordScreenProps {
     user: {
