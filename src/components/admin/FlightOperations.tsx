@@ -30,6 +30,7 @@ export function FlightOperations() {
   const [totalPages, setTotalPages] = useState(0);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [delayMinutes, setDelayMinutes] = useState(0);
+  const [showDelayDialog, setShowDelayDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [aircrafts, setAircrafts] = useState<Aircraft[]>([]);
@@ -162,6 +163,7 @@ export function FlightOperations() {
       `Chuyến bay ${selectedFlight.id} đã được đánh dấu chậm ${delayMinutes} phút`
     );
     setSelectedFlight(null);
+    setShowDelayDialog(false);
   };
 
   const handleCancelFlight = (flight: Flight) => {
@@ -302,7 +304,7 @@ export function FlightOperations() {
       string,
       { variant: any; label: string }
     > = {
-      open: { variant: "default", label: "Bình thường" },
+      open: { variant: "default", label: "Đang mở" },
       full: { variant: "secondary", label: "Hết chỗ" },
       delayed: { variant: "destructive", label: "Chậm" },
       canceled: { variant: "destructive", label: "Đã hủy" },
@@ -409,16 +411,31 @@ export function FlightOperations() {
                         <option value="BUSINESS">Thương gia</option>
                         <option value="FIRST">Hạng nhất</option>
                       </select>
-                      <Input
-                        type="number"
-                        value={price.price}
-                        onChange={(e) => {
-                          const updated = [...newFlight.priceSeatClass];
-                          updated[index].price = parseInt(e.target.value) || 0;
-                          setNewFlight({ ...newFlight, priceSeatClass: updated });
-                        }}
-                        placeholder="Giá"
-                      />
+                      <div className="flex gap-2 items-center">
+                        <Input
+                          type="number"
+                          value={price.price}
+                          onChange={(e) => {
+                            const updated = [...newFlight.priceSeatClass];
+                            updated[index].price = parseInt(e.target.value) || 0;
+                            setNewFlight({ ...newFlight, priceSeatClass: updated });
+                          }}
+                          placeholder="Giá"
+                        />
+                        {newFlight.priceSeatClass.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const updated = newFlight.priceSeatClass.filter((_, i) => i !== index);
+                              setNewFlight({ ...newFlight, priceSeatClass: updated });
+                            }}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))}
                   <Button
@@ -433,21 +450,6 @@ export function FlightOperations() {
                     <Plus className="w-4 h-4 mr-1" /> Thêm hạng ghế
                   </Button>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="status">Trạng thái</Label>
-                <select
-                  className="border p-2 rounded w-full"
-                  value={newFlight.status}
-                  onChange={(e) => setNewFlight({ ...newFlight, status: e.target.value as FlightStatus })}
-                >
-                  <option value="OPEN">Bình thường</option>
-                  <option value="FULL">Hết chỗ</option>
-                  <option value="DELAYED">Chậm</option>
-                  <option value="CANCELED">Đã hủy</option>
-                  <option value="DEPARTED">Khởi hành</option>
-                  <option value="COMPLETED">Hoàn thành</option>
-                </select>
               </div>
               <Button className="w-full" onClick={handleCreateFlight}>
                 Tạo chuyến bay
@@ -535,16 +537,31 @@ export function FlightOperations() {
                       <option value="BUSINESS">Thương gia</option>
                       <option value="FIRST">Hạng nhất</option>
                     </select>
-                    <Input
-                      type="number"
-                      value={price.price}
-                      onChange={(e) => {
-                        const updated = [...editFlightData.priceSeatClass];
-                        updated[index].price = parseInt(e.target.value) || 0;
-                        setEditFlightData({ ...editFlightData, priceSeatClass: updated });
-                      }}
-                      placeholder="Giá"
-                    />
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        type="number"
+                        value={price.price}
+                        onChange={(e) => {
+                          const updated = [...editFlightData.priceSeatClass];
+                          updated[index].price = parseInt(e.target.value) || 0;
+                          setEditFlightData({ ...editFlightData, priceSeatClass: updated });
+                        }}
+                        placeholder="Giá"
+                      />
+                      {editFlightData.priceSeatClass.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const updated = editFlightData.priceSeatClass.filter((_, i) => i !== index);
+                            setEditFlightData({ ...editFlightData, priceSeatClass: updated });
+                          }}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))}
                 <Button
@@ -559,21 +576,6 @@ export function FlightOperations() {
                   <Plus className="w-4 h-4 mr-1" /> Thêm hạng ghế
                 </Button>
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-status">Trạng thái</Label>
-              <select
-                className="border p-2 rounded w-full"
-                value={editFlightData.status}
-                onChange={(e) => setEditFlightData({ ...editFlightData, status: e.target.value as FlightStatus })}
-              >
-                <option value="OPEN">Bình thường</option>
-                <option value="FULL">Hết chỗ</option>
-                <option value="DELAYED">Chậm</option>
-                <option value="CANCELED">Đã hủy</option>
-                <option value="DEPARTED">Khởi hành</option>
-                <option value="COMPLETED">Hoàn thành</option>
-              </select>
             </div>
             <Button className="w-full" onClick={handleUpdateFlight}>
               Lưu thay đổi
@@ -597,7 +599,7 @@ export function FlightOperations() {
           onChange={(e) => { setSelectedStatus(e.target.value); setPage(0); }}
         >
           <option value="">Tất cả</option>
-          <option value="OPEN">Bình thường</option>
+          <option value="OPEN">Đang mở</option>
           <option value="FULL">Hết chỗ</option>
           <option value="DELAYED">Chậm</option>
           <option value="CANCELED">Đã hủy</option>
@@ -616,7 +618,7 @@ export function FlightOperations() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>Bình thường</CardDescription>
+            <CardDescription>Đang mở</CardDescription>
             <CardTitle className="text-3xl text-green-600">
               {allFlights.filter((f) => f.status === "OPEN").length}
             </CardTitle>
@@ -760,15 +762,16 @@ export function FlightOperations() {
                         <Pencil className="w-4 h-4 mr-2" />
                         Chỉnh sửa
                       </Button>
-                      {flight.status === "OPEN" && (
+                      {(flight.status !== "COMPLETED" && flight.status !== "CANCELED") && (
                         <>
-                          <Dialog>
+                          <Dialog open={showDelayDialog} onOpenChange={setShowDelayDialog}>
                             <DialogTrigger asChild>
                               <Button
                                 variant="outline"
                                 onClick={() => {
                                   setSelectedFlight(flight);
                                   setDelayMinutes(0);
+                                  setShowDelayDialog(true);
                                 }}
                               >
                                 <Clock className="w-4 h-4 mr-2" />
