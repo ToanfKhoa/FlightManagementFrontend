@@ -1,14 +1,7 @@
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
-import {
-    Plane,
-    Search,
-    Shield,
-    Clock,
-    MapPin,
-    Star,
-    Users
-} from "lucide-react";
+import { Search, Shield, Clock, MapPin, Star, Users } from "lucide-react";
+import logoIcon from "../../assets/images/logo-icon.png";
 
 const backgroundImage = new URL("../../assets/images/airplane-wallpaper.jpg", import.meta.url).href;
 
@@ -24,9 +17,7 @@ export function PassengerLandingPage({ onLogin, onRegister }: PassengerLandingPa
             <header className="bg-white shadow-sm sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        <div className="bg-blue-600 p-2 rounded-lg">
-                            <Plane className="w-6 h-6 text-white" />
-                        </div>
+                        <img src={logoIcon} alt="SkyWings Logo" className="w-12 h-12" />
                         <div>
                             <h1 className="text-xl font-bold text-gray-900">SkyWings Airlines</h1>
                             <p className="text-sm text-gray-600">Bay cao, bay xa cùng chúng tôi</p>
