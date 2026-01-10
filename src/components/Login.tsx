@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Plane, UserPlus } from "lucide-react";
+import { Plane, UserPlus, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import type { User, UserRole } from "../App";
 import { authService } from "../services/authService";
@@ -19,6 +19,7 @@ export function Login({ onLogin, onRegister }: LoginProps) {
   const [password, setPassword] = useState("");
   const [selectedRole, setSelectedRole] = useState<UserRole>("passenger");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,7 +67,7 @@ export function Login({ onLogin, onRegister }: LoginProps) {
       staff: "Nhân viên",
       admin: "Quản trị viên",
     };
-    
+
     const user: User = {
       id: role === "crew" ? "c1" : "demo-" + role,
       name: roleNames[role || "passenger"],
@@ -95,23 +96,39 @@ export function Login({ onLogin, onRegister }: LoginProps) {
               <Input
                 id="email"
                 type="text"
-                  placeholder="email@example.com hoặc tên đăng nhập"
+                placeholder="email@example.com hoặc tên đăng nhập"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="password">Mật khẩu</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-2 top-0 h-full px-4 flex items-center justify-center hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                </Button>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <a href="#" className="text-sm text-blue-600 hover:underline">Forgot your password?</a>
             </div>
 
             {/* <div className="space-y-2">
