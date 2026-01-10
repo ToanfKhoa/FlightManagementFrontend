@@ -30,6 +30,7 @@ export function FlightOperations() {
   const [totalPages, setTotalPages] = useState(0);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [delayMinutes, setDelayMinutes] = useState(0);
+  const [showDelayDialog, setShowDelayDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [aircrafts, setAircrafts] = useState<Aircraft[]>([]);
@@ -162,6 +163,7 @@ export function FlightOperations() {
       `Chuyến bay ${selectedFlight.id} đã được đánh dấu chậm ${delayMinutes} phút`
     );
     setSelectedFlight(null);
+    setShowDelayDialog(false);
   };
 
   const handleCancelFlight = (flight: Flight) => {
@@ -760,15 +762,16 @@ export function FlightOperations() {
                         <Pencil className="w-4 h-4 mr-2" />
                         Chỉnh sửa
                       </Button>
-                      {flight.status === "OPEN" && (
+                      {(flight.status !== "COMPLETED" && flight.status !== "CANCELED") && (
                         <>
-                          <Dialog>
+                          <Dialog open={showDelayDialog} onOpenChange={setShowDelayDialog}>
                             <DialogTrigger asChild>
                               <Button
                                 variant="outline"
                                 onClick={() => {
                                   setSelectedFlight(flight);
                                   setDelayMinutes(0);
+                                  setShowDelayDialog(true);
                                 }}
                               >
                                 <Clock className="w-4 h-4 mr-2" />
