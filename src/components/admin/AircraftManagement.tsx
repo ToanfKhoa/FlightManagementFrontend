@@ -5,8 +5,9 @@ import { Badge } from "../ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Plane, Wrench, Plus, Edit } from "lucide-react";
+import { Plane, Wrench, Plus, Edit, Download } from "lucide-react";
 import { toast } from "sonner";
+import { exportAircraftToExcel } from "../../utils/excelExport";
 import { aircraftService } from "../../services/aircraftService";
 import type { Aircraft, CreateAircraftRequest, AircraftsPageResponse } from "../../types/aircraftType";
 import type { ApiResponse } from "../../types/commonType";
@@ -182,10 +183,23 @@ export function AircraftManagement() {
             Theo dõi và quản lý trạng thái máy bay
           </p>
         </div>
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Thêm máy bay mới
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => {
+            const success = exportAircraftToExcel(aircraft);
+            if (success) {
+              toast.success("Xuất file Excel thành công");
+            } else {
+              toast.error("Lỗi khi xuất file Excel");
+            }
+          }}>
+            <Download className="w-4 h-4 mr-2" />
+            Xuất Excel
+          </Button>
+          <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Thêm máy bay mới
+          </Button>
+        </div>
       </div>
 
       {/* Search */}
@@ -383,7 +397,6 @@ export function AircraftManagement() {
         </DialogContent>
       </Dialog>
 
-
       {/* Aircraft List */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {aircraft.filter((a) => a).map((ac) => (
@@ -426,37 +439,6 @@ export function AircraftManagement() {
                 <p className="text-lg font-semibold">{ac.seatCapacity}</p>
               </div>
 
-              {/* Maintenance Schedule 
-              <div>
-                <p className="text-sm font-semibold mb-2 flex items-center gap-1">
-                  <Calendar className="w-4 h-4" />
-                  Lịch bảo trì
-                </p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Bảo trì gần nhất:</span>
-                    <span className="font-semibold">
-                      {new Date(ac.lastMaintenance).toLocaleDateString("vi-VN")}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Bảo trì tiếp theo:</span>
-                    <span className="font-semibold">
-                      {new Date(ac.nextMaintenance).toLocaleDateString("vi-VN")}
-                    </span>
-                  </div>
-                </div> 
-
-                {isMaintenanceDue(ac.nextMaintenance) && ac.status === "active" && (
-                  <div className="bg-red-50 border border-red-200 p-2 rounded mt-2 flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-red-600 mt-0.5" />
-                    <p className="text-xs text-red-800">
-                      Cần lên lịch bảo trì trong vòng 14 ngày
-                    </p>
-                  </div>
-                )}
-              </div> */}
-
               {/* Actions */}
               <div className="flex gap-2">
                 <Dialog>
@@ -490,6 +472,7 @@ export function AircraftManagement() {
           </Card>
         ))}
       </div>
+
       {/* Pagination controls */}
       <div className="flex items-center justify-between mt-4">
         <div className="text-sm text-gray-600">Trang {page + 1} / {totalPages || 1}</div>
