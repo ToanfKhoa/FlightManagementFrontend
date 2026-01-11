@@ -7,6 +7,7 @@ export type FlightStatus = 'OPEN' | 'FULL' | 'DEPARTED' | 'COMPLETED' | 'DELAYED
 export type Route = BaseEntity & {
   origin: string;
   destination: string;
+  external: boolean;
 };
 
 export const defaultPrices = {
@@ -44,6 +45,12 @@ export type CreateFlightRequest = {
   flightSeats: FlightSeat[];
   departureTime: string;
   arrivalTime: string;
+};
+
+export type CreateRouteRequest = {
+  origin: string;
+  destination: string;
+  external: boolean;
 };
 
 export type UpdateFlightRequest = {

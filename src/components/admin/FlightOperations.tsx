@@ -12,13 +12,13 @@ import {
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Pencil, Plane, AlertTriangle, Clock, X, Plus, Download } from "lucide-react";
+import { Pencil, Plane, AlertTriangle, Clock, X, Plus, Download, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { exportFlightsToExcel } from "../../utils/excelExport";
 import { flightService } from "../../services/flightService";
 import { aircraftService } from "../../services/aircraftService";
 import { routeService } from "../../services/routeService";
-import type { Flight, Route, FlightStatus, FlightsPageResponse, FlightSeat, SeatSummary } from "../../types/flightType";
+import type { Flight, Route, FlightStatus, FlightsPageResponse, FlightSeat, SeatSummary, CreateRouteRequest } from "../../types/flightType";
 import type { Aircraft } from "../../types/aircraftType";
 import type { ApiResponse } from "../../types/commonType";
 
@@ -34,6 +34,12 @@ export function FlightOperations() {
   const [showDelayDialog, setShowDelayDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [routes, setRoutes] = useState<Route[]>([]);
+  const [showRouteDialog, setShowRouteDialog] = useState(false);
+  const [newRoute, setNewRoute] = useState<CreateRouteRequest>({
+    origin: '',
+    destination: '',
+    external: false
+  });
   const [aircrafts, setAircrafts] = useState<Aircraft[]>([]);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newFlight, setNewFlight] = useState({
@@ -148,6 +154,40 @@ export function FlightOperations() {
         toast.error("Không tải được dữ liệu");
       });
   }, []);
+
+  const handleCreateRoute = async () => {
+    try {
+      // Check for duplicate route
+      const existingRoute = routes.find(route =>
+        route.origin.toLowerCase() === newRoute.origin.toLowerCase() &&
+        route.destination.toLowerCase() === newRoute.destination.toLowerCase() &&
+        route.external === newRoute.external
+      );
+
+      if (existingRoute) {
+        toast.error("Tuyến bay này đã tồn tại. Vui lòng kiểm tra lại thông tin!");
+        return;
+      }
+
+      // Validate required fields
+      if (!newRoute.origin || !newRoute.destination) {
+        toast.error("Vui lòng nhập đầy đủ thông tin điểm đi và điểm đến");
+        return;
+      }
+
+      const createdRoute = await routeService.create(newRoute);
+      setRoutes(prev => [...prev, createdRoute]);
+      toast.success("Tuyến bay mới đã được tạo thành công");
+      setShowRouteDialog(false);
+      setNewRoute({
+        origin: '',
+        destination: '',
+        external: false
+      });
+    } catch (error) {
+      toast.error("Vui lòng nhập đầy đủ thông tin");
+    }
+  };
 
   const handleDelayFlight = () => {
     if (!selectedFlight) return;
@@ -358,6 +398,14 @@ export function FlightOperations() {
             <Download className="w-4 h-4 mr-2" />
             Xuất Excel
           </Button>
+          <Dialog open={showRouteDialog} onOpenChange={setShowRouteDialog}>
+            <DialogTrigger asChild>
+              <Button>
+                <MapPin className="w-4 h-4 mr-2" />
+                Tạo tuyến bay mới
+              </Button>
+            </DialogTrigger>
+          </Dialog>
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
               <Button>
@@ -928,6 +976,79 @@ export function FlightOperations() {
           <Button disabled={page >= (totalPages - 1) || loading} onClick={() => setPage(p => Math.min((totalPages - 1) || p + 1, p + 1))}>Next</Button>
         </div>
       </div>
+
+      {/* Route Management Dialog */}
+      <Dialog open={showRouteDialog} onOpenChange={setShowRouteDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Tạo tuyến bay mới</DialogTitle>
+            <DialogDescription>
+              Thêm tuyến bay mới vào hệ thống
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="origin">Điểm đi</Label>
+                <Input
+                  id="origin"
+                  value={newRoute.origin}
+                  onChange={(e) =>
+                    setNewRoute({ ...newRoute, origin: e.target.value })
+                  }
+                  placeholder="Nhập điểm đi"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="destination">Điểm đến</Label>
+                <Input
+                  id="destination"
+                  value={newRoute.destination}
+                  onChange={(e) =>
+                    setNewRoute({ ...newRoute, destination: e.target.value })
+                  }
+                  placeholder="Nhập điểm đến"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Loại tuyến bay</Label>
+              <div className="flex items-center gap-6">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    checked={!newRoute.external}
+                    onChange={() =>
+                      setNewRoute({ ...newRoute, external: false })
+                    }
+                    className="mr-2"
+                  />
+                  Nội địa
+                </label>
+
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    checked={newRoute.external}
+                    onChange={() =>
+                      setNewRoute({ ...newRoute, external: true })
+                    }
+                    className="mr-2"
+                  />
+                  Quốc tế
+                </label>
+              </div>
+            </div>
+
+            <Button className="w-full" onClick={handleCreateRoute}>
+              Tạo tuyến bay
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
