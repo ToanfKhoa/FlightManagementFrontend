@@ -223,7 +223,7 @@ export function FlightOperations() {
         routeId: newFlight.routeId,
         aircraftId: newFlight.aircraftId,
         status: newFlight.status,
-        priceSeatClass: newFlight.flightSeats,
+        flightSeats: newFlight.flightSeats,
         departureTime: formatToISO(newFlight.departureTime),
         arrivalTime: formatToISO(newFlight.arrivalTime),
       });
@@ -279,10 +279,10 @@ export function FlightOperations() {
       };
 
       const updatedData = await flightService.update(String(editingFlight.id), {
+        flightSeats: editFlightData.flightSeats,
         routeId: editFlightData.routeId,
         aircraftId: editFlightData.aircraftId,
         status: editFlightData.status,
-        priceSeatClass: editFlightData.flightSeats,
         departureTime: formatToISO(editFlightData.departureTime),
         arrivalTime: formatToISO(editFlightData.arrivalTime),
       });
@@ -439,7 +439,7 @@ export function FlightOperations() {
                         >
                           <option value="ECONOMY">Phổ thông</option>
                           <option value="BUSINESS">Thương gia</option>
-                          <option value="FIRST">Hạng nhất</option>
+                          <option value="FIRST_CLASS">Hạng nhất</option>
                         </select>
                         <div className="flex gap-2 items-center">
                           <Input
@@ -566,7 +566,7 @@ export function FlightOperations() {
                     >
                       <option value="ECONOMY">Phổ thông</option>
                       <option value="BUSINESS">Thương gia</option>
-                      <option value="FIRST">Hạng nhất</option>
+                      <option value="FIRST_CLASS">Hạng nhất</option>
                     </select>
                     <div className="flex gap-2 items-center">
                       <Input
@@ -776,12 +776,21 @@ export function FlightOperations() {
                             }))
                             : [{ seatClass: 'ECONOMY', price: 1500000 }];
 
+                          // Convert summary seat object to seat summary array
+                          const summary = flight.seatSummary;
+                          const seatSummary = summary
+                            ? Object.entries(summary).map(([seatClass, availableSeats]) => ({
+                              seatClass: seatClass.toUpperCase(),
+                              availableSeats: availableSeats as number
+                            }))
+                            : [{ seatClass: 'ECONOMY', availableSeats: 1 }];
 
                           setEditFlightData({
+                            flightSeats: priceSeatClass,
+                            seatSummary: seatSummary,
                             routeId: flight.route?.id ?? 1,
                             aircraftId: flight.aircraft?.id ?? 1,
                             status: flight.status,
-                            flightSeats: priceSeatClass,
                             departureTime: isoToLocalInput(flight.departureTime),
                             arrivalTime: isoToLocalInput(flight.arrivalTime),
                           });
