@@ -14,7 +14,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Pencil, Plane, AlertTriangle, Clock, X, Plus, Download } from "lucide-react";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
+import { exportFlightsToExcel } from "../../utils/excelExport";
 import { flightService } from "../../services/flightService";
 import { aircraftService } from "../../services/aircraftService";
 import { routeService } from "../../services/routeService";
@@ -251,39 +251,6 @@ export function FlightOperations() {
     }
   };
 
-  const exportFlightsToExcel = () => {
-    try {
-      // Prepare data for export
-      const exportData = allFlights.map(flight => ({
-        'Mã chuyến bay': flight.id,
-        'Tuyến bay': flight.route ? `${flight.route.origin} → ${flight.route.destination}` : '—',
-        'Máy bay': flight.aircraft?.type || '—',
-        'Mã số máy bay': flight.aircraft?.registrationNumber || '—',
-        'Trạng thái': getStatusLabel(flight.status),
-        'Thời gian khởi hành': flight.departureTimeDisplay || '—',
-        'Thời gian hạ cánh': flight.arrivalTimeDisplay || '—',
-        'Số chỗ trống': flight.aircraft?.seatCapacity || '—',
-      }));
-
-      // Create worksheet
-      const worksheet = XLSX.utils.json_to_sheet(exportData);
-
-      // Create workbook
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Danh sách chuyến bay');
-
-      // Generate filename with timestamp
-      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-      const filename = `danh-sach-chuyen-bay-${timestamp}.xlsx`;
-
-      // Export file
-      XLSX.writeFile(workbook, filename);
-
-      toast.success("Xuất file Excel thành công");
-    } catch (error) {
-      toast.error("Lỗi khi xuất file Excel");
-    }
-  };
 
   const getStatusLabel = (status: Flight["status"]) => {
     const statusLabels: Record<string, string> = {
@@ -376,7 +343,14 @@ export function FlightOperations() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={exportFlightsToExcel}>
+          <Button onClick={() => {
+            const success = exportFlightsToExcel(allFlights);
+            if (success) {
+              toast.success("Xuất file Excel thành công");
+            } else {
+              toast.error("Lỗi khi xuất file Excel");
+            }
+          }}>
             <Download className="w-4 h-4 mr-2" />
             Xuất Excel
           </Button>

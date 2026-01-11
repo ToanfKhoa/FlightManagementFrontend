@@ -8,13 +8,14 @@ import { Progress } from "../ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { Textarea } from "../ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Users, Plus, AlertTriangle, Plane, PlaneTakeoff, Edit } from "lucide-react";
+import { Users, Plus, AlertTriangle, Plane, PlaneTakeoff, Edit, Download } from "lucide-react";
 import { flightService } from "../../services/flightService";
 import employeeService from "../../services/employeeService";
 import type { Employee, EmployeePosition } from "../../types/employeeType";
 import { AddEmployeeDialog } from "./AddEmployeeDialog";
 import type { Flight } from "../../types/flightType";
 import { toast } from "sonner";
+import { exportCrewToExcel } from "../../utils/excelExport";
 
 export function CrewManagement() {
   const [employees, setEmployees] = useState<Employee[]>([])
@@ -234,6 +235,17 @@ export function CrewManagement() {
           </p>
         </div>
 
+        <Button onClick={() => {
+          const success = exportCrewToExcel(employees);
+          if (success) {
+            toast.success("Xuất file Excel thành công");
+          } else {
+            toast.error("Lỗi khi xuất file Excel");
+          }
+        }}>
+          <Download className="w-4 h-4 mr-2" />
+          Xuất Excel
+        </Button>
       </div>
 
       {/* Search & actions */}
