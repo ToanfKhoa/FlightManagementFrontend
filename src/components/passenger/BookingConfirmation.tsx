@@ -108,8 +108,8 @@ export function BookingConfirmation({
                   {seat.class === "first"
                     ? "Hạng Nhất"
                     : seat.class === "business"
-                    ? "Thương Gia"
-                    : "Phổ Thông"}
+                      ? "Thương Gia"
+                      : "Phổ Thông"}
                 </p>
               </div>
               <div>
@@ -200,8 +200,8 @@ export function BookingConfirmation({
                 {seat.class === "first"
                   ? "Hạng Nhất"
                   : seat.class === "business"
-                  ? "Thương Gia"
-                  : "Phổ Thông"}
+                    ? "Thương Gia"
+                    : "Phổ Thông"}
               </p>
             </div>
           </div>

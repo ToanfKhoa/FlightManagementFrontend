@@ -20,7 +20,7 @@ interface Props {
 export function SeatClassSelection({ flight, userId, onBack }: Props) {
   const [selectedClass, setSelectedClass] = useState<"BUSINESS" | "FIRST_CLASS" | "ECONOMY" | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [passengerName, setPassengerName] = useState("Nguyễn Văn A");
+  const [passengerName, setPassengerName] = useState("Nguyễn Văn AAA");
   const [passengerEmail, setPassengerEmail] = useState("nguyen.a@example.com");
   const [passengerPhone, setPassengerPhone] = useState("0912345678");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -64,12 +64,17 @@ export function SeatClassSelection({ flight, userId, onBack }: Props) {
         seatClass: selectedClass
       };
 
-      const response: BookingResponse = await ticketService.booking(bookingData);
+      const response = await ticketService.booking(bookingData);
+      if (!response || !response.id) {
+        throw new Error("Invalid booking response");
+      }
+      else {
+        setTicketCode(`ID${response.id}`);
+        setBookingComplete(true);
+        toast.success("Đặt vé thành công!");
+      }
 
-      // Giả sử response có ticketCode hoặc id
-      setTicketCode(`ID${response.id}`);
-      setBookingComplete(true);
-      toast.success("Đặt vé thành công!");
+
     } catch (error) {
       toast.error("Lỗi khi đặt vé. Vui lòng thử lại.");
       console.error("Booking error:", error);

@@ -248,7 +248,7 @@ export function FlightSearch({ userId }: FlightSearchProps) {
                         </div> */}
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          {flight.schedule ? new Date(flight.schedule.departureTime).toLocaleDateString("vi-VN") : '-'} - {flight.schedule ? new Date(flight.schedule.arrivalTime).toLocaleDateString("vi-VN") : '-'}
+                          {flight.departureTime ? new Date(flight.departureTime).toLocaleDateString("vi-VN") : '-'} - {flight.arrivalTime ? new Date(flight.arrivalTime).toLocaleDateString("vi-VN") : '-'}
                         </div>
                         <div className="flex items-center gap-1">
                           <Plane className="w-4 h-4" />

@@ -47,8 +47,16 @@ export const flightService = {
     if (params.destination) {
       rsqlConditions.push(`route.destination=='*${params.destination}*'`);
     }
+
     if (params.date) {
-      rsqlConditions.push(`schedule.departureTime>='${params.date}'`);
+      if (params.date) {
+
+        const dateOnly = params.date.toString().split('T')[0];
+        const startTime = `${dateOnly}T00:00:00Z`;
+        const endTime = `${dateOnly}T23:59:59Z`;
+
+        rsqlConditions.push(`(departureTime>='${startTime}';departureTime<='${endTime}')`);
+      }
     }
 
     if (rsqlConditions.length > 0) {
