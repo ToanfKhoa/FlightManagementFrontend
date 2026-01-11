@@ -16,29 +16,32 @@ export const defaultPrices = {
 };
 
 export type Flight = BaseEntity & {
+  flightSeats: FlightSeat;
+  seatSummary: SeatSummary;
   route: Route;
   aircraft: Aircraft;
   status: FlightStatus;
   departureTime: string; //Date time
   arrivalTime: string; //Date time
-  seats?: Seat[];
-  availableSeats?: AvailableSeats;
-  prices?: typeof defaultPrices;
-  date?: string; // Computed field for display
   departureTimeDisplay?: string; // Computed field for display
   arrivalTimeDisplay?: string; // Computed field for display
 };
 
-export type PriceSeatClassDto = {
+export type FlightSeat = {
   seatClass: string;
   price: number;
+};
+
+export type SeatSummary = {
+  seatClass: string;
+  availableSeats: number;
 };
 
 export type CreateFlightRequest = {
   routeId: number;
   aircraftId: number;
   status: FlightStatus;
-  priceSeatClass: PriceSeatClassDto[];
+  priceSeatClass: FlightSeat[];
   departureTime: string;
   arrivalTime: string;
 };

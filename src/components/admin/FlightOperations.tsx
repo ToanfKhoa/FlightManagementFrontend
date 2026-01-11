@@ -18,7 +18,7 @@ import { exportFlightsToExcel } from "../../utils/excelExport";
 import { flightService } from "../../services/flightService";
 import { aircraftService } from "../../services/aircraftService";
 import { routeService } from "../../services/routeService";
-import type { Flight, Route, FlightStatus, FlightsPageResponse, PriceSeatClassDto } from "../../types/flightType";
+import type { Flight, Route, FlightStatus, FlightsPageResponse, FlightSeat, SeatSummary } from "../../types/flightType";
 import type { Aircraft } from "../../types/aircraftType";
 import type { ApiResponse } from "../../types/commonType";
 
@@ -37,20 +37,22 @@ export function FlightOperations() {
   const [aircrafts, setAircrafts] = useState<Aircraft[]>([]);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newFlight, setNewFlight] = useState({
-    routeId: 0,
-    aircraftId: 0,
+    flightSeats: [{ seatClass: 'ECONOMY', price: 1500000 }] as FlightSeat[],
+    seatSummary: [{ seatClass: 'ECONOMY', availableSeats: 1 }] as SeatSummary[],
+    routeId: 1,
+    aircraftId: 1,
     status: 'OPEN' as FlightStatus,
-    priceSeatClass: [{ seatClass: 'ECONOMY', price: 1500000 }] as PriceSeatClassDto[],
     departureTime: '',
     arrivalTime: '',
   });
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingFlight, setEditingFlight] = useState<Flight | null>(null);
   const [editFlightData, setEditFlightData] = useState({
-    routeId: 0,
-    aircraftId: 0,
+    flightSeats: [{ seatClass: 'ECONOMY', price: 1500000 }] as FlightSeat[],
+    seatSummary: [{ seatClass: 'ECONOMY', availableSeats: 1 }] as SeatSummary[],
+    routeId: 1,
+    aircraftId: 1,
     status: 'OPEN' as FlightStatus,
-    priceSeatClass: [{ seatClass: 'ECONOMY', price: 1500000 }] as PriceSeatClassDto[],
     departureTime: '',
     arrivalTime: '',
   });
@@ -132,10 +134,11 @@ export function FlightOperations() {
         // Set default values to first items
         if (routesData.length > 0 && (aircraftsData as Aircraft[]).length > 0) {
           setNewFlight({
+            flightSeats: [{ seatClass: 'ECONOMY', price: 1500000 }],
+            seatSummary: [{ seatClass: 'ECONOMY', availableSeats: 1 }],
             routeId: routesData[0].id,
             aircraftId: (aircraftsData as Aircraft[])[0].id,
             status: 'OPEN',
-            priceSeatClass: [{ seatClass: 'ECONOMY', price: 1500000 }],
             departureTime: '',
             arrivalTime: '',
           });
@@ -220,7 +223,7 @@ export function FlightOperations() {
         routeId: newFlight.routeId,
         aircraftId: newFlight.aircraftId,
         status: newFlight.status,
-        priceSeatClass: newFlight.priceSeatClass,
+        priceSeatClass: newFlight.flightSeats,
         departureTime: formatToISO(newFlight.departureTime),
         arrivalTime: formatToISO(newFlight.arrivalTime),
       });
@@ -239,10 +242,11 @@ export function FlightOperations() {
       toast.success("Chuyến bay mới đã được tạo thành công");
       setShowCreateDialog(false);
       setNewFlight({
-        routeId: routes[0]?.id || 0,
-        aircraftId: aircrafts[0]?.id || 0,
+        flightSeats: [{ seatClass: 'ECONOMY', price: 1500000 }],
+        seatSummary: [{ seatClass: 'ECONOMY', availableSeats: 1 }] as SeatSummary[],
+        routeId: routes[1]?.id || 1,
+        aircraftId: aircrafts[1]?.id || 1,
         status: 'OPEN' as FlightStatus,
-        priceSeatClass: [{ seatClass: 'ECONOMY', price: 1500000 }],
         departureTime: '',
         arrivalTime: '',
       });
@@ -278,7 +282,7 @@ export function FlightOperations() {
         routeId: editFlightData.routeId,
         aircraftId: editFlightData.aircraftId,
         status: editFlightData.status,
-        priceSeatClass: editFlightData.priceSeatClass,
+        priceSeatClass: editFlightData.flightSeats,
         departureTime: formatToISO(editFlightData.departureTime),
         arrivalTime: formatToISO(editFlightData.arrivalTime),
       });
@@ -422,15 +426,15 @@ export function FlightOperations() {
                 <div className="space-y-2">
                   <Label>Giá theo hạng ghế</Label>
                   <div className="space-y-2 border p-3 rounded">
-                    {newFlight.priceSeatClass.map((price, index) => (
+                    {newFlight.flightSeats.map((price, index) => (
                       <div key={index} className="grid grid-cols-2 gap-2 items-center">
                         <select
                           className="border p-2 rounded"
                           value={price.seatClass}
                           onChange={(e) => {
-                            const updated = [...newFlight.priceSeatClass];
+                            const updated = [...newFlight.flightSeats];
                             updated[index].seatClass = e.target.value;
-                            setNewFlight({ ...newFlight, priceSeatClass: updated });
+                            setNewFlight({ ...newFlight, flightSeats: updated });
                           }}
                         >
                           <option value="ECONOMY">Phổ thông</option>
@@ -442,19 +446,19 @@ export function FlightOperations() {
                             type="number"
                             value={price.price}
                             onChange={(e) => {
-                              const updated = [...newFlight.priceSeatClass];
+                              const updated = [...newFlight.flightSeats];
                               updated[index].price = parseInt(e.target.value) || 0;
-                              setNewFlight({ ...newFlight, priceSeatClass: updated });
+                              setNewFlight({ ...newFlight, flightSeats: updated });
                             }}
                             placeholder="Giá"
                           />
-                          {newFlight.priceSeatClass.length > 1 && (
+                          {newFlight.flightSeats.length > 1 && (
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => {
-                                const updated = newFlight.priceSeatClass.filter((_, i) => i !== index);
-                                setNewFlight({ ...newFlight, priceSeatClass: updated });
+                                const updated = newFlight.flightSeats.filter((_, i) => i !== index);
+                                setNewFlight({ ...newFlight, flightSeats: updated });
                               }}
                               className="text-red-500 hover:text-red-700"
                             >
@@ -470,7 +474,7 @@ export function FlightOperations() {
                       size="sm"
                       onClick={() => setNewFlight({
                         ...newFlight,
-                        priceSeatClass: [...newFlight.priceSeatClass, { seatClass: 'ECONOMY', price: 0 }]
+                        flightSeats: [...newFlight.flightSeats, { seatClass: 'ECONOMY', price: 0 }]
                       })}
                     >
                       <Plus className="w-4 h-4 mr-1" /> Thêm hạng ghế
@@ -549,15 +553,15 @@ export function FlightOperations() {
             <div className="space-y-2">
               <Label>Giá theo hạng ghế</Label>
               <div className="space-y-2 border p-3 rounded">
-                {editFlightData.priceSeatClass.map((price, index) => (
+                {editFlightData.flightSeats.map((price, index) => (
                   <div key={index} className="grid grid-cols-2 gap-2 items-center">
                     <select
                       className="border p-2 rounded"
                       value={price.seatClass}
                       onChange={(e) => {
-                        const updated = [...editFlightData.priceSeatClass];
+                        const updated = [...editFlightData.flightSeats];
                         updated[index].seatClass = e.target.value;
-                        setEditFlightData({ ...editFlightData, priceSeatClass: updated });
+                        setEditFlightData({ ...editFlightData, flightSeats: updated });
                       }}
                     >
                       <option value="ECONOMY">Phổ thông</option>
@@ -569,19 +573,19 @@ export function FlightOperations() {
                         type="number"
                         value={price.price}
                         onChange={(e) => {
-                          const updated = [...editFlightData.priceSeatClass];
+                          const updated = [...editFlightData.flightSeats];
                           updated[index].price = parseInt(e.target.value) || 0;
-                          setEditFlightData({ ...editFlightData, priceSeatClass: updated });
+                          setEditFlightData({ ...editFlightData, flightSeats: updated });
                         }}
                         placeholder="Giá"
                       />
-                      {editFlightData.priceSeatClass.length > 1 && (
+                      {editFlightData.flightSeats.length > 1 && (
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            const updated = editFlightData.priceSeatClass.filter((_, i) => i !== index);
-                            setEditFlightData({ ...editFlightData, priceSeatClass: updated });
+                            const updated = editFlightData.flightSeats.filter((_, i) => i !== index);
+                            setEditFlightData({ ...editFlightData, flightSeats: updated });
                           }}
                           className="text-red-500 hover:text-red-700"
                         >
@@ -597,7 +601,7 @@ export function FlightOperations() {
                   size="sm"
                   onClick={() => setEditFlightData({
                     ...editFlightData,
-                    priceSeatClass: [...editFlightData.priceSeatClass, { seatClass: 'ECONOMY', price: 0 }]
+                    flightSeats: [...editFlightData.flightSeats, { seatClass: 'ECONOMY', price: 0 }]
                   })}
                 >
                   <Plus className="w-4 h-4 mr-1" /> Thêm hạng ghế
@@ -764,7 +768,7 @@ export function FlightOperations() {
                           };
 
                           // Convert prices object to priceSeatClass array
-                          const prices = flight.prices;
+                          const prices = flight.flightSeats;
                           const priceSeatClass = prices
                             ? Object.entries(prices).map(([seatClass, price]) => ({
                               seatClass: seatClass.toUpperCase(),
@@ -774,10 +778,10 @@ export function FlightOperations() {
 
 
                           setEditFlightData({
-                            routeId: flight.route?.id ?? 0,
-                            aircraftId: flight.aircraft?.id ?? 0,
+                            routeId: flight.route?.id ?? 1,
+                            aircraftId: flight.aircraft?.id ?? 1,
                             status: flight.status,
-                            priceSeatClass: priceSeatClass,
+                            flightSeats: priceSeatClass,
                             departureTime: isoToLocalInput(flight.departureTime),
                             arrivalTime: isoToLocalInput(flight.arrivalTime),
                           });
