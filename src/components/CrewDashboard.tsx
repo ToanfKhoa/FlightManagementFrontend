@@ -4,30 +4,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { Badge } from "./ui/badge";
 import { LogOut, Calendar, Clock, Plane } from "lucide-react";
 import { mockCrew, mockFlights } from "../lib/mockData";
-import type { User } from "../App";
 import type { CrewMember, Flight } from "../lib/mockData";
+import { useAuth } from "../context/AuthContext";
 import logoIcon from "../assets/images/logo-icon.png";
 
-interface CrewDashboardProps {
-  user: User;
-  onLogout: () => void;
-}
-
-export function CrewDashboard({ user, onLogout }: CrewDashboardProps) {
+export function CrewDashboard() {
+  const { user, logout } = useAuth();
   const [crewMember, setCrewMember] = useState<CrewMember | null>(null);
   const [assignedFlights, setAssignedFlights] = useState<Flight[]>([]);
 
   useEffect(() => {
-    // Find crew member by user ID (in real app, this would be from the database)
-    const member = mockCrew.find(c => c.id === user.id) || mockCrew[0];
-    setCrewMember(member);
+    if (user) {
+      // Find crew member by user ID (in real app, this would be from the database)
+      const member = mockCrew.find(c => c.id === user.id) || mockCrew[0];
+      setCrewMember(member);
 
-    // Get flights assigned to this crew member
-    const flights = mockFlights.filter(f =>
-      member.assignments.includes(f.flightCode)
-    );
-    setAssignedFlights(flights);
-  }, [user.id]);
+      // Get flights assigned to this crew member
+      const flights = mockFlights.filter(f =>
+        member.assignments.includes(f.flightCode)
+      );
+      setAssignedFlights(flights);
+    }
+  }, [user?.id]);
 
   const getStatusBadge = (status: Flight["status"]) => {
     const variants: Record<Flight["status"], { variant: any; label: string }> = {
@@ -61,11 +59,11 @@ export function CrewDashboard({ user, onLogout }: CrewDashboardProps) {
             <div>
               <h1>Hệ Thống Phi Hành Viên</h1>
               <p className="text-sm text-gray-600">
-                Xin chào, {user.name} ({crewMember.role === "pilot" ? "Phi công" : "Tiếp viên"})
+                Xin chào, {user?.username} ({crewMember.role === "pilot" ? "Phi công" : "Tiếp viên"})
               </p>
             </div>
           </div>
-          <Button variant="outline" onClick={onLogout}>
+          <Button variant="outline" onClick={logout}>
             <LogOut className="w-4 h-4 mr-2" />
             Đăng xuất
           </Button>

@@ -12,11 +12,11 @@ export interface Flight {
   arrivalTime: string;
   date: string;
   status:
-    | "open"
-    | "full"
-    | "delayed"
-    | "canceled"
-    | "completed";
+  | "open"
+  | "full"
+  | "delayed"
+  | "canceled"
+  | "completed";
   aircraftId: string;
   aircraftType: string;
   availableSeats: {
@@ -50,9 +50,9 @@ export interface Seat {
 }
 
 export interface Booking {
-  id: string;
+  id: number;
   ticketCode: string;
-  passengerId: string;
+  passengerId: number;
   passengerName: string;
   flightId: string;
   flightCode: string;
@@ -84,7 +84,7 @@ export interface Aircraft {
 }
 
 export interface CrewMember {
-  id: string;
+  id: number;
   name: string;
   role: "pilot" | "attendant";
   monthlyHours: number;
@@ -243,9 +243,9 @@ export function generateSeatMap(
 // Mock bookings
 export const mockBookings: Booking[] = [
   {
-    id: "b1",
+    id: 12234023,
     ticketCode: "TK001234567",
-    passengerId: "demo-passenger",
+    passengerId: 99909827,
     passengerName: "Nguyễn Văn A",
     flightId: "f1",
     flightCode: "VN101",
@@ -262,9 +262,9 @@ export const mockBookings: Booking[] = [
     },
   },
   {
-    id: "b2",
+    id: 25520223,
     ticketCode: "TK987654321",
-    passengerId: "demo-passenger",
+    passengerId: 99910222,
     passengerName: "Nguyễn Văn A",
     flightId: "f2",
     flightCode: "VN202",
@@ -325,7 +325,7 @@ export const mockAircraft: Aircraft[] = [
 // Mock crew members
 export const mockCrew: CrewMember[] = [
   {
-    id: "c1",
+    id: 1,
     name: "Trần Văn B",
     role: "pilot",
     monthlyHours: 85,
@@ -333,7 +333,7 @@ export const mockCrew: CrewMember[] = [
     assignments: ["VN101", "VN202", "VN303"],
   },
   {
-    id: "c2",
+    id: 2,
     name: "Lê Thị C",
     role: "pilot",
     monthlyHours: 92,
@@ -341,7 +341,7 @@ export const mockCrew: CrewMember[] = [
     assignments: ["VN404", "VN505"],
   },
   {
-    id: "c3",
+    id: 3,
     name: "Phạm Văn D",
     role: "attendant",
     monthlyHours: 65,
@@ -349,7 +349,7 @@ export const mockCrew: CrewMember[] = [
     assignments: ["VN101", "VN202"],
   },
   {
-    id: "c4",
+    id: 4,
     name: "Hoàng Thị E",
     role: "attendant",
     monthlyHours: 78,

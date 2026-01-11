@@ -6,16 +6,12 @@ import { CrewManagement } from "./admin/CrewManagement";
 import { AircraftManagement } from "./admin/AircraftManagement";
 import { FlightOperations } from "./admin/FlightOperations";
 import { Reports } from "./admin/Reports";
-import type { User } from "../App";
 import { UserManagement } from "./admin/UserManagement";
+import { useAuth } from "../context/AuthContext";
 import logoIcon from "../assets/images/logo-icon.png";
 
-interface AdminDashboardProps {
-  user: User;
-  onLogout: () => void;
-}
-
-export function AdminDashboard({ user, onLogout }: AdminDashboardProps) {
+export function AdminDashboard() {
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("crew");
 
   return (
@@ -27,10 +23,10 @@ export function AdminDashboard({ user, onLogout }: AdminDashboardProps) {
             <img src={logoIcon} alt="SkyWings Logo" className="w-12 h-12" />
             <div>
               <h1>Hệ Thống Quản Trị</h1>
-              <p className="text-sm text-gray-600">Xin chào, {user.name}</p>
+              <p className="text-sm text-gray-600">Xin chào, {user?.username}</p>
             </div>
           </div>
-          <Button variant="outline" onClick={onLogout}>
+          <Button variant="outline" onClick={logout}>
             <LogOut className="w-4 h-4 mr-2" />
             Đăng xuất
           </Button>

@@ -16,7 +16,7 @@ import ApiResponse from "../../types/commonType";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 interface FlightSearchProps {
-  userId: string;
+  userId: number;
 }
 
 export function FlightSearch({ userId }: FlightSearchProps) {
