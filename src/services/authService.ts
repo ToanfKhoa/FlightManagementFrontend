@@ -10,5 +10,11 @@ export const authService = {
   },
   changePassword(oldPassword: string, newPassword: string): Promise<LoginResponse> {
     return axiosClient.post('/auth/change-password', { oldPassword, newPassword });
+  },
+  resetPassword(verificationCode: string, newPassword: string): Promise<LoginResponse> {
+    return axiosClient.post('/auth/reset-password', { verificationCode, newPassword });
+  },
+  sendResetPasswordEmail(email: string): Promise<LoginResponse> {
+    return axiosClient.post(`/auth/send-reset-password-email?${email}`);
   }
 };
