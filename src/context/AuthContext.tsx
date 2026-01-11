@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api/axiosClient';
 import { User, UserRole } from "../types/authType"
 import { authService } from '../services/authService';
 import { LoginResponse } from '../types/authType';
@@ -37,6 +36,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     }
                     setUser({ ...userData.user, role: mappedRole });
                 } catch (error) {
+                    console.error("Check auth failed:", error);
                     logout();
                 }
             }
@@ -62,6 +62,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
 
             localStorage.setItem('access_token', accessToken);
+            localStorage.setItem('refresh_token', refreshToken);
             setUser({ ...user, role: mappedRole });
 
             navigate(`/${mappedRole}`);
@@ -72,7 +73,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     const logout = () => {
+        console.log("Log out")
         localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
         setUser(null);
         navigate('/login');
     };

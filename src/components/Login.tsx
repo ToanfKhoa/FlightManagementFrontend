@@ -7,9 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
-import type { User, UserRole } from "../App";
-import { authService } from "../services/authService";
-import type { LoginResponse } from "../types/authType";
 import logoIcon from "../assets/images/logo-icon.png";
 
 export function Login() {
@@ -33,22 +30,22 @@ export function Login() {
     }
   };
 
-  const quickLogin = (role: UserRole) => {
-    const roleNames: Record<string, string> = {
-      passenger: "Nguyễn Văn A",
-      crew: "Trần Văn B",
-      staff: "Nhân viên",
-      admin: "Quản trị viên",
-    };
+  // const quickLogin = (role: UserRole) => {
+  //   const roleNames: Record<string, string> = {
+  //     passenger: "Nguyễn Văn A",
+  //     crew: "Trần Văn B",
+  //     staff: "Nhân viên",
+  //     admin: "Quản trị viên",
+  //   };
 
-    const user: User = {
-      id: role === "crew" ? "c1" : "demo-" + role,
-      name: roleNames[role || "passenger"],
-      email: `${role}@example.com`,
-      role,
-    };
-    onLogin(user);
-  };
+  //   const user: User = {
+  //     id: role === "crew" ? "c1" : "demo-" + role,
+  //     name: roleNames[role || "passenger"],
+  //     email: `${role}@example.com`,
+  //     role,
+  //   };
+  //   onLogin(user);
+  // };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">

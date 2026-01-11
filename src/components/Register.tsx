@@ -86,7 +86,7 @@ export function Register() {
 
       // If the API returned a token and user, persist and auto login, else just show success
       if (response?.token && response?.user) {
-        localStorage.setItem("user", JSON.stringify({ token: response.token, user: response.user }));
+        localStorage.setItem('access_token', response.token);
         toast.success("Đăng ký thành công và đã đăng nhập tự động");
         // Navigate to passenger dashboard or home
         navigate("/");

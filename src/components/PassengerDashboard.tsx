@@ -8,7 +8,6 @@ import { MyBookings } from "./passenger/MyBookings";
 import { CheckInPage } from "./passenger/CheckInPage";
 import { BaggageCalculator } from "./passenger/BaggageCalculator";
 import { useAuth } from "../context/AuthContext";
-import type { User } from "../App";
 import logoIcon from "../assets/images/logo-icon.png";
 
 // Use a relative path that should work with Vite's asset handling
