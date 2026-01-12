@@ -1,16 +1,42 @@
 import axiosClient from "../api/axiosClient";
 import { PageResponse } from "../types/commonType";
 
-import type { Assignment } from "../types/assignmentType";
+import type { Assignment, AssignmentRequest, GetAssignmentsParams } from "../types/assignmentType";
 
 export const assignmentService = {
-    getAll(): Promise<Assignment[]> {
-        return axiosClient.get("/assignments/all");
+    getAll(params: GetAssignmentsParams = {}): Promise<PageResponse<Assignment>> {
+        const queryParams = new URLSearchParams();
+
+        if (params.all) {
+            queryParams.append('all', 'true');
+        } else {
+            queryParams.append('page', String(params.page || 0));
+            queryParams.append('size', String(params.size || 10));
+        }
+
+        if (params.filter) {
+            queryParams.append('filter', params.filter);
+        }
+
+        return axiosClient.get(`/assignments/all?${queryParams.toString()}`) as Promise<PageResponse<Assignment>>;
     },
-    assign(flightId: string, employeeIds: number[]): Promise<PageResponse<Assignment>> {
-        return axiosClient.post("/assignments/assign", { flightId, employeeIds }) as Promise<PageResponse<Assignment>>;
+    assign(request: AssignmentRequest): Promise<void> {
+        return axiosClient.post("/assignments/assign", request);
     },
-    getEmployeeAssignments(employeeId: number): Promise<PageResponse<Assignment>> {
-        return axiosClient.get(`/assignments/employee/${employeeId}`) as Promise<PageResponse<Assignment>>;
+    getEmployeeAssignments(employeeId: number, params: GetAssignmentsParams = {}): Promise<PageResponse<Assignment>> {
+        const queryParams = new URLSearchParams();
+
+        if (params.all) {
+            queryParams.append('all', 'true');
+        } else {
+            queryParams.append('page', String(params.page || 0));
+            queryParams.append('size', String(params.size || 10));
+        }
+
+        if (params.filter) {
+            queryParams.append('filter', params.filter);
+        }
+
+        return axiosClient.get(`/assignments/all/employee/${employeeId}?${queryParams.toString()}`) as Promise<PageResponse<Assignment>>;
     }
 };
