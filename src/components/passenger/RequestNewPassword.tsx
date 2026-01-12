@@ -38,11 +38,15 @@ export function RequestResetScreen({ onSubmit, onBack }: RequestResetScreenProps
 
         setIsLoading(true);
 
-        // Simulate API call
-        setTimeout(() => {
-            setIsLoading(false);
-            onSubmit(email);
-        }, 1000);
+        authService.sendResetPasswordEmail(email)
+            .then(() => {
+                setIsLoading(false);
+                onSubmit(email);
+            })
+            .catch((error) => {
+                setIsLoading(false);
+                setError("Failed to send reset email. Please try again.");
+            });
     };
 
     return (

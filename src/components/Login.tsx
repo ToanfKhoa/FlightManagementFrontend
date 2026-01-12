@@ -11,7 +11,6 @@ import { authService } from "../services/authService";
 import type { LoginResponse } from "../types/authType";
 import { RequestResetScreen } from "./passenger/RequestNewPassword";
 import { SuccessScreen } from "./passenger/SuccessRequestNewPassword";
-import { UserPlus } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import logoIcon from "../assets/images/logo-icon.png";
 
@@ -56,6 +55,31 @@ export function Login() {
   //   onLogin(user);
   // };
 
+  if (view === 'request') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <RequestResetScreen
+          onSubmit={(email) => {
+            setResetEmail(email);
+            setView('success');
+          }}
+          onBack={() => setView('login')}
+        />
+      </div>
+    );
+  }
+
+  if (view === 'success') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <SuccessScreen
+          email={resetEmail}
+          onBackToLogin={() => setView('login')}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <Card className="w-full max-w-md">
@@ -92,13 +116,19 @@ export function Login() {
               />
             </div>
 
+            <div className="text-right">
+              <button type="button" onClick={() => setView('request')} className="text-sm text-blue-600 hover:underline">
+                Quên mật khẩu?
+              </button>
+            </div>
+
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Đang đăng nhập..." : "Đăng nhập"}
             </Button>
           </form>
 
           <div className="mt-4">
-            <Button variant="outline" className="w-full" onClick={() => navigate("/login", { state: { showRegister: true } })}>
+            <Button variant="outline" className="w-full" onClick={() => navigate("/register")}>
               <UserPlus className="w-4 h-4 mr-2" />
               Đăng ký tài khoản hành khách
             </Button>

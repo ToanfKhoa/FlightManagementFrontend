@@ -1,6 +1,7 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Login } from "./components/Login";
+import { Register } from "./components/Register";
 import { PassengerDashboard } from "./components/PassengerDashboard";
 import { PassengerLandingPage } from "./components/passenger/PassengerLandingPage";
 import { StaffDashboard } from "./components/StaffDashboard";
@@ -47,6 +48,10 @@ function App() {
           element={
             user ? <Navigate to={`/${user.role}`} replace /> : <Login />
           }
+        />
+        <Route
+          path="/register"
+          element={<Register />}
         />
 
         {/* Protected routes */}

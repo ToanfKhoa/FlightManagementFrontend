@@ -21,6 +21,6 @@ export const authService = {
     return axiosClient.post('/auth/reset-password', { verificationCode, newPassword });
   },
   sendResetPasswordEmail(email: string): Promise<LoginResponse> {
-    return axiosClient.post(`/auth/send-reset-password-email?${email}`);
+    return axiosClient.post(`/auth/send-reset-password-email?email=${email}`);
   }
 };
