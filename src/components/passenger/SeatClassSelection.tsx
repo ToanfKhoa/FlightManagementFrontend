@@ -8,7 +8,7 @@ import { ArrowLeft, Check, Plane, CreditCard } from "lucide-react";
 import { Booking, formatCurrency, mockBookings } from "../../lib/mockData";
 import { toast } from "sonner";
 import { Flight } from "../../types/flightType"
-import { BookingRequest, BookingResponse } from "../../types/ticketType";
+import { BookingRequest, BookingResponse, PaymentRequest } from "../../types/ticketType";
 import ticketService from "../../services/ticketService";
 
 interface Props {
@@ -26,6 +26,7 @@ export function SeatClassSelection({ flight, userId, onBack }: Props) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [bookingComplete, setBookingComplete] = useState(false);
   const [ticketCode, setTicketCode] = useState("");
+  const [ticketId, setTicketId] = useState<number | null>(null);
 
   if (!flight.prices) {
     flight.prices = {
@@ -70,6 +71,7 @@ export function SeatClassSelection({ flight, userId, onBack }: Props) {
       }
       else {
         setTicketCode(`ID${response.id}`);
+        setTicketId(response.id);
         setBookingComplete(true);
         toast.success("Đặt vé thành công!");
       }
@@ -80,6 +82,24 @@ export function SeatClassSelection({ flight, userId, onBack }: Props) {
       console.error("Booking error:", error);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handlePayment = async () => {
+    if (!ticketId) return;
+    try {
+      const paymentData: PaymentRequest = {
+        paymentMethod: 'VNPAY',
+        returnUrl: window.location.origin + '/passenger',
+        cancelUrl: window.location.origin + '/passenger'
+      };
+      const paymentResponse = await ticketService.pay(ticketId, paymentData);
+      if (paymentResponse.paymentUrl) {
+        window.location.href = paymentResponse.paymentUrl;
+      }
+    } catch (error) {
+      toast.error("Lỗi khi thanh toán. Vui lòng thử lại.");
+      console.error("Payment error:", error);
     }
   };
 
@@ -117,7 +137,7 @@ export function SeatClassSelection({ flight, userId, onBack }: Props) {
             </div>
 
             <div className="flex gap-3">
-              <Button className="flex-1" onClick={() => window.location.reload()}>
+              <Button className="flex-1" onClick={handlePayment}>
                 Thanh toán ngay
               </Button>
               <Button variant="outline" onClick={onBack}>

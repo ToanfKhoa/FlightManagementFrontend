@@ -5,68 +5,77 @@ import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Calendar, Clock, Plane, Ticket, AlertCircle, CheckCircle2 } from "lucide-react";
-import { mockBookings, mockFlights, formatCurrency, getTimeRemaining } from "../../lib/mockData";
+import { formatCurrency } from "../../lib/mockData";
 import { toast } from "sonner";
-import type { Booking, Flight } from "../../lib/mockData";
+import type { Ticket } from "../../types/ticketType";
+import { ticketService } from "../../services/ticketService";
 
 interface MyBookingsProps {
   userId: number;
 }
 
 export function MyBookings({ userId }: MyBookingsProps) {
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showRefundDialog, setShowRefundDialog] = useState(false);
   const [showCheckInDialog, setShowCheckInDialog] = useState(false);
 
   useEffect(() => {
-    const userBookings = mockBookings.filter((b) => b.passengerId === userId);
-    setBookings(userBookings);
+    const fetchTickets = async () => {
+      try {
+        const response = await ticketService.getOwnTickets({ page: 0, size: 100, sort: [] });
+        setTickets(response.content);
+      } catch (error) {
+        console.error('Failed to fetch tickets:', error);
+        toast.error('Không thể tải danh sách vé');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTickets();
   }, [userId]);
 
-  const getFlight = (flightId: string): Flight | undefined => {
-    return mockFlights.find((f) => f.id === flightId);
-  };
-
-  const getStatusBadge = (status: Booking["status"]) => {
-    const variants: Record<Booking["status"], { variant: any; label: string }> = {
-      reserved: { variant: "secondary", label: "Đang giữ chỗ" },
-      paid: { variant: "default", label: "Đã thanh toán" },
-      canceled: { variant: "destructive", label: "Đã hủy" },
-      "checked-in": { variant: "default", label: "Đã check-in" },
+  const getStatusBadge = (status: string) => {
+    const statusMap: Record<string, { variant: any; label: string }> = {
+      RESERVED: { variant: "secondary", label: "Đang giữ chỗ" },
+      PAID: { variant: "default", label: "Đã thanh toán" },
+      CANCELED: { variant: "destructive", label: "Đã hủy" },
+      CHANGED: { variant: "default", label: "Đã đổi" },
     };
 
     return (
-      <Badge variant={variants[status].variant as any}>{variants[status].label}</Badge>
+      <Badge variant={statusMap[status]?.variant as any}>{statusMap[status]?.label || status}</Badge>
     );
   };
 
-  const handlePayment = (booking: Booking) => {
+  const handlePayment = (ticket: any) => {
     toast.success("Chuyển đến trang thanh toán...");
+    // For now, mock update
     setTimeout(() => {
-      booking.status = "paid";
-      setBookings([...bookings]);
+      // Update local state
+      setTickets(tickets.map(t => t.id === ticket.id ? { ...t, status: 'PAID' as const } : t));
       toast.success("Thanh toán thành công!");
     }, 1500);
   };
 
   const handleCheckIn = () => {
-    if (selectedBooking) {
-      selectedBooking.status = "checked-in";
-      setBookings([...bookings]);
+    if (selectedTicket) {
+      // Mock check-in
+      setTickets(tickets.map(t => t.id === selectedTicket.id ? { ...t, status: 'PAID' as const } : t)); // Keep as PAID
       setShowCheckInDialog(false);
       toast.success("Check-in thành công! Vui lòng đến cổng lên máy bay đúng giờ.");
-      setSelectedBooking(null);
+      setSelectedTicket(null);
     }
   };
 
-  const canCheckIn = (booking: Booking, flight: Flight): boolean => {
-    // Can only check-in if status is "paid"
-    if (booking.status !== "paid") return false;
+  const canCheckIn = (ticket: any): boolean => {
+    // Can only check-in if status is "PAID"
+    if (ticket.status !== "PAID") return false;
 
     // Check if flight date is within 24 hours
-    const flightDateTime = new Date(`${flight.date}T${flight.departureTime}`);
+    const flightDateTime = new Date(`${ticket.flight.date}T${ticket.flight.departureTime}`);
     const now = new Date();
     const hoursUntilFlight = (flightDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
@@ -74,12 +83,12 @@ export function MyBookings({ userId }: MyBookingsProps) {
     return hoursUntilFlight <= 24 && hoursUntilFlight > 0;
   };
 
-  const getCheckInMessage = (booking: Booking, flight: Flight): string => {
-    if (booking.status !== "paid") {
+  const getCheckInMessage = (ticket: any): string => {
+    if (ticket.status !== "PAID") {
       return "Vui lòng thanh toán trước khi check-in";
     }
 
-    const flightDateTime = new Date(`${flight.date}T${flight.departureTime}`);
+    const flightDateTime = new Date(`${ticket.flight.date}T${ticket.flight.departureTime}`);
     const now = new Date();
     const hoursUntilFlight = (flightDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
@@ -93,61 +102,32 @@ export function MyBookings({ userId }: MyBookingsProps) {
   };
 
   const handleCancelBooking = () => {
-    if (selectedBooking) {
-      const flight = getFlight(selectedBooking.flightId);
-
-      selectedBooking.status = "canceled";
-      setBookings([...bookings]);
+    if (selectedTicket) {
+      setTickets(tickets.map(t => t.id === selectedTicket.id ? { ...t, status: 'CANCELED' as const } : t));
       setShowCancelDialog(false);
 
-      // Notify waiting list if flight exists and has waiting list
-      if (flight && flight.waitingList && flight.waitingList.length > 0) {
-        const firstWaiting = flight.waitingList[0];
-        if (firstWaiting && !firstWaiting.notified) {
-          firstWaiting.notified = true;
-          toast.success(
-            `Đã hủy vé. Đã thông báo cho ${firstWaiting.passengerName} trong danh sách chờ.`,
-            { duration: 5000 }
-          );
-        }
-      } else {
-        toast.success("Vé đã được hủy");
-      }
-
-      setSelectedBooking(null);
+      toast.success("Vé đã được hủy");
+      setSelectedTicket(null);
     }
   };
 
   const handleRefund = () => {
-    if (selectedBooking) {
-      const refundAmount = selectedBooking.price * 0.8; // 80% refund
-      const flight = getFlight(selectedBooking.flightId);
+    if (selectedTicket) {
+      const refundAmount = selectedTicket.price * 0.8; // 80% refund
 
-      selectedBooking.status = "canceled";
-      setBookings([...bookings]);
+      setTickets(tickets.map(t => t.id === selectedTicket.id ? { ...t, status: 'CANCELED' as const } : t));
       setShowRefundDialog(false);
 
-      // Notify waiting list if flight exists and has waiting list
-      if (flight && flight.waitingList && flight.waitingList.length > 0) {
-        const firstWaiting = flight.waitingList[0];
-        if (firstWaiting && !firstWaiting.notified) {
-          firstWaiting.notified = true;
-          toast.success(
-            `Hoàn tiền ${formatCurrency(refundAmount)} thành công! Đã thông báo cho người trong danh sách chờ.`,
-            { duration: 5000 }
-          );
-        } else {
-          toast.success(`Hoàn tiền ${formatCurrency(refundAmount)} thành công!`);
-        }
-      } else {
-        toast.success(`Hoàn tiền ${formatCurrency(refundAmount)} thành công!`);
-      }
-
-      setSelectedBooking(null);
+      toast.success(`Hoàn tiền ${formatCurrency(refundAmount)} thành công!`);
+      setSelectedTicket(null);
     }
   };
 
-  if (bookings.length === 0) {
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (tickets.length === 0) {
     return (
       <Card>
         <CardContent className="py-16 text-center">
@@ -165,36 +145,31 @@ export function MyBookings({ userId }: MyBookingsProps) {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2>Vé của tôi</h2>
-        <Badge variant="secondary">{bookings.length} vé</Badge>
+        <Badge variant="secondary">{tickets.length} vé</Badge>
       </div>
 
-      {bookings.map((booking) => {
-        const flight = getFlight(booking.flightId);
-        if (!flight) return null;
-
-        const timeRemaining = getTimeRemaining(booking.paymentDeadline);
-        const showPaymentWarning =
-          booking.status === "reserved" && !timeRemaining.expired;
+      {tickets.map((ticket) => {
+        const flight = ticket.flight;
 
         return (
-          <Card key={booking.id}>
+          <Card key={ticket.id}>
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
                   <CardTitle className="flex items-center gap-2">
-                    {booking.flightCode}
-                    {getStatusBadge(booking.status)}
+                    {flight.flightCode}
+                    {getStatusBadge(ticket.status)}
                   </CardTitle>
                   <CardDescription className="mt-1">
-                    Mã vé: {booking.ticketCode}
+                    Mã vé: {ticket.id}
                   </CardDescription>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold">{booking.seatNumber}</p>
+                  <p className="text-2xl font-bold">{/*ticket.seat.seatNumber*/ticket.ticketClass}</p>
                   <p className="text-sm text-gray-600">
-                    {booking.seatClass === "first"
+                    {ticket.ticketClass === "FIRST"
                       ? "Hạng Nhất"
-                      : booking.seatClass === "business"
+                      : ticket.ticketClass === "BUSINESS"
                         ? "Thương Gia"
                         : "Phổ Thông"}
                   </p>
@@ -228,36 +203,22 @@ export function MyBookings({ userId }: MyBookingsProps) {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Giá vé</p>
-                  <p className="font-semibold">{formatCurrency(booking.price)}</p>
+                  <p className="font-semibold">{formatCurrency(ticket.price)}</p>
                 </div>
               </div>
-
-              {showPaymentWarning && (
-                <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-sm text-yellow-800">
-                      Vui lòng thanh toán trong vòng{" "}
-                      <span className="font-bold">
-                        {timeRemaining.hours} giờ {timeRemaining.minutes} phút
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              )}
 
               <Separator />
 
               <div className="flex flex-wrap gap-2">
-                {booking.status === "reserved" && (
+                {ticket.status === "RESERVED" && (
                   <>
-                    <Button onClick={() => handlePayment(booking)}>
+                    <Button onClick={() => handlePayment(ticket)}>
                       Thanh toán ngay
                     </Button>
                     <Button
                       variant="outline"
                       onClick={() => {
-                        setSelectedBooking(booking);
+                        setSelectedTicket(ticket);
                         setShowCancelDialog(true);
                       }}
                     >
@@ -266,12 +227,12 @@ export function MyBookings({ userId }: MyBookingsProps) {
                   </>
                 )}
 
-                {booking.status === "paid" && (
+                {ticket.status === "PAID" && (
                   <>
-                    {canCheckIn(booking, flight) ? (
+                    {canCheckIn(ticket) ? (
                       <Button
                         onClick={() => {
-                          setSelectedBooking(booking);
+                          setSelectedTicket(ticket);
                           setShowCheckInDialog(true);
                         }}
                       >
@@ -285,7 +246,7 @@ export function MyBookings({ userId }: MyBookingsProps) {
                           Check-in
                         </Button>
                         <p className="text-xs text-gray-600 mt-1">
-                          {getCheckInMessage(booking, flight)}
+                          {getCheckInMessage(ticket)}
                         </p>
                       </div>
                     )}
@@ -294,7 +255,7 @@ export function MyBookings({ userId }: MyBookingsProps) {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        setSelectedBooking(booking);
+                        setSelectedTicket(ticket);
                         setShowRefundDialog(true);
                       }}
                     >
@@ -303,7 +264,7 @@ export function MyBookings({ userId }: MyBookingsProps) {
                   </>
                 )}
 
-                {booking.status === "checked-in" && (
+                {ticket.status === "CHANGED" && (
                   <Button>Xem thẻ lên máy bay</Button>
                 )}
               </div>
@@ -342,18 +303,18 @@ export function MyBookings({ userId }: MyBookingsProps) {
               vòng 7-10 ngày làm việc.
             </DialogDescription>
           </DialogHeader>
-          {selectedBooking && (
+          {selectedTicket && (
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex justify-between mb-2">
                 <span>Giá vé gốc:</span>
                 <span className="font-semibold">
-                  {formatCurrency(selectedBooking.price)}
+                  {formatCurrency(selectedTicket.price)}
                 </span>
               </div>
               <div className="flex justify-between text-green-600">
                 <span>Số tiền hoàn lại (80%):</span>
                 <span className="font-bold">
-                  {formatCurrency(selectedBooking.price * 0.8)}
+                  {formatCurrency(selectedTicket.price * 0.8)}
                 </span>
               </div>
             </div>
@@ -376,24 +337,24 @@ export function MyBookings({ userId }: MyBookingsProps) {
               Bạn có chắc chắn muốn check-in vé này? Hành động này không thể hoàn tác.
             </DialogDescription>
           </DialogHeader>
-          {selectedBooking && (
+          {selectedTicket && (
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex justify-between mb-2">
                 <span>Giá vé gốc:</span>
                 <span className="font-semibold">
-                  {formatCurrency(selectedBooking.price)}
+                  {formatCurrency(selectedTicket.price)}
                 </span>
               </div>
               <div className="flex justify-between text-green-600">
                 <span>Trạng thái:</span>
                 <span className="font-bold">
-                  {getStatusBadge(selectedBooking.status)}
+                  {getStatusBadge(selectedTicket.status)}
                 </span>
               </div>
               <div className="flex justify-between text-green-600">
                 <span>Thông báo:</span>
                 <span className="font-bold">
-                  {getCheckInMessage(selectedBooking, getFlight(selectedBooking.flightId) as Flight)}
+                  {getCheckInMessage(selectedTicket)}
                 </span>
               </div>
             </div>
