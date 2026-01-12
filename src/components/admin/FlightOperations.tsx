@@ -125,7 +125,7 @@ export function FlightOperations() {
     Promise.all([
       flightService.getAll({ all: true }),
       routeService.getAll(),
-      aircraftService.getAll({ all: true }),
+      aircraftService.getAll({ all: true, status: 'ACTIVE' }),
     ])
       .then(([allFlightsData, routesData, aircraftsData]) => {
         const allFlightsWithComputed = (allFlightsData.data.content as Flight[]).map(flight => ({
@@ -1056,4 +1056,5 @@ export function FlightOperations() {
     </div>
   );
 }
+
 
