@@ -9,6 +9,8 @@ import { Plane, Wrench, Plus, Edit, Download } from "lucide-react";
 import { toast } from "sonner";
 import { exportAircraftToExcel } from "../../utils/excelExport";
 import { aircraftService } from "../../services/aircraftService";
+import { seatService } from "../../services/seatService";
+import type { ClassSeatRequests } from "../../types/seatType";
 import type { Aircraft, CreateAircraftRequest, AircraftsPageResponse } from "../../types/aircraftType";
 import type { ApiResponse } from "../../types/commonType";
 
@@ -120,6 +122,51 @@ export function AircraftManagement() {
     aircraftService
       .create(aircraftData)
       .then((createdAircraft) => {
+        // Create seats if any seats specified
+        if (totalSeats > 0) {
+          const classSeatRequests: ClassSeatRequests = {};
+          let currentRow = 1;
+
+          if (newAircraft.economySeats > 0) {
+            const rows = Math.ceil(newAircraft.economySeats / 6);
+            classSeatRequests.ECONOMY = {
+              fromRow: currentRow,
+              toRow: currentRow + rows - 1,
+              layoutType: 'ECONOMY_3_3',
+              excludedRows: []
+            };
+            currentRow += rows;
+          }
+
+          if (newAircraft.businessSeats > 0) {
+            const rows = Math.ceil(newAircraft.businessSeats / 6);
+            classSeatRequests.BUSINESS = {
+              fromRow: currentRow,
+              toRow: currentRow + rows - 1,
+              layoutType: 'ECONOMY_3_3',
+              excludedRows: []
+            };
+            currentRow += rows;
+          }
+
+          if (newAircraft.firstClassSeats > 0) {
+            const rows = Math.ceil(newAircraft.firstClassSeats / 6);
+            classSeatRequests.FIRST_CLASS = {
+              fromRow: currentRow,
+              toRow: currentRow + rows - 1,
+              layoutType: 'ECONOMY_3_3',
+              excludedRows: []
+            };
+          }
+
+          seatService.createBulk({
+            aircraftId: createdAircraft.id,
+            classSeatRequests: classSeatRequests as ClassSeatRequests
+          }).catch(() => {
+            toast.error("Tạo ghế ngồi thất bại, nhưng máy bay đã được tạo");
+          });
+        }
+
         // Refresh the aircraft list
         fetchAircrafts();
         setAllAircraft(prev => [...prev, createdAircraft]);

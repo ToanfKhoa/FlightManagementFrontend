@@ -34,7 +34,7 @@ export interface ClassSeatRequest {
   excludedRows: number[];
 }
 
-export type ClassSeatRequests = Record<SeatClass, ClassSeatRequest>;
+export type ClassSeatRequests = Partial<Record<SeatClass, ClassSeatRequest>>;
 
 export type CreateSeatsRequest = {
   aircraftId: number;
