@@ -1,8 +1,10 @@
 import { Flight } from "./flightType";
+import { Employee } from "./employeeType";
 
 export interface Assignment {
     id: number;
     flight: Flight;
+    employee: Employee;
 }
 
 export interface AssignmentRequest {

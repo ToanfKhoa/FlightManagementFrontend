@@ -23,6 +23,7 @@ import { employeeService } from "../../services/employeeService";
 import type { Flight, Route, FlightStatus, FlightsPageResponse, FlightSeat, SeatSummary, CreateRouteRequest } from "../../types/flightType";
 import type { Aircraft } from "../../types/aircraftType";
 import type { Employee } from "../../types/employeeType";
+import type { Assignment } from "../../types/assignmentType";
 import type { ApiResponse } from "../../types/commonType";
 
 export function FlightOperations() {
@@ -67,6 +68,7 @@ export function FlightOperations() {
   const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [employeePage, setEmployeePage] = useState(0);
   const [employeeTotalPages, setEmployeeTotalPages] = useState(0);
+  const [existingAssignments, setExistingAssignments] = useState<Assignment[]>([]);
   const [editFlightData, setEditFlightData] = useState({
     priceSeatClass: [
       { seatClass: 'ECONOMY', price: 1500000 },
@@ -102,6 +104,19 @@ export function FlightOperations() {
       toast.error("Lỗi khi tải danh sách nhân viên");
     } finally {
       setLoadingEmployees(false);
+    }
+  };
+
+  const loadExistingAssignments = async (flightId: number) => {
+    try {
+      const res = await assignmentService.getAll({ all: true, filter: `flight.id==${flightId}` });
+      if (res.data) {
+        setExistingAssignments(res.data.content);
+        const assignedEmployeeIds = res.data.content.map((assignment: Assignment) => assignment.employee.id);
+        setSelectedEmployeeIds(assignedEmployeeIds);
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải phân công hiện tại", err);
     }
   };
 
@@ -150,6 +165,7 @@ export function FlightOperations() {
   useEffect(() => {
     if (showAssignDialog && selectedFlightForAssign) {
       loadEmployees(employeePage);
+      loadExistingAssignments(selectedFlightForAssign.id);
     }
   }, [showAssignDialog, selectedFlightForAssign, employeePage]);
 
@@ -380,6 +396,7 @@ export function FlightOperations() {
       setShowAssignDialog(false);
       setSelectedFlightForAssign(null);
       setSelectedEmployeeIds([]);
+      setExistingAssignments([]);
       setEmployeePage(0);
     } catch (err) {
       toast.error("Phân công chưa đáp ứng quy định, vui lòng xem xét lại.");
