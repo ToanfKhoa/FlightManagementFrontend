@@ -50,10 +50,8 @@ export const exportCrewToExcel = (employees: any[]) => {
             'ID': employee.id,
             'Họ tên': employee.fullName,
             'Vị trí': getPositionLabel(employee.position),
-            'Số chuyến bay': employee.assignments?.length || 0,
-            'Giờ bay trong tháng': `${employee.monthlyHours} / ${employee.maxHours}`,
-            'Kinh nghiệm': employee.workExperience || '—',
-            'Tổng giờ bay': employee.totalFlightHours || 0,
+            'Giờ bay trong tháng / Tối đa': `${employee.totalFlightHours} / ${employee.maxFlightHoursPerMonth}`,
+            'Kinh nghiệm': employee.workExperience || '—'
         }));
 
         // Create worksheet
