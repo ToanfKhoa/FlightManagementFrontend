@@ -2,38 +2,45 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { LogOut, Calendar, Clock, Plane } from "lucide-react";
-import { mockCrew, mockFlights } from "../lib/mockData";
-import type { CrewMember, Flight } from "../lib/mockData";
+import { LogOut, Calendar, Clock, Plane, User, Briefcase, Award, UserCheck } from "lucide-react";
+import { assignmentService } from "../services/assignmentService";
+import type { Employee } from "../types/employeeType";
+import type { Flight } from "../types/flightType";
+import type { Assignment } from "../types/assignmentType";
 import { useAuth } from "../context/AuthContext";
 import logoIcon from "../assets/images/logo-icon.png";
 
 export function CrewDashboard() {
-  const { user, logout } = useAuth();
-  const [crewMember, setCrewMember] = useState<CrewMember | null>(null);
+  const { user, employee, logout } = useAuth();
   const [assignedFlights, setAssignedFlights] = useState<Flight[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      // Find crew member by user ID (in real app, this would be from the database)
-      const member = mockCrew.find(c => c.id === user.id) || mockCrew[0];
-      setCrewMember(member);
+    if (!user || !employee) return;
 
-      // Get flights assigned to this crew member
-      const flights = mockFlights.filter(f =>
-        member.assignments.includes(f.flightCode)
-      );
-      setAssignedFlights(flights);
-    }
-  }, [user?.id]);
+    const fetchData = async () => {
+      try {
+        const assignmentsRes = await assignmentService.getEmployeeAssignments(employee.id);
+        const assignments = assignmentsRes.content;
+        const flights = assignments.map((a: Assignment) => a.flight);
+        setAssignedFlights(flights);
+      } catch (error) {
+        console.error('Error fetching crew data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [employee?.id]);
 
   const getStatusBadge = (status: Flight["status"]) => {
     const variants: Record<Flight["status"], { variant: any; label: string }> = {
-      open: { variant: "default", label: "Bình thường" },
-      full: { variant: "secondary", label: "Hết chỗ" },
-      delayed: { variant: "destructive", label: "Chậm" },
-      canceled: { variant: "destructive", label: "Đã hủy" },
-      completed: { variant: "secondary", label: "Hoàn thành" },
+      OPEN: { variant: "default", label: "Bình thường" },
+      FULL: { variant: "secondary", label: "Hết chỗ" },
+      DELAYED: { variant: "destructive", label: "Chậm" },
+      CANCELED: { variant: "destructive", label: "Đã hủy" },
+      COMPLETED: { variant: "secondary", label: "Hoàn thành" },
+      DEPARTED: { variant: "secondary", label: "Đã khởi hành" },
     };
 
     return (
@@ -41,7 +48,15 @@ export function CrewDashboard() {
     );
   };
 
-  if (!crewMember) {
+  if (!user || !employee) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Vui lòng đăng nhập để tiếp tục.</p>
+      </div>
+    );
+  }
+
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p>Đang tải...</p>
@@ -59,7 +74,7 @@ export function CrewDashboard() {
             <div>
               <h1>Hệ Thống Phi Hành Viên</h1>
               <p className="text-sm text-gray-600">
-                Xin chào, {user?.username} ({crewMember.role === "pilot" ? "Phi công" : "Tiếp viên"})
+                Xin chào, {employee.fullName} ({employee.position === "PILOT" || employee.position === "COPILOT" ? "Phi công" : "Tiếp viên"})
               </p>
             </div>
           </div>
@@ -79,25 +94,39 @@ export function CrewDashboard() {
               <CardTitle>Thông tin phi hành viên</CardTitle>
             </CardHeader>
             <CardContent>
+              <div className="mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600"><strong>Họ tên:</strong> {employee.fullName}</p>
+                    <p className="text-sm text-gray-600"><strong>Vai trò:</strong> {employee.position === "PILOT" || employee.position === "COPILOT" ? "Phi công" : "Tiếp viên"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600"><strong>Email:</strong> {user.email}</p>
+                    <p className="text-sm text-gray-600"><strong>Số điện thoại:</strong> {user.phone}</p>
+                  </div>
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Vai trò</p>
-                  <p className="text-xl font-bold">
-                    {crewMember.role === "pilot" ? "Phi công" : "Tiếp viên"}
-                  </p>
+                <div className="bg-orange-50 p-4 rounded-lg">
+                  <Briefcase className="w-6 h-6 text-orange-600 mb-2" />
+                  <p className="text-sm text-gray-600 mb-1">Kinh nghiệm</p>
+                  <p className="text-lg font-bold">{employee.workExperience}</p>
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Số chuyến bay</p>
-                  <p className="text-xl font-bold">{crewMember.assignments.length}</p>
+                  <Award className="w-6 h-6 text-green-600 mb-2" />
+                  <p className="text-sm text-gray-600 mb-1">Tổng giờ bay</p>
+                  <p className="text-lg font-bold">{employee.totalFlightHours}h</p>
                 </div>
                 <div className="bg-purple-50 p-4 rounded-lg">
+                  <Clock className="w-6 h-6 text-purple-600 mb-2" />
                   <p className="text-sm text-gray-600 mb-1">Giờ bay tháng này</p>
-                  <p className="text-xl font-bold">{crewMember.monthlyHours}h</p>
+                  <p className="text-lg font-bold">{employee.monthlyHours}h</p>
                 </div>
                 <div className="bg-yellow-50 p-4 rounded-lg">
+                  <Plane className="w-6 h-6 text-yellow-600 mb-2" />
                   <p className="text-sm text-gray-600 mb-1">Còn lại</p>
-                  <p className="text-xl font-bold">
-                    {crewMember.maxHours - crewMember.monthlyHours}h
+                  <p className="text-lg font-bold">
+                    {employee.maxHours - employee.monthlyHours}h
                   </p>
                 </div>
               </div>
@@ -127,15 +156,15 @@ export function CrewDashboard() {
                         <div>
                           <CardTitle className="flex items-center gap-2">
                             <Plane className="w-5 h-5" />
-                            {flight.flightCode}
+                            {flight.id}
                             {getStatusBadge(flight.status)}
                           </CardTitle>
                           <CardDescription className="mt-1">
-                            {flight.route}
+                            {flight.route.origin} - {flight.route.destination}
                           </CardDescription>
                         </div>
                         <div className="text-right">
-                          <Badge variant="outline">{flight.aircraftType}</Badge>
+                          <Badge variant="outline">{flight.aircraft.type}</Badge>
                         </div>
                       </div>
                     </CardHeader>
@@ -146,7 +175,7 @@ export function CrewDashboard() {
                           <div>
                             <p className="text-sm text-gray-600">Ngày bay</p>
                             <p className="font-semibold">
-                              {new Date(flight.date).toLocaleDateString("vi-VN")}
+                              {new Date(flight.departureTime).toLocaleDateString("vi-VN")}
                             </p>
                           </div>
                         </div>
@@ -163,11 +192,11 @@ export function CrewDashboard() {
                         </div>
                         <div>
                           <p className="text-sm text-gray-600">Xuất phát</p>
-                          <p className="font-semibold">{flight.departure}</p>
+                          <p className="font-semibold">{flight.route.origin}</p>
                         </div>
                       </div>
 
-                      {flight.status === "delayed" && (
+                      {flight.status === "DELAYED" && (
                         <div className="mt-4 bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
                           <p className="text-sm text-yellow-800">
                             ⚠️ Chuyến bay bị chậm. Vui lòng liên hệ điều hành để biết thêm chi tiết.
@@ -175,7 +204,7 @@ export function CrewDashboard() {
                         </div>
                       )}
 
-                      {flight.status === "canceled" && (
+                      {flight.status === "CANCELED" && (
                         <div className="mt-4 bg-red-50 border border-red-200 p-3 rounded-lg">
                           <p className="text-sm text-red-800">
                             ❌ Chuyến bay đã bị hủy.
