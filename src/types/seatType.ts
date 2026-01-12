@@ -4,15 +4,15 @@ import { Aircraft } from "./aircraftType";
 export type SeatClass = 'BUSINESS' | 'FIRST_CLASS' | 'ECONOMY';
 export type LayoutType =
   | "ECONOMY_3_3"
-  | "ECONOMY_2_4_2"
   | "BUSINESS_2_2"
-  | "FIRST_1_1";
+  | "WIDE_2_4_2"
+  | "SMALL_1_2";
 
 export type Seat = {
   id: number;
   aircraft?: Aircraft;
   seatNumber: string;
-  class: SeatClass;
+  seatClass: SeatClass;
 };
 
 export type CreateSeatRequest = {

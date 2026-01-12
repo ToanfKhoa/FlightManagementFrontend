@@ -22,7 +22,7 @@ export function AircraftManagement() {
   const [selectedAircraft, setSelectedAircraft] = useState<Aircraft | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [newAircraft, setNewAircraft] = useState<CreateAircraftRequest>({
+  const [newAircraft, setNewAircraft] = useState<CreateAircraftRequest & { economySeats: number; businessSeats: number; firstClassSeats: number }>({
     type: '',
     seatCapacity: 0,
     registrationNumber: '',
@@ -30,9 +30,12 @@ export function AircraftManagement() {
     model: '',
     manufactureYear: 0,
     serialNumber: '',
-    status: 'ACTIVE'
+    status: 'ACTIVE',
+    economySeats: 0,
+    businessSeats: 0,
+    firstClassSeats: 0
   });
-  const [updatedAircraft, setUpdatedAircraft] = useState<CreateAircraftRequest>({
+  const [updatedAircraft, setUpdatedAircraft] = useState<CreateAircraftRequest & { economySeats: number; businessSeats: number; firstClassSeats: number }>({
     type: '',
     seatCapacity: 0,
     registrationNumber: '',
@@ -40,7 +43,10 @@ export function AircraftManagement() {
     model: '',
     manufactureYear: 0,
     serialNumber: '',
-    status: 'ACTIVE'
+    status: 'ACTIVE',
+    economySeats: 0,
+    businessSeats: 0,
+    firstClassSeats: 0
   });
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -109,8 +115,10 @@ export function AircraftManagement() {
   };
 
   const handleCreateAircraft = () => {
+    const totalSeats = newAircraft.economySeats + newAircraft.businessSeats + newAircraft.firstClassSeats;
+    const aircraftData = { ...newAircraft, seatCapacity: totalSeats };
     aircraftService
-      .create(newAircraft)
+      .create(aircraftData)
       .then((createdAircraft) => {
         // Refresh the aircraft list
         fetchAircrafts();
@@ -125,7 +133,10 @@ export function AircraftManagement() {
           model: '',
           manufactureYear: 0,
           serialNumber: '',
-          status: 'ACTIVE'
+          status: 'ACTIVE',
+          economySeats: 0,
+          businessSeats: 0,
+          firstClassSeats: 0
         });
       })
       .catch(() => {
@@ -195,7 +206,10 @@ export function AircraftManagement() {
             <Download className="w-4 h-4 mr-2" />
             Xuất Excel
           </Button>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <Button onClick={() => {
+            if (isEditMode) setIsEditMode(false);
+            setIsCreateDialogOpen(true);
+          }}>
             <Plus className="w-4 h-4 mr-2" />
             Thêm máy bay mới
           </Button>
@@ -352,22 +366,6 @@ export function AircraftManagement() {
               </div>
 
               <div>
-                <Label htmlFor="seatCapacity">Sức chứa ghế</Label>
-                <Input
-                  id="seatCapacity"
-                  type="number"
-                  value={isEditMode ? updatedAircraft.seatCapacity : newAircraft.seatCapacity}
-                  onChange={(e) => {
-                    const v = parseInt(e.target.value) || 0;
-                    isEditMode
-                      ? setUpdatedAircraft(prev => ({ ...prev, seatCapacity: v }))
-                      : setNewAircraft(prev => ({ ...prev, seatCapacity: v }));
-                  }}
-                  placeholder="Ví dụ: 180"
-                />
-              </div>
-
-              <div>
                 <Label htmlFor="status">Trạng thái</Label>
                 <select
                   className="border p-2 rounded w-full"
@@ -385,8 +383,63 @@ export function AircraftManagement() {
               </div>
             </div>
 
+            {!isEditMode && (
+              <div className="border-t pt-4">
+                <h4 className="text-lg font-semibold mb-4">Cấu hình ghế ngồi</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="economySeats">Số ghế Economy</Label>
+                    <Input
+                      id="economySeats"
+                      type="number"
+                      value={newAircraft.economySeats}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value) || 0;
+                        setNewAircraft(prev => ({ ...prev, economySeats: v }));
+                      }}
+                      placeholder="Ví dụ: 150"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="businessSeats">Số ghế Business</Label>
+                    <Input
+                      id="businessSeats"
+                      type="number"
+                      value={newAircraft.businessSeats}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value) || 0;
+                        setNewAircraft(prev => ({ ...prev, businessSeats: v }));
+                      }}
+                      placeholder="Ví dụ: 20"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="firstClassSeats">Số ghế First Class</Label>
+                    <Input
+                      id="firstClassSeats"
+                      type="number"
+                      value={newAircraft.firstClassSeats}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value) || 0;
+                        setNewAircraft(prev => ({ ...prev, firstClassSeats: v }));
+                      }}
+                      placeholder="Ví dụ: 10"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => {
+                setIsCreateDialogOpen(false);
+                if (isEditMode) setIsEditMode(false);
+              }}>
                 Hủy
               </Button>
               <Button onClick={isEditMode ? handleUpdateAircraft : handleCreateAircraft}>
@@ -456,7 +509,10 @@ export function AircraftManagement() {
                           model: ac.model,
                           manufactureYear: ac.manufactureYear,
                           serialNumber: ac.serialNumber,
-                          status: ac.status
+                          status: ac.status,
+                          economySeats: 0,
+                          businessSeats: 0,
+                          firstClassSeats: 0
                         });
                         setIsEditMode(true);
                         setIsCreateDialogOpen(true);
@@ -484,3 +540,4 @@ export function AircraftManagement() {
     </div>
   );
 }
+
