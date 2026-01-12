@@ -117,6 +117,12 @@ export function AircraftManagement() {
   };
 
   const handleCreateAircraft = () => {
+    // Check if seat counts are multiples of 6
+    if (newAircraft.economySeats % 6 !== 0 || newAircraft.businessSeats % 6 !== 0 || newAircraft.firstClassSeats % 6 !== 0) {
+      toast.error("Số ghế mỗi hạng phải là bội số của 6. Vui lòng nhập lại.");
+      return;
+    }
+
     const totalSeats = newAircraft.economySeats + newAircraft.businessSeats + newAircraft.firstClassSeats;
     const aircraftData = { ...newAircraft, seatCapacity: totalSeats };
     aircraftService
@@ -187,7 +193,7 @@ export function AircraftManagement() {
         });
       })
       .catch(() => {
-        toast.error("Không thể tạo máy bay");
+        toast.error("Vui lòng nhập đầy đủ thông tin máy bay");
       });
   };
 
