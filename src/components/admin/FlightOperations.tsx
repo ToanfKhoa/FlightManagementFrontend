@@ -58,7 +58,7 @@ export function FlightOperations() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingFlight, setEditingFlight] = useState<Flight | null>(null);
   const [editFlightData, setEditFlightData] = useState({
-    flightSeats: [
+    priceSeatClass: [
       { seatClass: 'ECONOMY', price: 1500000 },
       { seatClass: 'BUSINESS', price: 3000000 },
       { seatClass: 'FIRST_CLASS', price: 5000000 }
@@ -347,7 +347,7 @@ export function FlightOperations() {
       };
 
       const updatedData = await flightService.update(String(editingFlight.id), {
-        priceSeatClass: editFlightData.flightSeats,
+        priceSeatClass: editFlightData.priceSeatClass,
         routeId: editFlightData.routeId,
         aircraftId: editFlightData.aircraftId,
         status: editFlightData.status,
@@ -623,11 +623,11 @@ export function FlightOperations() {
                   <Input
                     id="edit-economy-price"
                     type="number"
-                    value={editFlightData.flightSeats[0].price}
+                    value={editFlightData.priceSeatClass[0].price}
                     onChange={(e) => {
-                      const updated = [...editFlightData.flightSeats];
+                      const updated = [...editFlightData.priceSeatClass];
                       updated[0].price = parseInt(e.target.value) || 0;
-                      setEditFlightData({ ...editFlightData, flightSeats: updated });
+                      setEditFlightData({ ...editFlightData, priceSeatClass: updated });
                     }}
                     placeholder="Giá"
                   />
@@ -637,11 +637,11 @@ export function FlightOperations() {
                   <Input
                     id="edit-business-price"
                     type="number"
-                    value={editFlightData.flightSeats[1].price}
+                    value={editFlightData.priceSeatClass[1].price}
                     onChange={(e) => {
-                      const updated = [...editFlightData.flightSeats];
+                      const updated = [...editFlightData.priceSeatClass];
                       updated[1].price = parseInt(e.target.value) || 0;
-                      setEditFlightData({ ...editFlightData, flightSeats: updated });
+                      setEditFlightData({ ...editFlightData, priceSeatClass: updated });
                     }}
                     placeholder="Giá"
                   />
@@ -651,11 +651,11 @@ export function FlightOperations() {
                   <Input
                     id="edit-first-class-price"
                     type="number"
-                    value={editFlightData.flightSeats[2].price}
+                    value={editFlightData.priceSeatClass[2].price}
                     onChange={(e) => {
-                      const updated = [...editFlightData.flightSeats];
+                      const updated = [...editFlightData.priceSeatClass];
                       updated[2].price = parseInt(e.target.value) || 0;
-                      setEditFlightData({ ...editFlightData, flightSeats: updated });
+                      setEditFlightData({ ...editFlightData, priceSeatClass: updated });
                     }}
                     placeholder="Giá"
                   />
@@ -821,25 +821,21 @@ export function FlightOperations() {
                             return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
                           };
 
-                          // Convert prices object to priceSeatClass array
-                          const prices = flight.flightSeats;
-                          const priceSeatClass = [
-                            { seatClass: 'ECONOMY', price: (prices?.ECONOMY as number) || 1500000 },
-                            { seatClass: 'BUSINESS', price: (prices?.BUSINESS as number) || 3000000 },
-                            { seatClass: 'FIRST_CLASS', price: (prices?.FIRST_CLASS as number) || 5000000 }
-                          ];
+                          // Group flightSeats by seatClass to get prices
+                          const priceMap = flight.flightSeats.reduce((acc, seat) => {
+                            acc[seat.seatClass] = seat.price;
+                            return acc;
+                          }, {} as Record<string, number>);
 
-                          // Convert summary seat object to seat summary array
-                          const summary = flight.seatSummary;
-                          const seatSummary = [
-                            { seatClass: 'ECONOMY', availableSeats: (summary?.ECONOMY as number) || 1 },
-                            { seatClass: 'BUSINESS', availableSeats: (summary?.BUSINESS as number) || 1 },
-                            { seatClass: 'FIRST_CLASS', availableSeats: (summary?.FIRST_CLASS as number) || 1 }
+                          const priceSeatClass = [
+                            { seatClass: 'ECONOMY', price: priceMap.ECONOMY || 0 },
+                            { seatClass: 'BUSINESS', price: priceMap.BUSINESS || 0 },
+                            { seatClass: 'FIRST_CLASS', price: priceMap.FIRST_CLASS || 0 }
                           ];
 
                           setEditFlightData({
-                            flightSeats: priceSeatClass,
-                            seatSummary: seatSummary,
+                            priceSeatClass: priceSeatClass,
+                            seatSummary: flight.seatSummary,
                             routeId: flight.route?.id ?? 1,
                             aircraftId: flight.aircraft?.id ?? 1,
                             status: flight.status,
@@ -1056,3 +1052,4 @@ export function FlightOperations() {
     </div>
   );
 }
+
