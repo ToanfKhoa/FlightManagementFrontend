@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { Badge } from "./ui/badge";
 import { LogOut, Calendar, Clock, Plane } from "lucide-react";
 import { assignmentService } from "../services/assignmentService";
-import { employeeService } from "../services/employeeService";
 import type { Employee } from "../types/employeeType";
 import type { Flight } from "../types/flightType";
 import type { Assignment } from "../types/assignmentType";
@@ -12,19 +11,16 @@ import { useAuth } from "../context/AuthContext";
 import logoIcon from "../assets/images/logo-icon.png";
 
 export function CrewDashboard() {
-  const { user, logout } = useAuth();
-  const [crewMember, setCrewMember] = useState<CrewMember | null>(null);
+  const { user, employee, logout } = useAuth();
   const [assignedFlights, setAssignedFlights] = useState<Flight[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!user || !employee) return;
+
     const fetchData = async () => {
       try {
-        const employeeRes = await employeeService.getEmployee(user.id.toString());
-        const employee = employeeRes.data;
-        setCrewMember(employee);
-
-        const assignmentsRes = await assignmentService.getEmployeeAssignments(parseInt(user.id));
+        const assignmentsRes = await assignmentService.getEmployeeAssignments(employee.id);
         const assignments = assignmentsRes.content;
         const flights = assignments.map((a: Assignment) => a.flight);
         setAssignedFlights(flights);
@@ -35,7 +31,7 @@ export function CrewDashboard() {
       }
     };
     fetchData();
-  }, [user.id]);
+  }, [employee?.id]);
 
   const getStatusBadge = (status: Flight["status"]) => {
     const variants: Record<Flight["status"], { variant: any; label: string }> = {
@@ -52,7 +48,15 @@ export function CrewDashboard() {
     );
   };
 
-  if (loading || !crewMember) {
+  if (!user || !employee) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Vui lòng đăng nhập để tiếp tục.</p>
+      </div>
+    );
+  }
+
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p>Đang tải...</p>
@@ -70,7 +74,7 @@ export function CrewDashboard() {
             <div>
               <h1>Hệ Thống Phi Hành Viên</h1>
               <p className="text-sm text-gray-600">
-                Xin chào, {user.name} ({crewMember.position === "PILOT" || crewMember.position === "COPILOT" ? "Phi công" : "Tiếp viên"})
+                Xin chào, {user.username} ({employee.position === "PILOT" || employee.position === "COPILOT" ? "Phi công" : "Tiếp viên"})
               </p>
             </div>
           </div>
@@ -94,7 +98,7 @@ export function CrewDashboard() {
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <p className="text-sm text-gray-600 mb-1">Vai trò</p>
                   <p className="text-xl font-bold">
-                    {crewMember.position === "PILOT" || crewMember.position === "COPILOT" ? "Phi công" : "Tiếp viên"}
+                    {employee.position === "PILOT" || employee.position === "COPILOT" ? "Phi công" : "Tiếp viên"}
                   </p>
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg">
@@ -103,12 +107,12 @@ export function CrewDashboard() {
                 </div>
                 <div className="bg-purple-50 p-4 rounded-lg">
                   <p className="text-sm text-gray-600 mb-1">Giờ bay tháng này</p>
-                  <p className="text-xl font-bold">{crewMember.monthlyHours}h</p>
+                  <p className="text-xl font-bold">{employee.monthlyHours}h</p>
                 </div>
                 <div className="bg-yellow-50 p-4 rounded-lg">
                   <p className="text-sm text-gray-600 mb-1">Còn lại</p>
                   <p className="text-xl font-bold">
-                    {crewMember.maxHours - crewMember.monthlyHours}h
+                    {employee.maxHours - employee.monthlyHours}h
                   </p>
                 </div>
               </div>
