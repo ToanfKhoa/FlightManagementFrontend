@@ -12,7 +12,7 @@ import type { Flight, Seat, Booking } from "../../lib/mockData";
 interface BookingConfirmationProps {
   flight: Flight;
   seat: Seat;
-  userId: string;
+  userId: number;
   onBack: () => void;
   onComplete: () => void;
 }
@@ -40,7 +40,7 @@ export function BookingConfirmation({
       setTicketCode(code);
 
       const newBooking: Booking = {
-        id: "b" + Date.now(),
+        id: Date.now(),
         ticketCode: code,
         passengerId: userId,
         passengerName,

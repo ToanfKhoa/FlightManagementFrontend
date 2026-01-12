@@ -7,18 +7,14 @@ import { FlightSearch } from "./passenger/FlightSearch";
 import { MyBookings } from "./passenger/MyBookings";
 import { CheckInPage } from "./passenger/CheckInPage";
 import { BaggageCalculator } from "./passenger/BaggageCalculator";
-import type { User } from "../App";
+import { useAuth } from "../context/AuthContext";
 import logoIcon from "../assets/images/logo-icon.png";
 
 // Use a relative path that should work with Vite's asset handling
 const backgroundImage = new URL('../assets/images/passenger-wallpaper.jpg', import.meta.url).href;
 
-interface PassengerDashboardProps {
-  user: User;
-  onLogout: () => void;
-}
-
-export function PassengerDashboard({ user, onLogout }: PassengerDashboardProps) {
+export function PassengerDashboard() {
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("search");
   const [scrollY, setScrollY] = useState(0);
 
@@ -51,10 +47,10 @@ export function PassengerDashboard({ user, onLogout }: PassengerDashboardProps) 
             <img src={logoIcon} alt="SkyWings Logo" className="w-12 h-12" />
             <div>
               <h1 className="text-gray-900 font-bold">Hệ Thống Chuyến Bay</h1>
-              <p className="text-sm text-gray-600">Xin chào, {user.name}</p>
+              <p className="text-sm text-gray-600">Xin chào, {user?.username}</p>
             </div>
           </div>
-          <Button variant="outline" onClick={onLogout}>
+          <Button variant="outline" onClick={logout}>
             <LogOut className="w-4 h-4 mr-2" />
             Đăng xuất
           </Button>
@@ -130,15 +126,15 @@ export function PassengerDashboard({ user, onLogout }: PassengerDashboardProps) 
         <div className="max-w-7xl mx-auto px-4 py-8 bg-gray-50 min-h-screen">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsContent value="search" className="mt-0">
-              <FlightSearch userId={user.id} />
+              <FlightSearch userId={user!.id} />
             </TabsContent>
 
             <TabsContent value="bookings" className="mt-0">
-              <MyBookings userId={user.id} />
+              <MyBookings userId={user!.id} />
             </TabsContent>
 
             <TabsContent value="checkin" className="mt-0">
-              <CheckInPage userId={user.id} />
+              <CheckInPage userId={user!.id} />
             </TabsContent>
 
             <TabsContent value="baggage" className="mt-0">

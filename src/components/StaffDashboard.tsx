@@ -5,15 +5,12 @@ import { LogOut, Search, Luggage, FileCheck } from "lucide-react";
 import { PassengerVerification } from "./staff/PassengerVerification";
 import { CheckInDesk } from "./staff/CheckInDesk";
 import { BaggageDesk } from "./staff/BaggageDesk";
+import { useAuth } from "../context/AuthContext";
 import type { User } from "../App";
 import logoIcon from "../assets/images/logo-icon.png";
 
-interface StaffDashboardProps {
-  user: User;
-  onLogout: () => void;
-}
-
-export function StaffDashboard({ user, onLogout }: StaffDashboardProps) {
+export function StaffDashboard() {
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("verification");
 
   return (
@@ -25,10 +22,10 @@ export function StaffDashboard({ user, onLogout }: StaffDashboardProps) {
             <img src={logoIcon} alt="SkyWings Logo" className="w-12 h-12" />
             <div>
               <h1>Hệ Thống Nhân Viên</h1>
-              <p className="text-sm text-gray-600">Xin chào, {user.name}</p>
+              <p className="text-sm text-gray-600">Xin chào, {user?.username}</p>
             </div>
           </div>
-          <Button variant="outline" onClick={onLogout}>
+          <Button variant="outline" onClick={logout}>
             <LogOut className="w-4 h-4 mr-2" />
             Đăng xuất
           </Button>

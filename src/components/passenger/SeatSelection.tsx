@@ -9,7 +9,7 @@ import type { Flight, Seat } from "../../lib/mockData";
 
 interface SeatSelectionProps {
   flight: Flight;
-  userId: string;
+  userId: number;
   onBack: () => void;
 }
 
