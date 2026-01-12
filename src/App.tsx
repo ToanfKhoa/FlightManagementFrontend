@@ -7,6 +7,7 @@ import { PassengerLandingPage } from "./components/passenger/PassengerLandingPag
 import { StaffDashboard } from "./components/StaffDashboard";
 import { AdminDashboard } from "./components/AdminDashboard";
 import { CrewDashboard } from "./components/CrewDashboard";
+import { CreateNewPassword } from "./components/passenger/CreateNewPassword";
 import { Toaster } from "./components/ui/sonner";
 import { useAuth } from "./context/AuthContext";
 
@@ -52,6 +53,10 @@ function App() {
         <Route
           path="/register"
           element={<Register />}
+        />
+        <Route
+          path="/reset-password"
+          element={<CreateNewPassword />}
         />
 
         {/* Protected routes */}
