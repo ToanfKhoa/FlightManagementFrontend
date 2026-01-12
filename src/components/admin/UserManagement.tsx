@@ -8,7 +8,11 @@ import { Users, Eye, Edit, Trash, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import type { User, UsersPageResponse } from "../../types/authType";
 import type { ApiResponse } from "../../types/commonType";
+import type { Passenger } from "../../types/passengerType";
+import type { Employee } from "../../types/employeeType";
 import { userService } from "../../services/userService";
+import { passengerService } from "../../services/passengerService";
+import { employeeService } from "../../services/employeeService";
 import UserFormDialog from "./UserFormDialog";
 import { useEffect } from "react";
 
@@ -20,6 +24,8 @@ export function UserManagement() {
   const [totalPages, setTotalPages] = useState(0);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedPassenger, setSelectedPassenger] = useState<Passenger | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
@@ -68,6 +74,38 @@ export function UserManagement() {
   const confirmDeleteUser = (user: User) => {
     setUserToDelete(user);
     setShowDeleteDialog(true);
+  };
+
+  const fetchUserDetails = async (user: User) => {
+    setSelectedUser(user);
+    setSelectedPassenger(null);
+    setSelectedEmployee(null);
+    setShowDetailDialog(true);
+
+    const passengerId = (user as any).passenger_id;
+    const employeeId = (user as any).employee_id;
+
+    if (passengerId) {
+      try {
+        const res = await passengerService.getPassenger(String(passengerId));
+        if (res?.data) {
+          setSelectedPassenger(res.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch passenger details:', err);
+      }
+    }
+
+    if (employeeId) {
+      try {
+        const res = await employeeService.getEmployee(String(employeeId));
+        if (res?.data) {
+          setSelectedEmployee(res.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch employee details:', err);
+      }
+    }
   };
 
   const fetchUsers = async () => {
@@ -170,7 +208,7 @@ export function UserManagement() {
 
                 <div className="flex gap-2">
                   {/* View Details */}
-                  <Button size="sm" variant="outline" onClick={() => { setSelectedUser(user); setShowDetailDialog(true); }}>
+                  <Button size="sm" variant="outline" onClick={() => fetchUserDetails(user)}>
                     <Eye className="w-4 h-4 mr-1" />
                     Xem
                   </Button>
@@ -233,22 +271,53 @@ export function UserManagement() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-        <DialogContent>
+      <Dialog open={showDetailDialog} onOpenChange={(open) => { setShowDetailDialog(open); if (!open) { setSelectedUser(null); setSelectedPassenger(null); setSelectedEmployee(null); } }}>
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Thông tin tài khoản</DialogTitle>
             <DialogDescription>Chi tiết tài khoản {selectedUser?.username}</DialogDescription>
           </DialogHeader>
           {selectedUser && (
-            <div className="space-y-2 text-sm">
-              <p><strong>Username:</strong> {selectedUser.username}</p>
-              <p><strong>Email:</strong> {selectedUser.email}</p>
-              <p><strong>Phone:</strong> {selectedUser.phone}</p>
-              <p><strong>Role:</strong> {selectedUser.role}</p>
-              {selectedUser && (selectedUser as any).passenger_id && <p><strong>Passenger ID:</strong> {(selectedUser as any).passenger_id}</p>}
-              {selectedUser && (selectedUser as any).employee_id && <p><strong>Employee ID:</strong> {(selectedUser as any).employee_id}</p>}
-              <p><strong>Created at:</strong> {new Date((selectedUser as any).createdAt ?? (selectedUser as any).created_at ?? '').toLocaleString()}</p>
-              <p><strong>Updated at:</strong> {new Date((selectedUser as any).updatedAt ?? (selectedUser as any).updated_at ?? '').toLocaleString()}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* User Info */}
+              <div className="space-y-2 text-sm">
+                <h3 className="font-semibold text-base">Thông tin tài khoản</h3>
+                <p><strong>Username:</strong> {selectedUser.username}</p>
+                <p><strong>Email:</strong> {selectedUser.email}</p>
+                <p><strong>Phone:</strong> {selectedUser.phone}</p>
+                <p><strong>Role:</strong> {selectedUser.role}</p>
+                {selectedUser && (selectedUser as any).passenger_id && <p><strong>Passenger ID:</strong> {(selectedUser as any).passenger_id}</p>}
+                {selectedUser && (selectedUser as any).employee_id && <p><strong>Employee ID:</strong> {(selectedUser as any).employee_id}</p>}
+                <p><strong>Created at:</strong> {new Date((selectedUser as any).createdAt ?? (selectedUser as any).created_at ?? '').toLocaleString()}</p>
+                <p><strong>Updated at:</strong> {new Date((selectedUser as any).updatedAt ?? (selectedUser as any).updated_at ?? '').toLocaleString()}</p>
+              </div>
+
+              {/* Passenger Info */}
+              {selectedPassenger && (
+                <div className="space-y-2 text-sm">
+                  <h3 className="font-semibold text-base">Thông tin hành khách</h3>
+                  <p><strong>Họ tên:</strong> {selectedPassenger.fullName}</p>
+                  <p><strong>Ngày sinh:</strong> {new Date(selectedPassenger.dateOfBirth).toLocaleDateString()}</p>
+                  <p><strong>Quốc tịch:</strong> {selectedPassenger.nationality}</p>
+                  <p><strong>Số CMND/CCCD:</strong> {selectedPassenger.idNumber}</p>
+                  <p><strong>Địa chỉ:</strong> {selectedPassenger.address}</p>
+                  <p><strong>Số điện thoại:</strong> {selectedPassenger.phone}</p>
+                </div>
+              )}
+
+              {/* Employee Info */}
+              {selectedEmployee && (
+                <div className="space-y-2 text-sm">
+                  <h3 className="font-semibold text-base">Thông tin nhân viên</h3>
+                  <p><strong>Họ tên:</strong> {selectedEmployee.fullName}</p>
+                  <p><strong>Vị trí:</strong> {selectedEmployee.position}</p>
+                  <p><strong>Kinh nghiệm làm việc:</strong> {selectedEmployee.workExperience}</p>
+                  <p><strong>Tổng giờ bay:</strong> {selectedEmployee.totalFlightHours}</p>
+                  <p><strong>Giờ bay tháng này:</strong> {selectedEmployee.monthlyHours}</p>
+                  <p><strong>Giờ bay tối đa:</strong> {selectedEmployee.maxHours}</p>
+                  <p><strong>Phân công:</strong> {selectedEmployee.assignments?.join(', ') || 'Không có'}</p>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
