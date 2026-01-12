@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { LogOut, Calendar, Clock, Plane } from "lucide-react";
+import { LogOut, Calendar, Clock, Plane, User, Briefcase, Award, UserCheck } from "lucide-react";
 import { assignmentService } from "../services/assignmentService";
 import type { Employee } from "../types/employeeType";
 import type { Flight } from "../types/flightType";
@@ -74,7 +74,7 @@ export function CrewDashboard() {
             <div>
               <h1>Hệ Thống Phi Hành Viên</h1>
               <p className="text-sm text-gray-600">
-                Xin chào, {user.username} ({employee.position === "PILOT" || employee.position === "COPILOT" ? "Phi công" : "Tiếp viên"})
+                Xin chào, {employee.fullName} ({employee.position === "PILOT" || employee.position === "COPILOT" ? "Phi công" : "Tiếp viên"})
               </p>
             </div>
           </div>
@@ -94,24 +94,38 @@ export function CrewDashboard() {
               <CardTitle>Thông tin phi hành viên</CardTitle>
             </CardHeader>
             <CardContent>
+              <div className="mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600"><strong>Họ tên:</strong> {employee.fullName}</p>
+                    <p className="text-sm text-gray-600"><strong>Vai trò:</strong> {employee.position === "PILOT" || employee.position === "COPILOT" ? "Phi công" : "Tiếp viên"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600"><strong>Email:</strong> {user.email}</p>
+                    <p className="text-sm text-gray-600"><strong>Số điện thoại:</strong> {user.phone}</p>
+                  </div>
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Vai trò</p>
-                  <p className="text-xl font-bold">
-                    {employee.position === "PILOT" || employee.position === "COPILOT" ? "Phi công" : "Tiếp viên"}
-                  </p>
+                <div className="bg-orange-50 p-4 rounded-lg">
+                  <Briefcase className="w-6 h-6 text-orange-600 mb-2" />
+                  <p className="text-sm text-gray-600 mb-1">Kinh nghiệm</p>
+                  <p className="text-lg font-bold">{employee.workExperience}</p>
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Số chuyến bay</p>
-                  <p className="text-xl font-bold">{assignedFlights.length}</p>
+                  <Award className="w-6 h-6 text-green-600 mb-2" />
+                  <p className="text-sm text-gray-600 mb-1">Tổng giờ bay</p>
+                  <p className="text-lg font-bold">{employee.totalFlightHours}h</p>
                 </div>
                 <div className="bg-purple-50 p-4 rounded-lg">
+                  <Clock className="w-6 h-6 text-purple-600 mb-2" />
                   <p className="text-sm text-gray-600 mb-1">Giờ bay tháng này</p>
-                  <p className="text-xl font-bold">{employee.monthlyHours}h</p>
+                  <p className="text-lg font-bold">{employee.monthlyHours}h</p>
                 </div>
                 <div className="bg-yellow-50 p-4 rounded-lg">
+                  <Plane className="w-6 h-6 text-yellow-600 mb-2" />
                   <p className="text-sm text-gray-600 mb-1">Còn lại</p>
-                  <p className="text-xl font-bold">
+                  <p className="text-lg font-bold">
                     {employee.maxHours - employee.monthlyHours}h
                   </p>
                 </div>
