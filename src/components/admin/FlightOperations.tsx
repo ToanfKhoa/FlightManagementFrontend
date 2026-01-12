@@ -65,6 +65,8 @@ export function FlightOperations() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
   const [loadingEmployees, setLoadingEmployees] = useState(false);
+  const [employeePage, setEmployeePage] = useState(0);
+  const [employeeTotalPages, setEmployeeTotalPages] = useState(0);
   const [editFlightData, setEditFlightData] = useState({
     priceSeatClass: [
       { seatClass: 'ECONOMY', price: 1500000 },
@@ -87,12 +89,14 @@ export function FlightOperations() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
 
-  const loadEmployees = async () => {
+  const loadEmployees = async (page: number = 0) => {
     try {
       setLoadingEmployees(true);
-      const res = await employeeService.getAllEmployees({ all: true });
+      const res = await employeeService.getAllEmployees({ page, size: 10 });
       if (res.data) {
-        setEmployees(res.data.content);
+        const sortedEmployees = res.data.content.sort((a, b) => a.position.localeCompare(b.position));
+        setEmployees(sortedEmployees);
+        setEmployeeTotalPages(res.data.totalPages || 0);
       }
     } catch (err) {
       toast.error("Lỗi khi tải danh sách nhân viên");
@@ -145,9 +149,9 @@ export function FlightOperations() {
 
   useEffect(() => {
     if (showAssignDialog && selectedFlightForAssign) {
-      loadEmployees();
+      loadEmployees(employeePage);
     }
-  }, [showAssignDialog, selectedFlightForAssign]);
+  }, [showAssignDialog, selectedFlightForAssign, employeePage]);
 
   useEffect(() => {
     Promise.all([
@@ -376,8 +380,9 @@ export function FlightOperations() {
       setShowAssignDialog(false);
       setSelectedFlightForAssign(null);
       setSelectedEmployeeIds([]);
+      setEmployeePage(0);
     } catch (err) {
-      toast.error("Lỗi khi phân công nhân viên");
+      toast.error("Phân công chưa đáp ứng quy định, vui lòng xem xét lại.");
     }
   };
 
@@ -1111,21 +1116,21 @@ export function FlightOperations() {
 
       {/* Crew Assignment Dialog */}
       <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[600px] max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Phân công nhân viên cho chuyến bay {selectedFlightForAssign?.id}</DialogTitle>
             <DialogDescription>
               Chọn nhân viên để phân công cho chuyến bay này
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="flex-1 overflow-hidden">
             {loadingEmployees ? (
               <div className="text-center py-4">Đang tải danh sách nhân viên...</div>
             ) : (
-              <div className="max-h-96 overflow-y-auto">
-                <div className="grid grid-cols-1 gap-2">
+              <div className="overflow-y-auto max-h-96 pr-2">
+                <div className="grid grid-cols-2 gap-2">
                   {employees.map((employee) => (
-                    <label key={employee.id} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50">
+                    <label key={employee.id} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50 min-w-[200px]">
                       <input
                         type="checkbox"
                         checked={selectedEmployeeIds.includes(employee.id)}
@@ -1136,25 +1141,51 @@ export function FlightOperations() {
                             setSelectedEmployeeIds(selectedEmployeeIds.filter(id => id !== employee.id));
                           }
                         }}
-                        className="rounded"
+                        className="w-5 h-5 rounded"
                       />
                       <div>
                         <div className="font-medium">{employee.fullName}</div>
-                        <div className="text-sm text-gray-600">{employee.position} - {employee.totalFlightHours} giờ bay</div>
+                        <div className="text-sm text-gray-600">{employee.position} - {employee.totalFlightHours}/{employee.maxFlightHoursPerMonth} giờ</div>
                       </div>
                     </label>
                   ))}
                 </div>
+                {/* Employee Pagination */}
+                {employeeTotalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                    <div className="text-sm text-gray-600">
+                      Trang {employeePage + 1} / {employeeTotalPages}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={employeePage <= 0 || loadingEmployees}
+                        onClick={() => setEmployeePage(p => Math.max(0, p - 1))}
+                      >
+                        Trước
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={employeePage >= (employeeTotalPages - 1) || loadingEmployees}
+                        onClick={() => setEmployeePage(p => Math.min((employeeTotalPages - 1) || p + 1, p + 1))}
+                      >
+                        Sau
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowAssignDialog(false)}>
-                Hủy
-              </Button>
-              <Button onClick={handleAssignCrew} disabled={selectedEmployeeIds.length === 0}>
-                Phân công ({selectedEmployeeIds.length} nhân viên)
-              </Button>
-            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button variant="outline" onClick={() => setShowAssignDialog(false)}>
+              Hủy
+            </Button>
+            <Button onClick={handleAssignCrew} disabled={selectedEmployeeIds.length === 0}>
+              Phân công ({selectedEmployeeIds.length} nhân viên)
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
