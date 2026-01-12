@@ -4,8 +4,13 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { UserPlus } from "lucide-react";
+import { Plane, UserPlus, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
+import type { User, UserRole } from "../App";
+import { authService } from "../services/authService";
+import type { LoginResponse } from "../types/authType";
+import { RequestResetScreen } from "./passenger/RequestNewPassword";
+import { SuccessScreen } from "./passenger/SuccessRequestNewPassword";
 import { useAuth } from "../context/AuthContext";
 import logoIcon from "../assets/images/logo-icon.png";
 
@@ -15,6 +20,9 @@ export function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [view, setView] = useState<'login' | 'request' | 'success'>('login');
+  const [resetEmail, setResetEmail] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +54,31 @@ export function Login() {
   //   };
   //   onLogin(user);
   // };
+
+  if (view === 'request') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <RequestResetScreen
+          onSubmit={(email) => {
+            setResetEmail(email);
+            setView('success');
+          }}
+          onBack={() => setView('login')}
+        />
+      </div>
+    );
+  }
+
+  if (view === 'success') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <SuccessScreen
+          email={resetEmail}
+          onBackToLogin={() => setView('login')}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -83,13 +116,19 @@ export function Login() {
               />
             </div>
 
+            <div className="text-right">
+              <button type="button" onClick={() => setView('request')} className="text-sm text-blue-600 hover:underline">
+                Quên mật khẩu?
+              </button>
+            </div>
+
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Đang đăng nhập..." : "Đăng nhập"}
             </Button>
           </form>
 
           <div className="mt-4">
-            <Button variant="outline" className="w-full" onClick={() => navigate("/login", { state: { showRegister: true } })}>
+            <Button variant="outline" className="w-full" onClick={() => navigate("/register")}>
               <UserPlus className="w-4 h-4 mr-2" />
               Đăng ký tài khoản hành khách
             </Button>

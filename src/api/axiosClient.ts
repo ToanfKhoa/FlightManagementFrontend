@@ -26,8 +26,8 @@ axiosClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Lỗi Unauthorized và chưa từng retry
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Lỗi Unauthorized và chưa từng retry, và không phải endpoint auth
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/')) {
       originalRequest._retry = true;
       try {
         const refreshToken = localStorage.getItem('refresh_token');

@@ -1,11 +1,13 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Login } from "./components/Login";
+import { Register } from "./components/Register";
 import { PassengerDashboard } from "./components/PassengerDashboard";
 import { PassengerLandingPage } from "./components/passenger/PassengerLandingPage";
 import { StaffDashboard } from "./components/StaffDashboard";
 import { AdminDashboard } from "./components/AdminDashboard";
 import { CrewDashboard } from "./components/CrewDashboard";
+import { CreateNewPassword } from "./components/passenger/CreateNewPassword";
 import { Toaster } from "./components/ui/sonner";
 import { useAuth } from "./context/AuthContext";
 
@@ -47,6 +49,14 @@ function App() {
           element={
             user ? <Navigate to={`/${user.role}`} replace /> : <Login />
           }
+        />
+        <Route
+          path="/register"
+          element={<Register />}
+        />
+        <Route
+          path="/reset-password"
+          element={<CreateNewPassword />}
         />
 
         {/* Protected routes */}
