@@ -18,28 +18,32 @@ export const aircraftService = {
 
     if (params.all) {
       queryParams.append('all', 'true');
+    } else {
+      queryParams.append('page', String(params.page || 0));
+      queryParams.append('size', String(params.size || 10));
+    }
+
+    if (params.sort) {
+      queryParams.append('sort', params.sort);
+    }
+    // Add search/filter if needed
+    const rsqlConditions: string[] = [];
+    if (params.status) {
+      rsqlConditions.push(`status=='${params.status}'`);
+    }
+    if (params.search) {
+      const k = params.search.trim();
+      rsqlConditions.push(`(registrationNumber=='*${k}*',type=='*${k}*')`);
+    }
+    if (rsqlConditions.length > 0) {
+      queryParams.append('filter', rsqlConditions.join(';'));
+    }
+
+    if (params.all) {
       return axiosClient
         .get(`/aircrafts/all?${queryParams.toString()}`)
         .then(res => res.data.content);
     } else {
-      queryParams.append('page', String(params.page || 0));
-      queryParams.append('size', String(params.size || 10));
-      if (params.sort) {
-        queryParams.append('sort', params.sort);
-      }
-      // Add search/filter if needed
-      const rsqlConditions: string[] = [];
-      if (params.status) {
-        rsqlConditions.push(`status=='${params.status}'`);
-      }
-      if (params.search) {
-        const k = params.search.trim();
-        rsqlConditions.push(`(registrationNumber=='*${k}*',type=='*${k}*')`);
-      }
-      if (rsqlConditions.length > 0) {
-        queryParams.append('filter', rsqlConditions.join(';'));
-      }
-
       return axiosClient.get(`/aircrafts/all?${queryParams.toString()}`) as Promise<ApiResponse<AircraftsPageResponse>>;
     }
   },

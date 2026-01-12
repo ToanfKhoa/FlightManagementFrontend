@@ -1,5 +1,5 @@
 import type { Aircraft } from './aircraftType';
-import type { Seat, AvailableSeats } from './seatType';
+import type { Seat } from './seatType';
 import type { BaseEntity } from './commonType';
 
 export type FlightStatus = 'OPEN' | 'FULL' | 'DEPARTED' | 'COMPLETED' | 'DELAYED' | 'CANCELED';
@@ -7,6 +7,7 @@ export type FlightStatus = 'OPEN' | 'FULL' | 'DEPARTED' | 'COMPLETED' | 'DELAYED
 export type Route = BaseEntity & {
   origin: string;
   destination: string;
+  external: boolean;
 };
 
 export const defaultPrices = {
@@ -16,31 +17,47 @@ export const defaultPrices = {
 };
 
 export type Flight = BaseEntity & {
+  flightSeats: FlightSeatResponse[];
+  seatSummary: SeatSummary[];
   route: Route;
   aircraft: Aircraft;
   status: FlightStatus;
   departureTime: string; //Date time
   arrivalTime: string; //Date time
-  seats?: Seat[];
-  availableSeats?: AvailableSeats;
-  prices?: typeof defaultPrices;
-  date?: string; // Computed field for display
   departureTimeDisplay?: string; // Computed field for display
   arrivalTimeDisplay?: string; // Computed field for display
 };
 
-export type PriceSeatClassDto = {
+export type FlightSeat = {
   seatClass: string;
   price: number;
+};
+
+export type FlightSeatResponse = {
+  id: number;
+  seatClass: string;
+  price: number;
+  createdAt: string;
+};
+
+export type SeatSummary = {
+  seatClass: string;
+  availableSeats: number;
 };
 
 export type CreateFlightRequest = {
   routeId: number;
   aircraftId: number;
   status: FlightStatus;
-  priceSeatClass: PriceSeatClassDto[];
+  priceSeatClass: FlightSeat[];
   departureTime: string;
   arrivalTime: string;
+};
+
+export type CreateRouteRequest = {
+  origin: string;
+  destination: string;
+  external: boolean;
 };
 
 export type UpdateFlightRequest = {
