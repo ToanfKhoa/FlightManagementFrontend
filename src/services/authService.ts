@@ -2,6 +2,12 @@ import axiosClient from '../api/axiosClient';
 import type { LoginResponse, RegisterRequest } from '../types/authType';
 
 export const authService = {
+  getMe(): Promise<LoginResponse> {
+    return axiosClient.get('/auth/me');
+  },
+  refresh(refreshToken: string): Promise<LoginResponse> {
+    return axiosClient.post('/auth/refresh', { refreshToken });
+  },
   login(credentialId: string, password: string): Promise<LoginResponse> {
     return axiosClient.post('/auth/login', { credentialId, password });
   },

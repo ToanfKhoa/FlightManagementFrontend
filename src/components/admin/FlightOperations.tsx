@@ -12,8 +12,9 @@ import {
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Pencil, Plane, AlertTriangle, Clock, X, Plus } from "lucide-react";
+import { Pencil, Plane, AlertTriangle, Clock, X, Plus, Download } from "lucide-react";
 import { toast } from "sonner";
+import { exportFlightsToExcel } from "../../utils/excelExport";
 import { flightService } from "../../services/flightService";
 import { aircraftService } from "../../services/aircraftService";
 import { routeService } from "../../services/routeService";
@@ -30,6 +31,7 @@ export function FlightOperations() {
   const [totalPages, setTotalPages] = useState(0);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [delayMinutes, setDelayMinutes] = useState(0);
+  const [showDelayDialog, setShowDelayDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [aircrafts, setAircrafts] = useState<Aircraft[]>([]);
@@ -109,14 +111,14 @@ export function FlightOperations() {
         const allFlightsWithComputed = (allFlightsData.data.content as Flight[]).map(flight => ({
           ...flight,
           date: new Date(flight.departureTime).toISOString().split('T')[0],
-          departureTime: new Date(flight.departureTime).toLocaleString('vi-VN', {
+          departureTimeDisplay: new Date(flight.departureTime).toLocaleString('vi-VN', {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
           }),
-          arrivalTime: new Date(flight.departureTime).toLocaleString('vi-VN', {
+          arrivalTimeDisplay: new Date(flight.departureTime).toLocaleString('vi-VN', {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric',
@@ -162,6 +164,7 @@ export function FlightOperations() {
       `Chuyến bay ${selectedFlight.id} đã được đánh dấu chậm ${delayMinutes} phút`
     );
     setSelectedFlight(null);
+    setShowDelayDialog(false);
   };
 
   const handleCancelFlight = (flight: Flight) => {
@@ -248,6 +251,19 @@ export function FlightOperations() {
     }
   };
 
+
+  const getStatusLabel = (status: Flight["status"]) => {
+    const statusLabels: Record<string, string> = {
+      open: "Đang mở",
+      full: "Hết chỗ",
+      delayed: "Chậm",
+      canceled: "Đã hủy",
+      completed: "Hoàn thành",
+      departed: "Khởi hành",
+    };
+    return statusLabels[String(status ?? '').toLowerCase()] || String(status ?? '');
+  };
+
   const handleUpdateFlight = async () => {
     if (!editingFlight) return;
 
@@ -302,7 +318,7 @@ export function FlightOperations() {
       string,
       { variant: any; label: string }
     > = {
-      open: { variant: "default", label: "Bình thường" },
+      open: { variant: "default", label: "Đang mở" },
       full: { variant: "secondary", label: "Hết chỗ" },
       delayed: { variant: "destructive", label: "Chậm" },
       canceled: { variant: "destructive", label: "Đã hủy" },
@@ -326,135 +342,148 @@ export function FlightOperations() {
             Quản lý trạng thái chuyến bay, xử lý chậm/hủy chuyến
           </p>
         </div>
-        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Tạo chuyến bay mới
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Tạo chuyến bay mới</DialogTitle>
-              <DialogDescription>
-                Chọn tuyến bay, máy bay và trạng thái cho chuyến bay mới
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="route">Tuyến bay</Label>
-                  <select
-                    className="border p-2 rounded w-full"
-                    value={newFlight.routeId}
-                    onChange={(e) => setNewFlight({ ...newFlight, routeId: parseInt(e.target.value) })}
-                  >
-                    {routes.map((route) => (
-                      <option key={route.id} value={route.id}>
-                        {route.origin} → {route.destination}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="aircraft">Máy bay</Label>
-                  <select
-                    className="border p-2 rounded w-full"
-                    value={newFlight.aircraftId}
-                    onChange={(e) => setNewFlight({ ...newFlight, aircraftId: parseInt(e.target.value) })}
-                  >
-                    {aircrafts.map((aircraft) => (
-                      <option key={aircraft.id} value={aircraft.id}>
-                        {aircraft.type} ({aircraft.registrationNumber})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="departureTime">Thời gian khởi hành</Label>
-                  <Input
-                    type="datetime-local"
-                    id="departureTime"
-                    value={newFlight.departureTime}
-                    onChange={(e) => setNewFlight({ ...newFlight, departureTime: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="arrivalTime">Thời gian đến</Label>
-                  <Input
-                    type="datetime-local"
-                    id="arrivalTime"
-                    value={newFlight.arrivalTime}
-                    onChange={(e) => setNewFlight({ ...newFlight, arrivalTime: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Giá theo hạng ghế</Label>
-                <div className="space-y-2 border p-3 rounded">
-                  {newFlight.priceSeatClass.map((price, index) => (
-                    <div key={index} className="grid grid-cols-2 gap-2 items-center">
-                      <select
-                        className="border p-2 rounded"
-                        value={price.seatClass}
-                        onChange={(e) => {
-                          const updated = [...newFlight.priceSeatClass];
-                          updated[index].seatClass = e.target.value;
-                          setNewFlight({ ...newFlight, priceSeatClass: updated });
-                        }}
-                      >
-                        <option value="ECONOMY">Phổ thông</option>
-                        <option value="BUSINESS">Thương gia</option>
-                        <option value="FIRST">Hạng nhất</option>
-                      </select>
-                      <Input
-                        type="number"
-                        value={price.price}
-                        onChange={(e) => {
-                          const updated = [...newFlight.priceSeatClass];
-                          updated[index].price = parseInt(e.target.value) || 0;
-                          setNewFlight({ ...newFlight, priceSeatClass: updated });
-                        }}
-                        placeholder="Giá"
-                      />
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setNewFlight({
-                      ...newFlight,
-                      priceSeatClass: [...newFlight.priceSeatClass, { seatClass: 'ECONOMY', price: 0 }]
-                    })}
-                  >
-                    <Plus className="w-4 h-4 mr-1" /> Thêm hạng ghế
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="status">Trạng thái</Label>
-                <select
-                  className="border p-2 rounded w-full"
-                  value={newFlight.status}
-                  onChange={(e) => setNewFlight({ ...newFlight, status: e.target.value as FlightStatus })}
-                >
-                  <option value="OPEN">Bình thường</option>
-                  <option value="FULL">Hết chỗ</option>
-                  <option value="DELAYED">Chậm</option>
-                  <option value="CANCELED">Đã hủy</option>
-                  <option value="DEPARTED">Khởi hành</option>
-                  <option value="COMPLETED">Hoàn thành</option>
-                </select>
-              </div>
-              <Button className="w-full" onClick={handleCreateFlight}>
-                Tạo chuyến bay
+        <div className="flex gap-2">
+          <Button onClick={() => {
+            const success = exportFlightsToExcel(allFlights);
+            if (success) {
+              toast.success("Xuất file Excel thành công");
+            } else {
+              toast.error("Lỗi khi xuất file Excel");
+            }
+          }}>
+            <Download className="w-4 h-4 mr-2" />
+            Xuất Excel
+          </Button>
+          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Tạo chuyến bay mới
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Tạo chuyến bay mới</DialogTitle>
+                <DialogDescription>
+                  Chọn tuyến bay, máy bay và trạng thái cho chuyến bay mới
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="route">Tuyến bay</Label>
+                    <select
+                      className="border p-2 rounded w-full"
+                      value={newFlight.routeId}
+                      onChange={(e) => setNewFlight({ ...newFlight, routeId: parseInt(e.target.value) })}
+                    >
+                      {routes.map((route) => (
+                        <option key={route.id} value={route.id}>
+                          {route.origin} → {route.destination}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="aircraft">Máy bay</Label>
+                    <select
+                      className="border p-2 rounded w-full"
+                      value={newFlight.aircraftId}
+                      onChange={(e) => setNewFlight({ ...newFlight, aircraftId: parseInt(e.target.value) })}
+                    >
+                      {aircrafts.map((aircraft) => (
+                        <option key={aircraft.id} value={aircraft.id}>
+                          {aircraft.type} ({aircraft.registrationNumber})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="departureTime">Thời gian khởi hành</Label>
+                    <Input
+                      type="datetime-local"
+                      id="departureTime"
+                      value={newFlight.departureTime}
+                      onChange={(e) => setNewFlight({ ...newFlight, departureTime: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="arrivalTime">Thời gian đến</Label>
+                    <Input
+                      type="datetime-local"
+                      id="arrivalTime"
+                      value={newFlight.arrivalTime}
+                      onChange={(e) => setNewFlight({ ...newFlight, arrivalTime: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Giá theo hạng ghế</Label>
+                  <div className="space-y-2 border p-3 rounded">
+                    {newFlight.priceSeatClass.map((price, index) => (
+                      <div key={index} className="grid grid-cols-2 gap-2 items-center">
+                        <select
+                          className="border p-2 rounded"
+                          value={price.seatClass}
+                          onChange={(e) => {
+                            const updated = [...newFlight.priceSeatClass];
+                            updated[index].seatClass = e.target.value;
+                            setNewFlight({ ...newFlight, priceSeatClass: updated });
+                          }}
+                        >
+                          <option value="ECONOMY">Phổ thông</option>
+                          <option value="BUSINESS">Thương gia</option>
+                          <option value="FIRST">Hạng nhất</option>
+                        </select>
+                        <div className="flex gap-2 items-center">
+                          <Input
+                            type="number"
+                            value={price.price}
+                            onChange={(e) => {
+                              const updated = [...newFlight.priceSeatClass];
+                              updated[index].price = parseInt(e.target.value) || 0;
+                              setNewFlight({ ...newFlight, priceSeatClass: updated });
+                            }}
+                            placeholder="Giá"
+                          />
+                          {newFlight.priceSeatClass.length > 1 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const updated = newFlight.priceSeatClass.filter((_, i) => i !== index);
+                                setNewFlight({ ...newFlight, priceSeatClass: updated });
+                              }}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setNewFlight({
+                        ...newFlight,
+                        priceSeatClass: [...newFlight.priceSeatClass, { seatClass: 'ECONOMY', price: 0 }]
+                      })}
+                    >
+                      <Plus className="w-4 h-4 mr-1" /> Thêm hạng ghế
+                    </Button>
+                  </div>
+                </div>
+                <Button className="w-full" onClick={handleCreateFlight}>
+                  Tạo chuyến bay
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Edit Flight Dialog */}
@@ -535,16 +564,31 @@ export function FlightOperations() {
                       <option value="BUSINESS">Thương gia</option>
                       <option value="FIRST">Hạng nhất</option>
                     </select>
-                    <Input
-                      type="number"
-                      value={price.price}
-                      onChange={(e) => {
-                        const updated = [...editFlightData.priceSeatClass];
-                        updated[index].price = parseInt(e.target.value) || 0;
-                        setEditFlightData({ ...editFlightData, priceSeatClass: updated });
-                      }}
-                      placeholder="Giá"
-                    />
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        type="number"
+                        value={price.price}
+                        onChange={(e) => {
+                          const updated = [...editFlightData.priceSeatClass];
+                          updated[index].price = parseInt(e.target.value) || 0;
+                          setEditFlightData({ ...editFlightData, priceSeatClass: updated });
+                        }}
+                        placeholder="Giá"
+                      />
+                      {editFlightData.priceSeatClass.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const updated = editFlightData.priceSeatClass.filter((_, i) => i !== index);
+                            setEditFlightData({ ...editFlightData, priceSeatClass: updated });
+                          }}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))}
                 <Button
@@ -559,21 +603,6 @@ export function FlightOperations() {
                   <Plus className="w-4 h-4 mr-1" /> Thêm hạng ghế
                 </Button>
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-status">Trạng thái</Label>
-              <select
-                className="border p-2 rounded w-full"
-                value={editFlightData.status}
-                onChange={(e) => setEditFlightData({ ...editFlightData, status: e.target.value as FlightStatus })}
-              >
-                <option value="OPEN">Bình thường</option>
-                <option value="FULL">Hết chỗ</option>
-                <option value="DELAYED">Chậm</option>
-                <option value="CANCELED">Đã hủy</option>
-                <option value="DEPARTED">Khởi hành</option>
-                <option value="COMPLETED">Hoàn thành</option>
-              </select>
             </div>
             <Button className="w-full" onClick={handleUpdateFlight}>
               Lưu thay đổi
@@ -597,7 +626,7 @@ export function FlightOperations() {
           onChange={(e) => { setSelectedStatus(e.target.value); setPage(0); }}
         >
           <option value="">Tất cả</option>
-          <option value="OPEN">Bình thường</option>
+          <option value="OPEN">Đang mở</option>
           <option value="FULL">Hết chỗ</option>
           <option value="DELAYED">Chậm</option>
           <option value="CANCELED">Đã hủy</option>
@@ -605,7 +634,6 @@ export function FlightOperations() {
           <option value="COMPLETED">Hoàn thành</option>
         </select>
       </div>
-
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
@@ -616,7 +644,7 @@ export function FlightOperations() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>Bình thường</CardDescription>
+            <CardDescription>Đang mở</CardDescription>
             <CardTitle className="text-3xl text-green-600">
               {allFlights.filter((f) => f.status === "OPEN").length}
             </CardTitle>
@@ -760,15 +788,16 @@ export function FlightOperations() {
                         <Pencil className="w-4 h-4 mr-2" />
                         Chỉnh sửa
                       </Button>
-                      {flight.status === "OPEN" && (
+                      {(flight.status !== "COMPLETED" && flight.status !== "CANCELED") && (
                         <>
-                          <Dialog>
+                          <Dialog open={showDelayDialog} onOpenChange={setShowDelayDialog}>
                             <DialogTrigger asChild>
                               <Button
                                 variant="outline"
                                 onClick={() => {
                                   setSelectedFlight(flight);
                                   setDelayMinutes(0);
+                                  setShowDelayDialog(true);
                                 }}
                               >
                                 <Clock className="w-4 h-4 mr-2" />

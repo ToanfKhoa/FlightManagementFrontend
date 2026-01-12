@@ -1,101 +1,93 @@
-import { useState } from "react";
+import React from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { Login } from "./components/Login";
-import { Register } from "./components/Register";
 import { PassengerDashboard } from "./components/PassengerDashboard";
 import { PassengerLandingPage } from "./components/passenger/PassengerLandingPage";
 import { StaffDashboard } from "./components/StaffDashboard";
 import { AdminDashboard } from "./components/AdminDashboard";
 import { CrewDashboard } from "./components/CrewDashboard";
 import { Toaster } from "./components/ui/sonner";
+import { useAuth } from "./context/AuthContext";
 
-export type UserRole = "passenger" | "staff" | "admin" | "crew" | null;
+const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
+  const { user, isLoading } = useAuth();
 
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-}
-
-function App() {
-  const [user, setUser] = useState<User | null>(null);
-  const [showAuth, setShowAuth] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
-
-  const handleLogin = (userData: User) => {
-    setUser(userData);
-    setShowAuth(false);
-    setShowRegister(false);
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-  };
-
-  const handleShowLogin = () => {
-    setShowAuth(true);
-    setShowRegister(false);
-  };
-
-  const handleShowRegister = () => {
-    setShowAuth(true);
-    setShowRegister(true);
-  };
-
-  const handleBackToLanding = () => {
-    setShowAuth(false);
-    setShowRegister(false);
-  };
-
-  const handleRegisterSuccess = () => {
-    setShowAuth(false);
-    setShowRegister(false);
-  };
+  if (isLoading) return <div className="p-4">Loading...</div>;
 
   if (!user) {
-    if (showAuth) {
-      if (showRegister) {
-        return (
-          <>
-            <Register onBack={handleBackToLanding} onRegisterSuccess={handleRegisterSuccess} />
-            <Toaster />
-          </>
-        );
-      }
-
-      return (
-        <>
-          <Login onLogin={handleLogin} onRegister={handleShowRegister} />
-          <Toaster />
-        </>
-      );
-    }
-
-    return (
-      <>
-        <PassengerLandingPage onLogin={handleShowLogin} onRegister={handleShowRegister} />
-        <Toaster />
-      </>
-    );
+    return <Navigate to="/login" replace />;
   }
 
+  if (allowedRoles && !allowedRoles.includes(user.role!)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+function App() {
+  const { user } = useAuth();
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {user.role === "passenger" && (
-        <PassengerDashboard user={user} onLogout={handleLogout} />
-      )}
-      {user.role === "staff" && (
-        <StaffDashboard user={user} onLogout={handleLogout} />
-      )}
-      {user.role === "admin" && (
-        <AdminDashboard user={user} onLogout={handleLogout} />
-      )}
-      {user.role === "crew" && (
-        <CrewDashboard user={user} onLogout={handleLogout} />
-      )}
+    <>
+      <Routes>
+        {/* Public routes */}
+        <Route
+          path="/"
+          element={
+            user ? (
+              <Navigate to={`/${user.role}`} replace />
+            ) : (
+              <PassengerLandingPage />
+            )
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            user ? <Navigate to={`/${user.role}`} replace /> : <Login />
+          }
+        />
+
+        {/* Protected routes */}
+        <Route
+          path="/passenger"
+          element={
+            <ProtectedRoute>
+              <PassengerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/staff"
+          element={
+            <ProtectedRoute>
+              <StaffDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/crew"
+          element={
+            <ProtectedRoute>
+              <CrewDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Fallback route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
       <Toaster />
-    </div>
+    </>
   );
 }
-
 export default App;

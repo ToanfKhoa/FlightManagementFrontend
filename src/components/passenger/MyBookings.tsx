@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import type { Booking, Flight } from "../../lib/mockData";
 
 interface MyBookingsProps {
-  userId: string;
+  userId: number;
 }
 
 export function MyBookings({ userId }: MyBookingsProps) {
@@ -95,11 +95,11 @@ export function MyBookings({ userId }: MyBookingsProps) {
   const handleCancelBooking = () => {
     if (selectedBooking) {
       const flight = getFlight(selectedBooking.flightId);
-      
+
       selectedBooking.status = "canceled";
       setBookings([...bookings]);
       setShowCancelDialog(false);
-      
+
       // Notify waiting list if flight exists and has waiting list
       if (flight && flight.waitingList && flight.waitingList.length > 0) {
         const firstWaiting = flight.waitingList[0];
@@ -113,7 +113,7 @@ export function MyBookings({ userId }: MyBookingsProps) {
       } else {
         toast.success("Vé đã được hủy");
       }
-      
+
       setSelectedBooking(null);
     }
   };
@@ -122,11 +122,11 @@ export function MyBookings({ userId }: MyBookingsProps) {
     if (selectedBooking) {
       const refundAmount = selectedBooking.price * 0.8; // 80% refund
       const flight = getFlight(selectedBooking.flightId);
-      
+
       selectedBooking.status = "canceled";
       setBookings([...bookings]);
       setShowRefundDialog(false);
-      
+
       // Notify waiting list if flight exists and has waiting list
       if (flight && flight.waitingList && flight.waitingList.length > 0) {
         const firstWaiting = flight.waitingList[0];
@@ -142,7 +142,7 @@ export function MyBookings({ userId }: MyBookingsProps) {
       } else {
         toast.success(`Hoàn tiền ${formatCurrency(refundAmount)} thành công!`);
       }
-      
+
       setSelectedBooking(null);
     }
   };
@@ -195,8 +195,8 @@ export function MyBookings({ userId }: MyBookingsProps) {
                     {booking.seatClass === "first"
                       ? "Hạng Nhất"
                       : booking.seatClass === "business"
-                      ? "Thương Gia"
-                      : "Phổ Thông"}
+                        ? "Thương Gia"
+                        : "Phổ Thông"}
                   </p>
                 </div>
               </div>

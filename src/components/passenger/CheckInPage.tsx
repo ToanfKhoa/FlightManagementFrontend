@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import type { Booking, Flight } from "../../lib/mockData";
 
 interface CheckInPageProps {
-  userId: string;
+  userId: number;
 }
 
 export function CheckInPage({ userId }: CheckInPageProps) {
@@ -156,8 +156,8 @@ export function CheckInPage({ userId }: CheckInPageProps) {
                     {booking.seatClass === "first"
                       ? "First"
                       : booking.seatClass === "business"
-                      ? "Business"
-                      : "Economy"}
+                        ? "Business"
+                        : "Economy"}
                   </p>
                 </div>
               </div>
@@ -251,8 +251,8 @@ export function CheckInPage({ userId }: CheckInPageProps) {
                   {booking.seatClass === "first"
                     ? "Hạng Nhất"
                     : booking.seatClass === "business"
-                    ? "Thương Gia"
-                    : "Phổ Thông"}
+                      ? "Thương Gia"
+                      : "Phổ Thông"}
                 </p>
               </div>
             </div>

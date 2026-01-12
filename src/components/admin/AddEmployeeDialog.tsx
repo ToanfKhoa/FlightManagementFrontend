@@ -132,7 +132,7 @@ export function AddEmployeeDialog({ onAddEmployee, trigger }: AddEmployeeDialogP
 
         try {
             const response = await employeeService.createEmployee(employeeData);
-            if (response.code === 200 || response.message === "message") {
+            if (response.code === 200 || response.code === 0 || response.message?.toLowerCase().includes('success')) {
                 onAddEmployee?.(response.data);
                 toast.success("Thêm nhân viên thành công!", {
                     description: `${fullName} đã được thêm vào hệ thống.`

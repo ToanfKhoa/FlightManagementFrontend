@@ -9,7 +9,7 @@ import type { Flight, Seat } from "../../lib/mockData";
 
 interface SeatSelectionProps {
   flight: Flight;
-  userId: string;
+  userId: number;
   onBack: () => void;
 }
 
@@ -48,15 +48,13 @@ export function SeatSelection({ flight, userId, onBack }: SeatSelectionProps) {
             disabled={seat.status !== "available"}
             className={`
               aspect-square rounded-lg border-2 flex items-center justify-center text-sm transition-all
-              ${
-                seat.status === "available"
-                  ? "border-green-300 bg-green-50 hover:bg-green-100 hover:border-green-500 cursor-pointer"
-                  : "border-gray-300 bg-gray-100 cursor-not-allowed opacity-50"
+              ${seat.status === "available"
+                ? "border-green-300 bg-green-50 hover:bg-green-100 hover:border-green-500 cursor-pointer"
+                : "border-gray-300 bg-gray-100 cursor-not-allowed opacity-50"
               }
-              ${
-                selectedSeat?.id === seat.id
-                  ? "border-blue-500 bg-blue-100 ring-2 ring-blue-300"
-                  : ""
+              ${selectedSeat?.id === seat.id
+                ? "border-blue-500 bg-blue-100 ring-2 ring-blue-300"
+                : ""
               }
             `}
           >
@@ -186,8 +184,8 @@ export function SeatSelection({ flight, userId, onBack }: SeatSelectionProps) {
                     {selectedSeat.class === "first"
                       ? "Hạng Nhất"
                       : selectedSeat.class === "business"
-                      ? "Thương Gia"
-                      : "Phổ Thông"}
+                        ? "Thương Gia"
+                        : "Phổ Thông"}
                   </p>
                 </div>
                 <div>

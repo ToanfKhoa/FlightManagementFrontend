@@ -1,12 +1,18 @@
 
-export type UserRole = 'PASSENGER' | 'STAFF' | 'ADMIN' | 'CREW' | 'PILOT';
+
+import type { ApiResponse, PageResponse } from './commonType';
+import Employee from './employeeType';
+import Passenger from './passengerType';
+
+//export type UserRole = 'PASSENGER' | 'EMPLOYEE' | 'ADMIN';
+export type UserRole = "passenger" | "staff" | "admin" | "crew";
 
 export interface User {
-  id: number;           
+  id: number;
   username: string;
   email: string;
   phone: string;
-  role: string;       
+  role: string;
 
   version?: number;
   createdBy?: string | null;
@@ -27,21 +33,21 @@ export interface RegisterRequest {
   phone?: string;
 }
 
-import type { ApiResponse, PageResponse } from './commonType';
-
 export interface LoginResponseData {
   accessToken: string;
   refreshToken: string;
-  user: User;   
+  user: User;
+  employee: Employee
+  passenger: Passenger
 }
 
 export type LoginResponse = ApiResponse<LoginResponseData>;
 
 export interface AuthState {
-  user: User | null;       
-  isAuthenticated: boolean; 
-  isLoading: boolean;      
-  error: string | null;  
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
 }
 
 export type UsersPageResponse = PageResponse<User>;

@@ -1,42 +1,30 @@
+import { useNavigate } from "react-router-dom";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
-import {
-    Plane,
-    Search,
-    Shield,
-    Clock,
-    MapPin,
-    Star,
-    Users
-} from "lucide-react";
+import { Search, Shield, Clock, MapPin, Star, Users } from "lucide-react";
+import logoIcon from "../../assets/images/logo-icon.png";
 
 const backgroundImage = new URL("../../assets/images/airplane-wallpaper.jpg", import.meta.url).href;
 
-interface PassengerLandingPageProps {
-    onLogin: () => void;
-    onRegister: () => void;
-}
-
-export function PassengerLandingPage({ onLogin, onRegister }: PassengerLandingPageProps) {
+export function PassengerLandingPage() {
+    const navigate = useNavigate();
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
             {/* Header */}
             <header className="bg-white shadow-sm sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        <div className="bg-blue-600 p-2 rounded-lg">
-                            <Plane className="w-6 h-6 text-white" />
-                        </div>
+                        <img src={logoIcon} alt="SkyWings Logo" className="w-12 h-12" />
                         <div>
                             <h1 className="text-xl font-bold text-gray-900">SkyWings Airlines</h1>
                             <p className="text-sm text-gray-600">Bay cao, bay xa cùng chúng tôi</p>
                         </div>
                     </div>
                     <div className="flex gap-2">
-                        <Button variant="outline" onClick={onLogin}>
+                        <Button variant="outline" onClick={() => navigate("/login")}>
                             Đăng nhập
                         </Button>
-                        <Button onClick={onRegister}>
+                        <Button onClick={() => navigate("/login", { state: { showRegister: true } })}>
                             Đăng ký
                         </Button>
                     </div>
@@ -72,7 +60,7 @@ export function PassengerLandingPage({ onLogin, onRegister }: PassengerLandingPa
                     </p>
 
                     <div className="flex justify-center gap-4 flex-wrap mt-10">
-                        <Button variant="ghost" size="lg" onClick={onRegister}
+                        <Button variant="ghost" size="lg" onClick={() => navigate("/login", { state: { showRegister: true } })}
                             className="px-10 py-4 text-lg text-white">
                             <Search className="w-5 h-5 mr-2" />
                             Đăng ký miễn phí
