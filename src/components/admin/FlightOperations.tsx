@@ -586,6 +586,7 @@ export function FlightOperations() {
                   className="border p-2 rounded w-full"
                   value={editFlightData.aircraftId}
                   onChange={(e) => setEditFlightData({ ...editFlightData, aircraftId: parseInt(e.target.value) })}
+                  disabled
                 >
                   {aircrafts.map((aircraft) => (
                     <option key={aircraft.id} value={aircraft.id}>
@@ -630,6 +631,7 @@ export function FlightOperations() {
                       setEditFlightData({ ...editFlightData, priceSeatClass: updated });
                     }}
                     placeholder="Giá"
+                    readOnly
                   />
                 </div>
                 <div>
@@ -644,6 +646,7 @@ export function FlightOperations() {
                       setEditFlightData({ ...editFlightData, priceSeatClass: updated });
                     }}
                     placeholder="Giá"
+                    readOnly
                   />
                 </div>
                 <div>
@@ -658,6 +661,7 @@ export function FlightOperations() {
                       setEditFlightData({ ...editFlightData, priceSeatClass: updated });
                     }}
                     placeholder="Giá"
+                    readOnly
                   />
                 </div>
               </div>
