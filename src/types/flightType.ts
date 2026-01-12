@@ -42,7 +42,7 @@ export type CreateFlightRequest = {
   routeId: number;
   aircraftId: number;
   status: FlightStatus;
-  flightSeats: FlightSeat[];
+  priceSeatClass: FlightSeat[];
   departureTime: string;
   arrivalTime: string;
 };

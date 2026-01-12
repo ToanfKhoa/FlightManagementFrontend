@@ -124,6 +124,11 @@ export function AircraftManagement() {
     }
 
     const totalSeats = newAircraft.economySeats + newAircraft.businessSeats + newAircraft.firstClassSeats;
+    if (totalSeats === 0) {
+      toast.error("Số ghế máy bay đang trống. Vui lòng nhập lại.");
+      return;
+    }
+
     const aircraftData = { ...newAircraft, seatCapacity: totalSeats };
     aircraftService
       .create(aircraftData)
@@ -438,10 +443,11 @@ export function AircraftManagement() {
 
             {!isEditMode && (
               <div className="border-t pt-4">
-                <h4 className="text-lg font-semibold mb-4">Cấu hình ghế ngồi</h4>
+                <h4 className="text-lg font-semibold mb-0">Cấu hình số ghế ngồi</h4>
+                <p className="text-sm text-gray-500 italic mb-4">Số lượng ghế mỗi hạng cần là bội số của 6</p>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="economySeats">Số ghế Economy</Label>
+                    <Label htmlFor="economySeats">Phổ thông</Label>
                     <Input
                       id="economySeats"
                       type="number"
@@ -455,7 +461,7 @@ export function AircraftManagement() {
                   </div>
 
                   <div>
-                    <Label htmlFor="businessSeats">Số ghế Business</Label>
+                    <Label htmlFor="businessSeats">Thương gia</Label>
                     <Input
                       id="businessSeats"
                       type="number"
@@ -469,7 +475,7 @@ export function AircraftManagement() {
                   </div>
 
                   <div>
-                    <Label htmlFor="firstClassSeats">Số ghế First Class</Label>
+                    <Label htmlFor="firstClassSeats">Hạng nhất</Label>
                     <Input
                       id="firstClassSeats"
                       type="number"
