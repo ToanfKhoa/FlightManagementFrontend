@@ -1,27 +1,42 @@
+import { Aircraft } from "./aircraftType";
+
 // types/seat/seat.type.ts
 export type SeatClass = 'BUSINESS' | 'FIRST_CLASS' | 'ECONOMY';
-export type SeatStatus = 'available' | 'reserved' | 'booked';
+export type LayoutType =
+  | "ECONOMY_3_3"
+  | "ECONOMY_2_4_2"
+  | "BUSINESS_2_2"
+  | "FIRST_1_1";
 
 export type Seat = {
   id: number;
-  flightId: number;
+  aircraft?: Aircraft;
   seatNumber: string;
   class: SeatClass;
-  status: SeatStatus;
-};
-
-export type AvailableSeats = {
-  economy: number;
-  business: number;
-  first: number;
 };
 
 export type CreateSeatRequest = {
-  flightId: number;
+  aircraftId: number;
   seatNumber: string;
-  class: SeatClass;
+  seatClass: SeatClass;
 };
 
 export type UpdateSeatRequest = {
-  status: SeatStatus;
+  aircraftId: number;
+  seatNumber: string;
+  seatClass: SeatClass;
 };
+
+export interface ClassSeatRequest {
+  fromRow: number;
+  toRow: number;
+  layoutType: LayoutType;
+  excludedRows: number[];
+}
+
+export type ClassSeatRequests = Record<SeatClass, ClassSeatRequest>;
+
+export type CreateSeatsRequest = {
+  aircraftId: number;
+  classSeatRequests: ClassSeatRequests;
+}

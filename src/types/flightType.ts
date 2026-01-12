@@ -1,5 +1,5 @@
 import type { Aircraft } from './aircraftType';
-import type { Seat, AvailableSeats } from './seatType';
+import type { Seat } from './seatType';
 import type { BaseEntity } from './commonType';
 
 export type FlightStatus = 'OPEN' | 'FULL' | 'DEPARTED' | 'COMPLETED' | 'DELAYED' | 'CANCELED';
