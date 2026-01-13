@@ -21,8 +21,8 @@ export const ticketService = {
     refund(ticketId: number): Promise<ApiResponse<Ticket>> {
         return axiosClient.post(`/tickets/${ticketId}/refund`);
     },
-    getTicketById(ticketId: number): Promise<Ticket> {
-        return axiosClient.get(`/tickets/${ticketId}`);
+    getTicketById(id: number): Promise<Ticket> {
+        return axiosClient.get(`/tickets/${id}`) as Promise<Ticket>;
     }
 };
 

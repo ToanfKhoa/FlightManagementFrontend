@@ -15,7 +15,7 @@ import type { Seat } from "../../types/seatType";
 import { ticketService } from "../../services/ticketService";
 
 export function CheckInDesk() {
-  const [ticketCode, setTicketCode] = useState<number>(0);
+  const [ticketCode, setTicketCode] = useState("");
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [flight, setFlight] = useState<Flight | null>(null);
   const [availableSeats, setAvailableSeats] = useState<Seat[]>([]);
@@ -25,14 +25,14 @@ export function CheckInDesk() {
 
   const handleSearch = async () => {
     try {
-      const foundTicket = await ticketService.getTicketById(ticketCode);
+      const foundTicket = await ticketService.getTicketById(parseInt(ticketCode));
 
       if (!foundTicket) {
         toast.error("Không tìm thấy vé");
         return;
       }
 
-      if (foundTicket.status === "CANCELED") {
+      if (foundTicket.status.toString() === "CANCELED") {
         toast.error("Vé đã bị hủy");
         return;
       }
@@ -71,7 +71,7 @@ export function CheckInDesk() {
 
       toast.success("Tìm thấy vé!");
     } catch (error) {
-      toast.error("Lỗi khi tìm vé");
+      toast.error("Không tìm thấy vé");
       console.error(error);
     }
   };
@@ -108,9 +108,11 @@ export function CheckInDesk() {
               setShowBoardingPass(false);
               setTicket(null);
               setFlight(null);
+              setTicketCode("");
+
               setAvailableSeats([]);
               setSelectedSeatId(null);
-              setTicketCode(0);
+
               setCheckedIn(false);
             }}
           >
@@ -214,9 +216,9 @@ export function CheckInDesk() {
                   setShowBoardingPass(false);
                   setTicket(null);
                   setFlight(null);
+                  setTicketCode("");
                   setAvailableSeats([]);
                   setSelectedSeatId(null);
-                  setTicketCode(0);
                   setCheckedIn(false);
                 }}
               >
@@ -246,7 +248,7 @@ export function CheckInDesk() {
                 id="ticketCode"
                 placeholder="123456789"
                 value={ticketCode}
-                onChange={(e) => setTicketCode(parseInt(e.target.value))}
+                onChange={(e) => setTicketCode(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               />
             </div>
