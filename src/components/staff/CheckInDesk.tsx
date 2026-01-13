@@ -50,7 +50,6 @@ export function CheckInDesk() {
 
       setTicket(foundTicket);
       setFlight(foundFlight);
-      setSelectedSeatId(foundTicket.seat.id);
       setShowBoardingPass(false);
 
       // Fetch available seats for the flight
@@ -58,7 +57,7 @@ export function CheckInDesk() {
         const seats = foundFlight.flightSeats;
 
         const availableEconomySeats = seats.filter((seat) =>
-          seat.seatClass === 'ECONOMY' && seat.status === 'AVAILABLE'
+          seat.seatClass === ticket?.ticketClass && seat.status === 'AVAILABLE'
         );
 
         setAvailableSeats(availableEconomySeats);
@@ -76,7 +75,7 @@ export function CheckInDesk() {
 
   const handleCheckIn = async () => {
     if (!ticket || !selectedSeatId) return;
-
+    console.log("Checking in ticket:", ticket.id, "with seat:", selectedSeatId);
     try {
       console.log(ticket.id, selectedSeatId);
       await ticketService.checkin({
@@ -94,6 +93,10 @@ export function CheckInDesk() {
 
   const handlePrintBoardingPass = () => {
     toast.success("Đang in thẻ lên máy bay...");
+  };
+  const handleSeatClick = (seat: FlightSeatResponse) => {
+    if (seat.status !== "AVAILABLE") return;
+    setSelectedSeatId(seat.id);
   };
 
   if (showBoardingPass && ticket && flight) {
@@ -313,55 +316,65 @@ export function CheckInDesk() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Chọn ghế</CardTitle>
-              <CardDescription>Chọn ghế cho hành khách check-in</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="seatSelect">Ghế hiện tại: {selectedSeatId}</Label>
-                  <Select
-                    value={selectedSeatId?.toString() || ""}
-                    onValueChange={(value) => setSelectedSeatId(parseInt(value))}
-                    disabled={checkedIn}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn ghế" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableSeats.map((seat) => (
-                        <SelectItem key={seat.id} value={seat.id.toString()}>
-                          {seat.id} - {seat.seatClass === "FIRST_CLASS" ? "Hạng Nhất" : seat.seatClass === "BUSINESS" ? "Thương Gia" : "Phổ Thông"}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {selectedSeatId && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-600">Số ghế</p>
-                      <p className="text-xl font-bold">
-                        {availableSeats.find(s => s.id === selectedSeatId)?.id}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Hạng</p>
-                      <p className="font-semibold">
-                        {availableSeats.find(s => s.id === selectedSeatId)?.seatClass === "FIRST_CLASS"
-                          ? "Hạng Nhất"
-                          : availableSeats.find(s => s.id === selectedSeatId)?.seatClass === "BUSINESS"
-                            ? "Thương Gia"
-                            : "Phổ Thông"}
-                      </p>
-                    </div>
+          <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
+            {ticket.flight.flightSeats.map((seat) => {
+              const isAvailable = seat.status === "AVAILABLE";
+              const isSelected = selectedSeatId === seat.id;
+
+              return (
+                <button
+                  key={seat.id}
+                  disabled={!isAvailable}
+                  onClick={() => handleSeatClick(seat)}
+                  className={`
+                relative h-12 rounded-lg border-2 font-bold text-sm transition-all flex items-center justify-center
+                ${/* Style cho ghế ĐÃ ĐẶT (Xám, không click được) */ ""}
+                ${!isAvailable
+                      ? "bg-gray-200 border-gray-200 text-gray-400 cursor-not-allowed"
+                      : ""}
+                
+                ${/* Style cho ghế ĐANG CHỌN (Xanh đậm, nổi bật) */ ""}
+                ${isSelected
+                      ? "bg-blue-600 border-blue-600 text-white shadow-md scale-105 z-10"
+                      : ""}
+
+                ${/* Style cho ghế TRỐNG (Trắng, viền xanh nhạt) */ ""}
+                ${isAvailable && !isSelected
+                      ? "bg-white border-blue-100 text-blue-600 hover:border-blue-400 hover:bg-blue-50"
+                      : ""}
+              `}
+                >
+                  {/* Nội dung nút */}
+                  <div className="flex flex-col items-center leading-none">
+                    <span>{seat.id}</span>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 4. Chú thích (Legend) - Rất quan trọng để user hiểu */}
+          <div className="flex justify-center gap-4 text-xs text-gray-600 pt-2 border-t">
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-4 border-2 border-blue-100 bg-white rounded"></div>
+              <span>Còn trống</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-4 bg-blue-600 rounded"></div>
+              <span>Đang chọn</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-4 bg-gray-200 rounded"></div>
+              <span>Đã đặt</span>
+            </div>
+          </div>
+
+          {/* 5. Hiển thị kết quả chọn */}
+          {selectedSeatId && (
+            <div className="bg-blue-50 text-blue-700 p-3 rounded-md text-center font-medium animate-in fade-in slide-in-from-bottom-2">
+              Bạn đang chọn ghế: {ticket.flight.flightSeats.find(s => s.id === selectedSeatId)?.id}
+            </div>
+          )}
 
           {!checkedIn && (
             <Button className="w-full" size="lg" onClick={handleCheckIn}>
