@@ -10,12 +10,12 @@ import { formatCurrency } from "../../lib/mockData";
 import { toast } from "sonner";
 import { ticketService } from "../../services/ticketService";
 import { baggageService } from "../../services/baggageService";
-import type { BookingResponse } from "../../types/ticketType";
+import type { Ticket } from "../../types/ticketType";
 import type { BaggageType } from "../../types/baggageType";
 
 export function BaggageDesk() {
   const [ticketCode, setTicketCode] = useState("");
-  const [booking, setBooking] = useState<BookingResponse | null>(null);
+  const [booking, setBooking] = useState<Ticket | null>(null);
   const [baggageType, setBaggageType] = useState<BaggageType>("CARRY_ON");
   const [weight, setWeight] = useState(0);
   const [fee, setFee] = useState(0);
@@ -30,7 +30,7 @@ export function BaggageDesk() {
         return;
       }
 
-      if (foundBooking.status === "CANCELLED") {
+      if (foundBooking.status === "CANCELED") {
         toast.error("Vé đã bị hủy");
         return;
       }
@@ -53,16 +53,21 @@ export function BaggageDesk() {
   };
 
   const calculateFee = async () => {
-    if (!booking || weight === 0) return;
+    if (!booking) return;
+
+    if (weight === 0) {
+      setFee(0);
+      return;
+    }
 
     try {
-      const calculatedFee = await baggageService.calculateFee({
+      const response = await baggageService.calculateFee({
         type: baggageType,
         weight,
         passengerId: booking.passenger.id!,
         flightId: booking.flight.id,
       });
-      setFee(calculatedFee);
+      setFee(response.data.fee);
     } catch (error) {
       toast.error("Lỗi khi tính phí");
     }
@@ -130,7 +135,7 @@ export function BaggageDesk() {
                 <div>
                   <p className="text-sm text-gray-600">Hạng vé</p>
                   <p className="font-semibold">
-                    {booking.ticketClass === "FIRST"
+                    {booking.ticketClass === "FIRST_CLASS"
                       ? "Hạng Nhất"
                       : booking.ticketClass === "BUSINESS"
                         ? "Thương Gia"
@@ -140,7 +145,7 @@ export function BaggageDesk() {
                 <div>
                   <p className="text-sm text-gray-600">Trạng thái</p>
                   <p className="font-semibold">
-                    {booking.status === "PAID" ? "Đã thanh toán" : booking.status === "CANCELLED" ? "Đã hủy" : "Chưa thanh toán"}
+                    {booking.status === "PAID" ? "Đã thanh toán" : booking.status === "CANCELED" ? "Đã hủy" : "Chưa thanh toán"}
                   </p>
                 </div>
                 <div>
@@ -170,15 +175,17 @@ export function BaggageDesk() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="baggageType">Loại hành lý</Label>
-                  <Select value={baggageType} onValueChange={(value: BaggageType) => setBaggageType(value)} disabled={registered}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn loại" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CARRY_ON">Xách tay</SelectItem>
-                      <SelectItem value="CHECKED">Ký gửi</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+                  <select
+                    id="baggageType"
+                    className="border rounded px-3 py-2 w-full"
+                    value={baggageType}
+                    onChange={(e) => setBaggageType(e.target.value as BaggageType)}
+                    disabled={registered}
+                  >
+                    <option value="CARRY_ON">Xách tay</option>
+                    <option value="CHECKED">Ký gửi</option>
+                  </select>
                 </div>
 
                 <div className="space-y-2">
@@ -189,23 +196,30 @@ export function BaggageDesk() {
                     min="0"
                     max="50"
                     value={weight}
-                    onChange={(e) => {
-                      setWeight(Number(e.target.value));
-                      calculateFee();
-                    }}
+                    onChange={(e) => setWeight(Number(e.target.value))}
                     disabled={registered}
                   />
                 </div>
               </div>
 
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={calculateFee}
+                  disabled={!booking}
+                >
+                  Tính phí
+                </Button>
+              </div>
+
               <Separator />
 
               <div className="bg-gray-50 p-6 rounded-lg space-y-3">
-                <h3 className="font-semibold">Chi tiết tính phí</h3>
+                <h3 className="font-semibold">Tổng phí hành lý</h3>
 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between items-center">
-                    <span className="font-bold">Phí hành lý:</span>
                     <span className="text-2xl font-bold text-blue-600">
                       {fee > 0 ? formatCurrency(fee) : "0đ"}
                     </span>
