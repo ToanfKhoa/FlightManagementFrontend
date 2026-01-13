@@ -347,18 +347,18 @@ export function CrewManagement() {
                     <Edit className="w-4 h-4 mr-2" />
                     Chỉnh sửa
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={isOverLimit(member)}
-                    onClick={() => {
-                      setSelectedEmployee(member);
-                      setShowAssignDialog(true);
-                    }}
-                  >
-                    <PlaneTakeoff className="w-4 h-4 mr-2" />
-                    Phân công chuyến bay
-                  </Button>
+                  { /* <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={isOverLimit(member)}
+                      onClick={() => {
+                        setSelectedEmployee(member);
+                        setShowAssignDialog(true);
+                      }}
+                    >
+                      <PlaneTakeoff className="w-4 h-4 mr-2" />
+                      Phân công chuyến bay
+                  </Button> */}
                 </div>
               </div>
             </CardHeader>
