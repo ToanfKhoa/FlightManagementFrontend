@@ -130,7 +130,7 @@ export function BaggageDesk() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-600">Mã vé</p>
-                  <p className="font-semibold">{(booking as any).ticketCode || "N/A"}</p>
+                  <p className="font-semibold">{(booking as any).id || "N/A"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Hạng vé</p>

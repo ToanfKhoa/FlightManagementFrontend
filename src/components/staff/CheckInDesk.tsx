@@ -51,6 +51,9 @@ export function CheckInDesk() {
       setTicket(foundTicket);
       setFlight(foundFlight);
       setShowBoardingPass(false);
+      if (foundTicket.seat) {
+        setCheckedIn(true);
+      }
 
       // Fetch available seats for the flight
       try {
@@ -78,10 +81,11 @@ export function CheckInDesk() {
     console.log("Checking in ticket:", ticket.id, "with seat:", selectedSeatId);
     try {
       console.log(ticket.id, selectedSeatId);
-      await ticketService.checkin({
-        ticketId: ticket.id,
-        seatId: selectedSeatId
-      });
+      await ticketService.checkin(
+        ticket.flight.id,
+        ticket.id,
+        selectedSeatId
+      );
       setCheckedIn(true);
       setShowBoardingPass(true);
       toast.success("Check-in thành công!");
@@ -169,33 +173,6 @@ export function CheckInDesk() {
                 </div>
               </div>
 
-              <Separator className="my-6" />
-
-              <div className="grid grid-cols-4 gap-6 mb-6">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Cổng / Gate</p>
-                  <p className="text-3xl font-bold">A12</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Ghế / Seat</p>
-                  <p className="text-3xl font-bold">
-                    {availableSeats.find(s => s.id === selectedSeatId)?.seatClass || ticket.seat.seatNumber}
-                  </p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-sm text-gray-600 mb-1">Hạng / Class</p>
-                  <p className="text-xl font-bold">
-                    {availableSeats.find(s => s.id === selectedSeatId)?.seatClass === "FIRST_CLASS"
-                      ? "First Class"
-                      : availableSeats.find(s => s.id === selectedSeatId)?.seatClass === "BUSINESS"
-                        ? "Business"
-                        : "Economy"}
-                  </p>
-                </div>
-              </div>
-
-              <Separator className="my-6" />
-
               <div className="text-center">
                 <p className="text-sm text-gray-600 mb-2">
                   Vui lòng có mặt tại cổng lên máy bay trước 30 phút
@@ -207,26 +184,6 @@ export function CheckInDesk() {
               </div>
             </div>
 
-            <div className="flex gap-3">
-              <Button className="flex-1" onClick={handlePrintBoardingPass}>
-                <Download className="w-4 h-4 mr-2" />
-                In thẻ lên máy bay
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowBoardingPass(false);
-                  setTicket(null);
-                  setFlight(null);
-                  setTicketCode("");
-                  setAvailableSeats([]);
-                  setSelectedSeatId(null);
-                  setCheckedIn(false);
-                }}
-              >
-                Hoàn tất
-              </Button>
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -321,58 +278,63 @@ export function CheckInDesk() {
               const isAvailable = seat.status === "AVAILABLE";
               const isSelected = selectedSeatId === seat.id;
 
-              return (
-                <button
-                  key={seat.id}
-                  disabled={!isAvailable}
-                  onClick={() => handleSeatClick(seat)}
-                  className={`
+              if (!checkedIn)
+                return (
+                  <button
+                    key={seat.id}
+                    disabled={!isAvailable}
+                    onClick={() => handleSeatClick(seat)}
+                    className={`
                 relative h-12 rounded-lg border-2 font-bold text-sm transition-all flex items-center justify-center
                 ${/* Style cho ghế ĐÃ ĐẶT (Xám, không click được) */ ""}
                 ${!isAvailable
-                      ? "bg-gray-200 border-gray-200 text-gray-400 cursor-not-allowed"
-                      : ""}
+                        ? "bg-gray-200 border-gray-200 text-gray-400 cursor-not-allowed"
+                        : ""}
                 
                 ${/* Style cho ghế ĐANG CHỌN (Xanh đậm, nổi bật) */ ""}
                 ${isSelected
-                      ? "bg-blue-600 border-blue-600 text-white shadow-md scale-105 z-10"
-                      : ""}
+                        ? "bg-blue-600 border-blue-600 text-white shadow-md scale-105 z-10"
+                        : ""}
 
                 ${/* Style cho ghế TRỐNG (Trắng, viền xanh nhạt) */ ""}
                 ${isAvailable && !isSelected
-                      ? "bg-white border-blue-100 text-blue-600 hover:border-blue-400 hover:bg-blue-50"
-                      : ""}
+                        ? "bg-white border-blue-100 text-blue-600 hover:border-blue-400 hover:bg-blue-50"
+                        : ""}
               `}
-                >
-                  {/* Nội dung nút */}
-                  <div className="flex flex-col items-center leading-none">
-                    <span>{seat.id}</span>
-                  </div>
-                </button>
-              );
+                  >
+                    {/* Nội dung nút */}
+                    <div className="flex flex-col items-center leading-none">
+                      <span>{seat.id}</span>
+                    </div>
+                  </button>
+                );
             })}
           </div>
 
+
+
           {/* 4. Chú thích (Legend) - Rất quan trọng để user hiểu */}
-          <div className="flex justify-center gap-4 text-xs text-gray-600 pt-2 border-t">
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 border-2 border-blue-100 bg-white rounded"></div>
-              <span>Còn trống</span>
+          {!checkedIn && (
+            <div className="flex justify-center gap-4 text-xs text-gray-600 pt-2 border-t">
+              <div className="flex items-center gap-1">
+                <div className="w-4 h-4 border-2 border-blue-100 bg-white rounded"></div>
+                <span>Còn trống</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-4 h-4 bg-blue-600 rounded"></div>
+                <span>Đang chọn</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                <span>Đã đặt</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 bg-blue-600 rounded"></div>
-              <span>Đang chọn</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 bg-gray-200 rounded"></div>
-              <span>Đã đặt</span>
-            </div>
-          </div>
+          )}
 
           {/* 5. Hiển thị kết quả chọn */}
           {selectedSeatId && (
             <div className="bg-blue-50 text-blue-700 p-3 rounded-md text-center font-medium animate-in fade-in slide-in-from-bottom-2">
-              Bạn đang chọn ghế: {ticket.flight.flightSeats.find(s => s.id === selectedSeatId)?.id}
+              {checkedIn ? "Mã ghế của bạn là" : "Bạn đang chọn ghế"}: {ticket.flight.flightSeats.find(s => s.id === selectedSeatId)?.id}
             </div>
           )}
 
