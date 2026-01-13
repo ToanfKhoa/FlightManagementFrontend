@@ -17,6 +17,7 @@ export const defaultPrices = {
 };
 
 export type Flight = BaseEntity & {
+  priceSeatClass?: FlightSeat[];
   flightSeats: FlightSeatResponse[];
   seatSummary: SeatSummary[];
   route: Route;

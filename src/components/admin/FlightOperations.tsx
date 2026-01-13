@@ -290,12 +290,12 @@ export function FlightOperations() {
       );
 
       toast.success(
-        `Chuyến bay ${selectedFlight.id} đã được đánh dấu chậm ${delayMinutes} phút`
+        `Chuyến bay ${selectedFlight.id} đã được đánh dấu hoãn ${delayMinutes} phút`
       );
       setSelectedFlight(null);
       setShowDelayDialog(false);
     } catch (error) {
-      toast.error("Lỗi khi báo chậm chuyến bay");
+      toast.error("Lỗi khi báo hoãn chuyến bay");
     }
   };
 
@@ -360,6 +360,7 @@ export function FlightOperations() {
       const aircraft = aircrafts.find(a => a.id === (newFlightData as any).aircraftId) || newFlightData.aircraft;
       const flightWithDetails = {
         ...newFlightData,
+        priceSeatClass: newFlight.priceSeatClass,
         route,
         aircraft,
         status: newFlight.status,
@@ -368,6 +369,8 @@ export function FlightOperations() {
       };
       setFlights((prev) => [...prev, flightWithDetails]);
       setAllFlights((prev) => [...prev, flightWithDetails]);
+      console.log(newFlight);
+      console.log(flightWithDetails);
       toast.success("Chuyến bay mới đã được tạo thành công");
       setShowCreateDialog(false);
       setNewFlight({
@@ -397,7 +400,7 @@ export function FlightOperations() {
     const statusLabels: Record<string, string> = {
       open: "Đang mở",
       full: "Hết chỗ",
-      delayed: "Chậm",
+      delayed: "Hoãn",
       canceled: "Đã hủy",
       completed: "Hoàn thành",
       departed: "Khởi hành",
@@ -480,7 +483,7 @@ export function FlightOperations() {
     > = {
       open: { variant: "default", label: "Đang mở" },
       full: { variant: "secondary", label: "Hết chỗ" },
-      delayed: { variant: "destructive", label: "Chậm" },
+      delayed: { variant: "destructive", label: "Hoãn" },
       canceled: { variant: "destructive_2", label: "Đã hủy" },
       completed: { variant: "secondary", label: "Hoàn thành" },
       departed: { variant: "secondary", label: "Khởi hành" },
@@ -499,7 +502,7 @@ export function FlightOperations() {
         <div>
           <h2>Điều hành bay</h2>
           <p className="text-sm text-gray-600 mt-1">
-            Quản lý trạng thái chuyến bay, xử lý chậm/hủy chuyến
+            Quản lý trạng thái chuyến bay, xử lý hoãn/hủy chuyến
           </p>
         </div>
         <div className="flex gap-2">
@@ -778,7 +781,7 @@ export function FlightOperations() {
           <option value="">Tất cả</option>
           <option value="OPEN">Đang mở</option>
           <option value="FULL">Hết chỗ</option>
-          <option value="DELAYED">Chậm</option>
+          <option value="DELAYED">Hoãn</option>
           <option value="CANCELED">Đã hủy</option>
           <option value="DEPARTED">Khởi hành</option>
           <option value="COMPLETED">Hoàn thành</option>
@@ -810,7 +813,7 @@ export function FlightOperations() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>Chậm</CardDescription>
+            <CardDescription>Hoãn</CardDescription>
             <CardTitle className="text-3xl text-yellow-600">
               {allFlights.filter((f) => f.status === "DELAYED").length}
             </CardTitle>
@@ -878,9 +881,9 @@ export function FlightOperations() {
                       <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg flex items-start gap-2">
                         <Clock className="w-5 h-5 text-yellow-600 mt-0.5" />
                         <div>
-                          <p className="font-semibold text-yellow-800">Chuyến bay bị chậm</p>
+                          <p className="font-semibold text-yellow-800">Chuyến bay bị hoãn</p>
                           <p className="text-sm text-yellow-700">
-                            Hành khách đã được thông báo qua email và SMS
+                            Hành khách sẽ nhận được thông báo qua email
                           </p>
                         </div>
                       </div>
@@ -892,7 +895,7 @@ export function FlightOperations() {
                         <div>
                           <p className="font-semibold text-red-800">Chuyến bay đã bị hủy</p>
                           <p className="text-sm text-red-700">
-                            Hành khách đã được thông báo và có thể đổi/hoàn vé
+                            Hành khách sẽ nhận được thông báo qua email
                           </p>
                         </div>
                       </div>
@@ -936,7 +939,9 @@ export function FlightOperations() {
                           ];
 
                           setEditFlightData({
-                            priceSeatClass: priceSeatClass,
+                            priceSeatClass: flight.priceSeatClass && flight.priceSeatClass.length > 0
+                              ? flight.priceSeatClass
+                              : priceSeatClass,
                             seatSummary: flight.seatSummary,
                             routeId: flight.route?.id ?? 1,
                             aircraftId: flight.aircraft?.id ?? 1,
@@ -964,19 +969,19 @@ export function FlightOperations() {
                                 }}
                               >
                                 <Clock className="w-4 h-4 mr-2" />
-                                Báo chậm
+                                Báo hoãn
                               </Button>
                             </DialogTrigger>
                             <DialogContent>
                               <DialogHeader>
-                                <DialogTitle>Báo chậm chuyến bay</DialogTitle>
+                                <DialogTitle>Báo hoãn chuyến bay</DialogTitle>
                                 <DialogDescription>
-                                  Nhập thời gian chậm dự kiến. Hệ thống sẽ tự động thông báo cho hành khách.
+                                  Nhập thời gian hoãn dự kiến. Hệ thống sẽ tự động thông báo cho hành khách.
                                 </DialogDescription>
                               </DialogHeader>
                               <div className="space-y-4">
                                 <div className="space-y-2">
-                                  <Label htmlFor="delay">Thời gian chậm (phút)</Label>
+                                  <Label htmlFor="delay">Thời gian hoãn (phút)</Label>
                                   <Input
                                     type="number"
                                     min="0"
@@ -989,11 +994,11 @@ export function FlightOperations() {
                                 <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
                                   <p className="text-sm text-yellow-800">
                                     <AlertTriangle className="w-4 h-4 inline mr-1" />
-                                    Hành khách sẽ nhận được thông báo qua email và SMS
+                                    Hành khách sẽ nhận được thông báo qua email
                                   </p>
                                 </div>
                                 <Button className="w-full" onClick={handleDelayFlight}>
-                                  Xác nhận báo chậm
+                                  Xác nhận báo hoãn
                                 </Button>
                               </div>
                             </DialogContent>
