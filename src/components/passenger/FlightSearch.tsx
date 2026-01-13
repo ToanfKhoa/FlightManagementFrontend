@@ -18,6 +18,24 @@ interface FlightSearchProps {
   userId: number;
 }
 
+export const formatToVietnamTimeInput = (utcDateString: string | Date = new Date()) => {
+  const date = new Date(utcDateString);
+  return date.toLocaleString('sv-SE', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).replace(' ', 'T');
+};
+
+export const convertVietnamToUTC = (vnTimeString: string) => {
+  if (!vnTimeString) return null;
+  const dateObj = new Date(`${vnTimeString}:00+07:00`);
+  return dateObj.toISOString();
+};
+
 export function FlightSearch({ userId }: FlightSearchProps) {
   const [origins, setOrigins] = useState<string[]>([]);
   const [destinations, setDestinations] = useState<string[]>([]);
@@ -52,10 +70,14 @@ export function FlightSearch({ userId }: FlightSearchProps) {
 
     setIsSearching(true);
     try {
+      let searchDateFormated = formatToVietnamTimeInput(searchDate);
+      let searchDateUTC = convertVietnamToUTC(searchDateFormated ? searchDateFormated : searchDate);
+
+
       const res = await flightService.getAll({
         origin: origin,
         destination: destination,
-        date: searchDate ? `${searchDate}T00:00:00Z` : ""
+        date: searchDateUTC || undefined,
       });
 
       const response = res.data.content as Flight[];
@@ -154,9 +176,16 @@ export function FlightSearch({ userId }: FlightSearchProps) {
 
             <div className="space-y-2">
               <Label htmlFor="date">Ngày bay</Label>
-              <Input
+              {/* <Input
                 id="date"
                 type="date"
+                value={searchDate}
+                onChange={(e) => setSearchDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+              /> */}
+              <Input
+                type="datetime-local"
+                id="edit-departureTime"
                 value={searchDate}
                 onChange={(e) => setSearchDate(e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
