@@ -124,14 +124,13 @@ export function MyBookings({ userId }: MyBookingsProps) {
   const handleRefund = async () => {
     if (selectedTicket) {
       const refundAmount = selectedTicket.price * 0.8;
-
-      setTickets(tickets.map(t => t.id === selectedTicket.id ? { ...t, status: 'CANCELED' as const } : t));
       setShowRefundDialog(false);
 
       const res = await ticketService.refund(selectedTicket.id);
 
       if (res.code === 200 || res.code === 0 || res.message?.toLowerCase().includes('success')) {
         toast.success(`Hoàn tiền ${formatCurrency(refundAmount)} thành công!`);
+        setTickets(tickets.map(t => t.id === selectedTicket.id ? { ...t, status: 'CANCELED' as const } : t));
         setSelectedTicket(null);
       } else {
         toast.error("Hoàn tiền thất bại. Vui lòng thử lại sau.");
