@@ -15,13 +15,25 @@ export function CrewDashboard() {
   const [assignedFlights, setAssignedFlights] = useState<Flight[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const formatDateTime = (iso: string) => {
+    if (!iso) return '';
+    const date = new Date(iso);
+    return date.toLocaleString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   useEffect(() => {
     if (!user || !employee) return;
 
     const fetchData = async () => {
       try {
         const assignmentsRes = await assignmentService.getEmployeeAssignments(employee.id);
-        const assignments = assignmentsRes.content;
+        const assignments = assignmentsRes.data.content;
         const flights = assignments.map((a: Assignment) => a.flight);
         setAssignedFlights(flights);
       } catch (error) {
@@ -169,30 +181,24 @@ export function CrewDashboard() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-gray-600" />
+                          <Plane className="w-4 h-4 text-gray-600" />
                           <div>
-                            <p className="text-sm text-gray-600">Ngày bay</p>
-                            <p className="font-semibold">
-                              {new Date(flight.departureTime).toLocaleDateString("vi-VN")}
-                            </p>
+                            <p className="text-sm text-gray-600">Khởi hành từ {flight.route.origin}</p>
+                            <p className="font-semibold">{formatDateTime(flight.departureTime)}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4 text-gray-600" />
                           <div>
-                            <p className="text-sm text-gray-600">Giờ khởi hành</p>
-                            <p className="font-semibold">{flight.departureTime}</p>
+                            <p className="text-sm text-gray-600">Đến {flight.route.destination}</p>
+                            <p className="font-semibold">{formatDateTime(flight.arrivalTime)}</p>
                           </div>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-600">Giờ đến</p>
-                          <p className="font-semibold">{flight.arrivalTime}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-600">Xuất phát</p>
-                          <p className="font-semibold">{flight.route.origin}</p>
+                          <p className="text-sm text-gray-600">Máy bay</p>
+                          <p className="font-semibold">{flight.aircraft.type}</p>
                         </div>
                       </div>
 
