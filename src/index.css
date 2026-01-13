@@ -1151,6 +1151,10 @@
     background-color: var(--color-red-100);
   }
 
+  .bg-red-800 {
+    background-color: var(--color-red-800);
+  }
+
   .bg-secondary {
     background-color: var(--secondary);
   }
