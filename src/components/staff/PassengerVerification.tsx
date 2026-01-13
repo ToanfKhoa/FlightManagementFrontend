@@ -9,13 +9,16 @@ import { Search, User, Plane, Calendar, Luggage, AlertCircle } from "lucide-reac
 import { mockBookings, mockFlights, formatCurrency } from "../../lib/mockData";
 import { toast } from "sonner";
 import type { Booking, Flight } from "../../lib/mockData";
+import { baggageService } from "../../services/baggageService";
+import type { Baggage } from "../../types/baggageType";
 
 export function PassengerVerification() {
   const [searchQuery, setSearchQuery] = useState("");
   const [booking, setBooking] = useState<Booking | null>(null);
   const [flight, setFlight] = useState<Flight | null>(null);
+  const [baggage, setBaggage] = useState<Baggage[]>([]);
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     const foundBooking = mockBookings.find(
       (b) =>
         b.ticketCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -26,6 +29,7 @@ export function PassengerVerification() {
       toast.error("Không tìm thấy thông tin");
       setBooking(null);
       setFlight(null);
+      setBaggage([]);
       return;
     }
 
@@ -33,6 +37,15 @@ export function PassengerVerification() {
 
     setBooking(foundBooking);
     setFlight(foundFlight || null);
+
+    try {
+      const res = await baggageService.getBaggageByPassenger(foundBooking.passengerId);
+      setBaggage(res.data.content);
+    } catch (error) {
+      console.error("Error fetching baggage:", error);
+      setBaggage([]);
+    }
+
     toast.success("Tìm thấy thông tin!");
   };
 
@@ -48,6 +61,10 @@ export function PassengerVerification() {
       <Badge variant={variants[status].variant as any}>{variants[status].label}</Badge>
     );
   };
+
+  const carryOnWeight = baggage.filter(b => b.type === "CARRY_ON").reduce((sum, b) => sum + b.weight, 0);
+  const checkedWeight = baggage.filter(b => b.type === "CHECKED").reduce((sum, b) => sum + b.weight, 0);
+  const totalExtraFee = baggage.reduce((sum, b) => sum + b.extraFee, 0);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -179,8 +196,8 @@ export function PassengerVerification() {
                     {flight.status === "open"
                       ? "Bình thường"
                       : flight.status === "delayed"
-                      ? "Chậm"
-                      : flight.status}
+                        ? "Chậm"
+                        : flight.status}
                   </Badge>
                 </div>
               </div>
@@ -207,8 +224,8 @@ export function PassengerVerification() {
                     {booking.seatClass === "first"
                       ? "Hạng Nhất"
                       : booking.seatClass === "business"
-                      ? "Thương Gia"
-                      : "Phổ Thông"}
+                        ? "Thương Gia"
+                        : "Phổ Thông"}
                   </p>
                 </div>
                 <div>
@@ -217,22 +234,22 @@ export function PassengerVerification() {
                 </div>
               </div>
 
-              {booking.baggage && (
+              {baggage.length > 0 && (
                 <>
                   <Separator />
                   <div className="grid md:grid-cols-3 gap-4">
                     <div>
                       <p className="text-sm text-gray-600">Hành lý xách tay</p>
-                      <p className="font-semibold">{booking.baggage.carryOn} kg</p>
+                      <p className="font-semibold">{carryOnWeight} kg</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Hành lý ký gửi</p>
-                      <p className="font-semibold">{booking.baggage.checked} kg</p>
+                      <p className="font-semibold">{checkedWeight} kg</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Phí vượt mức</p>
                       <p className="font-semibold">
-                        {formatCurrency(booking.baggage.extraFee)}
+                        {formatCurrency(totalExtraFee)}
                       </p>
                     </div>
                   </div>
