@@ -6,60 +6,41 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
 import { Search, User, Plane, Calendar, Luggage, AlertCircle } from "lucide-react";
-import { mockBookings, mockFlights, formatCurrency } from "../../lib/mockData";
+import { formatCurrency } from "../../lib/mockData";
 import { toast } from "sonner";
-import type { Booking, Flight } from "../../lib/mockData";
 import { baggageService } from "../../services/baggageService";
 import type { Baggage } from "../../types/baggageType";
+import type { Flight } from "../../types/flightType";
+import type { Passenger } from "../../types/passengerType";
+import passengerService from "../../services/passengerService";
 
 export function PassengerVerification() {
+  const [passenger, setPassenger] = useState<Passenger>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [booking, setBooking] = useState<Booking | null>(null);
   const [flight, setFlight] = useState<Flight | null>(null);
   const [baggage, setBaggage] = useState<Baggage[]>([]);
 
   const handleSearch = async () => {
-    const foundBooking = mockBookings.find(
-      (b) =>
-        b.ticketCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        b.passengerName.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    if (!foundBooking) {
-      toast.error("Không tìm thấy thông tin");
-      setBooking(null);
-      setFlight(null);
-      setBaggage([]);
+    if (!/^\d+$/.test(searchQuery)) {
+      toast.error("Vui lòng nhập mã vé (số)");
       return;
     }
 
-    const foundFlight = mockFlights.find((f) => f.id === foundBooking.flightId);
-
-    setBooking(foundBooking);
-    setFlight(foundFlight || null);
-
     try {
-      const res = await baggageService.getBaggageByPassenger(foundBooking.passengerId);
-      setBaggage(res.data.content);
+      const res = await baggageService.getBaggageByPassenger(parseInt(searchQuery));
+      if (res) {
+        setFlight(res.data.content[0].flight);
+        setPassenger(res.data.content[0].passenger);
+        setBaggage(res.data.content);
+        toast.success("Tìm thấy thông tin!");
+      }
+
     } catch (error) {
-      console.error("Error fetching baggage:", error);
+      console.error("Error:", error);
+      toast.error("Không tìm thấy thông tin");
+      setFlight(null);
       setBaggage([]);
     }
-
-    toast.success("Tìm thấy thông tin!");
-  };
-
-  const getStatusBadge = (status: Booking["status"]) => {
-    const variants: Record<Booking["status"], { variant: any; label: string }> = {
-      reserved: { variant: "secondary", label: "Đang giữ chỗ" },
-      paid: { variant: "default", label: "Đã thanh toán" },
-      canceled: { variant: "destructive", label: "Đã hủy" },
-      "checked-in": { variant: "default", label: "Đã check-in" },
-    };
-
-    return (
-      <Badge variant={variants[status].variant as any}>{variants[status].label}</Badge>
-    );
   };
 
   const carryOnWeight = baggage.filter(b => b.type === "CARRY_ON").reduce((sum, b) => sum + b.weight, 0);
@@ -72,7 +53,7 @@ export function PassengerVerification() {
         <CardHeader>
           <CardTitle>Xác minh hành khách</CardTitle>
           <CardDescription>
-            Tìm kiếm theo mã vé, tên hành khách hoặc CMND/CCCD
+            Tìm kiếm theo mã vé
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -83,7 +64,7 @@ export function PassengerVerification() {
               </Label>
               <Input
                 id="search"
-                placeholder="Nhập mã vé, tên hành khách..."
+                placeholder="Nhập mã vé (số)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -97,7 +78,7 @@ export function PassengerVerification() {
         </CardContent>
       </Card>
 
-      {booking && flight && (
+      {flight && (
         <>
           {/* Passenger Info */}
           <Card>
@@ -111,47 +92,13 @@ export function PassengerVerification() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-600">Họ và tên</p>
-                  <p className="font-semibold">{booking.passengerName}</p>
+                  <p className="font-semibold">{passenger.fullName}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Mã vé</p>
-                  <p className="font-mono font-semibold">{booking.ticketCode}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Trạng thái</p>
-                  <div className="mt-1">{getStatusBadge(booking.status)}</div>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Ngày đặt vé</p>
-                  <p className="font-semibold">
-                    {new Date(booking.bookingDate).toLocaleDateString("vi-VN")}
-                  </p>
+                  <p className="text-sm text-gray-600">Số điện thoại</p>
+                  <p className="font-mono font-semibold">{passenger.phone}</p>
                 </div>
               </div>
-
-              {booking.status === "canceled" && (
-                <div className="bg-red-50 border border-red-200 p-3 rounded-lg flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-red-800">Vé đã bị hủy</p>
-                    <p className="text-sm text-red-700">
-                      Hành khách này không được phép lên máy bay
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {booking.status === "reserved" && (
-                <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-yellow-800">Chưa thanh toán</p>
-                    <p className="text-sm text-yellow-700">
-                      Vé đang trong trạng thái giữ chỗ, chưa được thanh toán
-                    </p>
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
 
@@ -167,18 +114,18 @@ export function PassengerVerification() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-600">Mã chuyến bay</p>
-                  <p className="font-semibold">{flight.flightCode}</p>
+                  <p className="font-semibold">{flight.id}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Tuyến đường</p>
-                  <p className="font-semibold">{flight.route}</p>
+                  <p className="font-semibold">{flight.route.origin} - {flight.route.destination}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-gray-600" />
                   <div>
                     <p className="text-sm text-gray-600">Ngày bay</p>
                     <p className="font-semibold">
-                      {new Date(flight.date).toLocaleDateString("vi-VN")}
+                      {new Date(flight.arrivalTime).toLocaleDateString("vi-VN")}
                     </p>
                   </div>
                 </div>
@@ -188,15 +135,15 @@ export function PassengerVerification() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Máy bay</p>
-                  <p className="font-semibold">{flight.aircraftType}</p>
+                  <p className="font-semibold">{flight.aircraft.model}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Trạng thái chuyến bay</p>
                   <Badge>
-                    {flight.status === "open"
+                    {flight.status === "OPEN"
                       ? "Bình thường"
-                      : flight.status === "delayed"
-                        ? "Chậm"
+                      : flight.status === "DELAYED"
+                        ? "Hoãn"
                         : flight.status}
                   </Badge>
                 </div>
@@ -209,30 +156,10 @@ export function PassengerVerification() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Luggage className="w-5 h-5" />
-                Ghế ngồi & Hành lý
+                Hành lý
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid md:grid-cols-3 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600">Số ghế</p>
-                  <p className="text-2xl font-bold">{booking.seatNumber}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Hạng vé</p>
-                  <p className="font-semibold">
-                    {booking.seatClass === "first"
-                      ? "Hạng Nhất"
-                      : booking.seatClass === "business"
-                        ? "Thương Gia"
-                        : "Phổ Thông"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Giá vé</p>
-                  <p className="font-semibold">{formatCurrency(booking.price)}</p>
-                </div>
-              </div>
 
               {baggage.length > 0 && (
                 <>
@@ -258,15 +185,6 @@ export function PassengerVerification() {
             </CardContent>
           </Card>
         </>
-      )}
-
-      {!booking && (
-        <Card>
-          <CardContent className="py-16 text-center text-gray-500">
-            <Search className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-            <p>Nhập thông tin để tìm kiếm hành khách</p>
-          </CardContent>
-        </Card>
       )}
     </div>
   );

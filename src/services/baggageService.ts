@@ -11,7 +11,7 @@ export const baggageService = {
     calculateFee(payload: CreateBaggageRequest): Promise<ApiResponse<Number>> {
         return axiosClient.post("/baggages/calculate-fee", payload) as Promise<ApiResponse<Number>>;
     },
-    getBaggageByPassenger(passengerId: number, params: PageableParams = { page: 0, size: 10 }) {
+    getBaggageByPassenger(passengerId: number, params: PageableParams = { page: 0, size: 10 }): Promise<ApiResponse<any>> {
         return axiosClient.get(`/baggages/passenger/${passengerId}`, { params: params });
     },
 };
