@@ -15,8 +15,8 @@ export const ticketService = {
     getOwnTickets(payload: PaginationRequest): Promise<PageResponse<Ticket>> {
         return axiosClient.get('/tickets/own', { params: payload });
     },
-    checkin(payload: { ticketId: number, passengerEmail: string, seatId: number }): Promise<Flight> {
-        return axiosClient.get(`/flights/${payload.ticketId}/seat`, { params: payload });
+    checkin(payload: { ticketId: number, seatId: number }): Promise<Flight> {
+        return axiosClient.post(`/flights/${payload.ticketId}/seat`, { params: payload });
     },
     refund(ticketId: number): Promise<ApiResponse<Ticket>> {
         return axiosClient.post(`/tickets/${ticketId}/refund`);
