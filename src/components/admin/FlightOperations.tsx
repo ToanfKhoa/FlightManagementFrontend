@@ -12,7 +12,7 @@ import {
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Pencil, Plane, AlertTriangle, Clock, X, Plus, Download, MapPin, Users } from "lucide-react";
+import { Pencil, Plane, AlertTriangle, Clock, X, Plus, Download, MapPin, Users, EyeIcon, ScanEyeIcon } from "lucide-react";
 import { toast } from "sonner";
 import { exportFlightsToExcel } from "../../utils/excelExport";
 import { flightService } from "../../services/flightService";
@@ -46,6 +46,8 @@ export function FlightOperations() {
   });
   const [aircrafts, setAircrafts] = useState<Aircraft[]>([]);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [creatingFlight, setCreatingFlight] = useState(false);
+
   const [newFlight, setNewFlight] = useState({
     priceSeatClass: [
       { seatClass: 'ECONOMY', price: 1500000 },
@@ -164,8 +166,13 @@ export function FlightOperations() {
 
   useEffect(() => {
     if (showAssignDialog && selectedFlightForAssign) {
-      loadEmployees(employeePage);
       loadExistingAssignments(selectedFlightForAssign.id);
+    }
+  }, [showAssignDialog, selectedFlightForAssign]);
+
+  useEffect(() => {
+    if (showAssignDialog && selectedFlightForAssign) {
+      loadEmployees(employeePage);
     }
   }, [showAssignDialog, selectedFlightForAssign, employeePage]);
 
@@ -341,6 +348,9 @@ export function FlightOperations() {
     });
 
   const handleCreateFlight = async () => {
+    if (creatingFlight) return;
+    setCreatingFlight(true);
+
     try {
       const formatToISO = (datetime: string) => {
         if (!datetime) return '';
@@ -392,6 +402,9 @@ export function FlightOperations() {
       });
     } catch (error) {
       toast.error("Vui lòng nhập đầy đủ thông tin");
+    }
+    finally {
+      setCreatingFlight(false);
     }
   };
 
@@ -637,8 +650,12 @@ export function FlightOperations() {
                     </div>
                   </div>
                 </div>
-                <Button className="w-full" onClick={handleCreateFlight}>
-                  Tạo chuyến bay
+                <Button
+                  className="w-full"
+                  onClick={handleCreateFlight}
+                  disabled={creatingFlight}
+                >
+                  {creatingFlight ? "Đang tạo..." : "Tạo chuyến bay"}
                 </Button>
               </div>
             </DialogContent>
@@ -650,7 +667,7 @@ export function FlightOperations() {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Chỉnh sửa chuyến bay</DialogTitle>
+            <DialogTitle>Chi tiết chuyến bay</DialogTitle>
             <DialogDescription>
               Cập nhật thông tin chuyến bay {editingFlight?.id}
             </DialogDescription>
@@ -757,9 +774,11 @@ export function FlightOperations() {
                 </div>
               </div>
             </div>
+            {/* 
             <Button className="w-full" onClick={handleUpdateFlight}>
               Lưu thay đổi
             </Button>
+            */}
           </div>
         </DialogContent>
       </Dialog>
@@ -912,6 +931,7 @@ export function FlightOperations() {
                         <Users className="w-4 h-4 mr-2" />
                         Phân công
                       </Button>
+
                       <Button
                         variant="outline"
                         onClick={() => {
@@ -953,8 +973,8 @@ export function FlightOperations() {
                           setShowEditDialog(true);
                         }}
                       >
-                        <Pencil className="w-4 h-4 mr-2" />
-                        Chỉnh sửa
+                        <EyeIcon className="w-4 h-4 mr-2" />
+                        Chi tiết
                       </Button>
                       {(flight.status !== "COMPLETED" && flight.status !== "CANCELED") && (
                         <>
