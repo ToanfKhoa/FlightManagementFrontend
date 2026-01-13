@@ -9,6 +9,8 @@ import { Plane, Wrench, Plus, Edit, Download } from "lucide-react";
 import { toast } from "sonner";
 import { exportAircraftToExcel } from "../../utils/excelExport";
 import { aircraftService } from "../../services/aircraftService";
+import { seatService } from "../../services/seatService";
+import type { ClassSeatRequests } from "../../types/seatType";
 import type { Aircraft, CreateAircraftRequest, AircraftsPageResponse } from "../../types/aircraftType";
 import type { ApiResponse } from "../../types/commonType";
 
@@ -22,7 +24,7 @@ export function AircraftManagement() {
   const [selectedAircraft, setSelectedAircraft] = useState<Aircraft | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [newAircraft, setNewAircraft] = useState<CreateAircraftRequest>({
+  const [newAircraft, setNewAircraft] = useState<CreateAircraftRequest & { economySeats: number; businessSeats: number; firstClassSeats: number }>({
     type: '',
     seatCapacity: 0,
     registrationNumber: '',
@@ -30,9 +32,12 @@ export function AircraftManagement() {
     model: '',
     manufactureYear: 0,
     serialNumber: '',
-    status: 'ACTIVE'
+    status: 'ACTIVE',
+    economySeats: 0,
+    businessSeats: 0,
+    firstClassSeats: 0
   });
-  const [updatedAircraft, setUpdatedAircraft] = useState<CreateAircraftRequest>({
+  const [updatedAircraft, setUpdatedAircraft] = useState<CreateAircraftRequest & { economySeats: number; businessSeats: number; firstClassSeats: number }>({
     type: '',
     seatCapacity: 0,
     registrationNumber: '',
@@ -40,7 +45,10 @@ export function AircraftManagement() {
     model: '',
     manufactureYear: 0,
     serialNumber: '',
-    status: 'ACTIVE'
+    status: 'ACTIVE',
+    economySeats: 0,
+    businessSeats: 0,
+    firstClassSeats: 0
   });
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -109,9 +117,67 @@ export function AircraftManagement() {
   };
 
   const handleCreateAircraft = () => {
+    // Check if seat counts are multiples of 6
+    if (newAircraft.economySeats % 6 !== 0 || newAircraft.businessSeats % 6 !== 0 || newAircraft.firstClassSeats % 6 !== 0) {
+      toast.error("Số ghế mỗi hạng phải là bội số của 6. Vui lòng nhập lại.");
+      return;
+    }
+
+    const totalSeats = newAircraft.economySeats + newAircraft.businessSeats + newAircraft.firstClassSeats;
+    if (totalSeats === 0) {
+      toast.error("Số ghế máy bay đang trống. Vui lòng nhập lại.");
+      return;
+    }
+
+    const aircraftData = { ...newAircraft, seatCapacity: totalSeats };
     aircraftService
-      .create(newAircraft)
+      .create(aircraftData)
       .then((createdAircraft) => {
+        // Create seats if any seats specified
+        if (totalSeats > 0) {
+          const classSeatRequests: ClassSeatRequests = {};
+          let currentRow = 1;
+
+          if (newAircraft.economySeats > 0) {
+            const rows = Math.ceil(newAircraft.economySeats / 6);
+            classSeatRequests.ECONOMY = {
+              fromRow: currentRow,
+              toRow: currentRow + rows - 1,
+              layoutType: 'ECONOMY_3_3',
+              excludedRows: []
+            };
+            currentRow += rows;
+          }
+
+          if (newAircraft.businessSeats > 0) {
+            const rows = Math.ceil(newAircraft.businessSeats / 6);
+            classSeatRequests.BUSINESS = {
+              fromRow: currentRow,
+              toRow: currentRow + rows - 1,
+              layoutType: 'ECONOMY_3_3',
+              excludedRows: []
+            };
+            currentRow += rows;
+          }
+
+          if (newAircraft.firstClassSeats > 0) {
+            const rows = Math.ceil(newAircraft.firstClassSeats / 6);
+            classSeatRequests.FIRST_CLASS = {
+              fromRow: currentRow,
+              toRow: currentRow + rows - 1,
+              layoutType: 'ECONOMY_3_3',
+              excludedRows: []
+            };
+          }
+
+          seatService.createBulk({
+            aircraftId: createdAircraft.id,
+            classSeatRequests: classSeatRequests as ClassSeatRequests
+          }).catch(() => {
+            toast.error("Tạo ghế ngồi thất bại, nhưng máy bay đã được tạo");
+          });
+        }
+
         // Refresh the aircraft list
         fetchAircrafts();
         setAllAircraft(prev => [...prev, createdAircraft]);
@@ -125,11 +191,14 @@ export function AircraftManagement() {
           model: '',
           manufactureYear: 0,
           serialNumber: '',
-          status: 'ACTIVE'
+          status: 'ACTIVE',
+          economySeats: 0,
+          businessSeats: 0,
+          firstClassSeats: 0
         });
       })
       .catch(() => {
-        toast.error("Không thể tạo máy bay");
+        toast.error("Vui lòng nhập đầy đủ thông tin máy bay");
       });
   };
 
@@ -195,7 +264,10 @@ export function AircraftManagement() {
             <Download className="w-4 h-4 mr-2" />
             Xuất Excel
           </Button>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <Button onClick={() => {
+            if (isEditMode) setIsEditMode(false);
+            setIsCreateDialogOpen(true);
+          }}>
             <Plus className="w-4 h-4 mr-2" />
             Thêm máy bay mới
           </Button>
@@ -352,22 +424,6 @@ export function AircraftManagement() {
               </div>
 
               <div>
-                <Label htmlFor="seatCapacity">Sức chứa ghế</Label>
-                <Input
-                  id="seatCapacity"
-                  type="number"
-                  value={isEditMode ? updatedAircraft.seatCapacity : newAircraft.seatCapacity}
-                  onChange={(e) => {
-                    const v = parseInt(e.target.value) || 0;
-                    isEditMode
-                      ? setUpdatedAircraft(prev => ({ ...prev, seatCapacity: v }))
-                      : setNewAircraft(prev => ({ ...prev, seatCapacity: v }));
-                  }}
-                  placeholder="Ví dụ: 180"
-                />
-              </div>
-
-              <div>
                 <Label htmlFor="status">Trạng thái</Label>
                 <select
                   className="border p-2 rounded w-full"
@@ -385,8 +441,64 @@ export function AircraftManagement() {
               </div>
             </div>
 
+            {!isEditMode && (
+              <div className="border-t pt-4">
+                <h4 className="text-lg font-semibold mb-0">Cấu hình số ghế ngồi</h4>
+                <p className="text-sm text-gray-500 italic mb-4">Số lượng ghế mỗi hạng cần là bội số của 6</p>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="economySeats">Phổ thông</Label>
+                    <Input
+                      id="economySeats"
+                      type="number"
+                      value={newAircraft.economySeats}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value) || 0;
+                        setNewAircraft(prev => ({ ...prev, economySeats: v }));
+                      }}
+                      placeholder="Ví dụ: 150"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="businessSeats">Thương gia</Label>
+                    <Input
+                      id="businessSeats"
+                      type="number"
+                      value={newAircraft.businessSeats}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value) || 0;
+                        setNewAircraft(prev => ({ ...prev, businessSeats: v }));
+                      }}
+                      placeholder="Ví dụ: 20"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="firstClassSeats">Hạng nhất</Label>
+                    <Input
+                      id="firstClassSeats"
+                      type="number"
+                      value={newAircraft.firstClassSeats}
+                      onChange={(e) => {
+                        const v = parseInt(e.target.value) || 0;
+                        setNewAircraft(prev => ({ ...prev, firstClassSeats: v }));
+                      }}
+                      placeholder="Ví dụ: 10"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => {
+                setIsCreateDialogOpen(false);
+                if (isEditMode) setIsEditMode(false);
+              }}>
                 Hủy
               </Button>
               <Button onClick={isEditMode ? handleUpdateAircraft : handleCreateAircraft}>
@@ -456,7 +568,10 @@ export function AircraftManagement() {
                           model: ac.model,
                           manufactureYear: ac.manufactureYear,
                           serialNumber: ac.serialNumber,
-                          status: ac.status
+                          status: ac.status,
+                          economySeats: 0,
+                          businessSeats: 0,
+                          firstClassSeats: 0
                         });
                         setIsEditMode(true);
                         setIsCreateDialogOpen(true);
@@ -484,3 +599,4 @@ export function AircraftManagement() {
     </div>
   );
 }
+

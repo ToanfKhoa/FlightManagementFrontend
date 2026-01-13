@@ -12,14 +12,18 @@ import {
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Pencil, Plane, AlertTriangle, Clock, X, Plus, Download } from "lucide-react";
+import { Pencil, Plane, AlertTriangle, Clock, X, Plus, Download, MapPin, Users } from "lucide-react";
 import { toast } from "sonner";
 import { exportFlightsToExcel } from "../../utils/excelExport";
 import { flightService } from "../../services/flightService";
 import { aircraftService } from "../../services/aircraftService";
 import { routeService } from "../../services/routeService";
-import type { Flight, Route, FlightStatus, FlightsPageResponse, PriceSeatClassDto } from "../../types/flightType";
+import { assignmentService } from "../../services/assignmentService";
+import { employeeService } from "../../services/employeeService";
+import type { Flight, Route, FlightStatus, FlightsPageResponse, FlightSeat, SeatSummary, CreateRouteRequest } from "../../types/flightType";
 import type { Aircraft } from "../../types/aircraftType";
+import type { Employee } from "../../types/employeeType";
+import type { Assignment } from "../../types/assignmentType";
 import type { ApiResponse } from "../../types/commonType";
 
 export function FlightOperations() {
@@ -34,23 +38,51 @@ export function FlightOperations() {
   const [showDelayDialog, setShowDelayDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [routes, setRoutes] = useState<Route[]>([]);
+  const [showRouteDialog, setShowRouteDialog] = useState(false);
+  const [newRoute, setNewRoute] = useState<CreateRouteRequest>({
+    origin: '',
+    destination: '',
+    external: false
+  });
   const [aircrafts, setAircrafts] = useState<Aircraft[]>([]);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newFlight, setNewFlight] = useState({
-    routeId: 0,
-    aircraftId: 0,
+    priceSeatClass: [
+      { seatClass: 'ECONOMY', price: 1500000 },
+      { seatClass: 'BUSINESS', price: 3000000 },
+      { seatClass: 'FIRST_CLASS', price: 5000000 }
+    ] as FlightSeat[],
+    seatSummary: [] as SeatSummary[],
+    routeId: 1,
+    aircraftId: 1,
     status: 'OPEN' as FlightStatus,
-    priceSeatClass: [{ seatClass: 'ECONOMY', price: 1500000 }] as PriceSeatClassDto[],
     departureTime: '',
     arrivalTime: '',
   });
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingFlight, setEditingFlight] = useState<Flight | null>(null);
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [selectedFlightForAssign, setSelectedFlightForAssign] = useState<Flight | null>(null);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
+  const [employeePage, setEmployeePage] = useState(0);
+  const [employeeTotalPages, setEmployeeTotalPages] = useState(0);
+  const [existingAssignments, setExistingAssignments] = useState<Assignment[]>([]);
   const [editFlightData, setEditFlightData] = useState({
-    routeId: 0,
-    aircraftId: 0,
+    priceSeatClass: [
+      { seatClass: 'ECONOMY', price: 1500000 },
+      { seatClass: 'BUSINESS', price: 3000000 },
+      { seatClass: 'FIRST_CLASS', price: 5000000 }
+    ] as FlightSeat[],
+    seatSummary: [
+      { seatClass: 'ECONOMY', availableSeats: 1 },
+      { seatClass: 'BUSINESS', availableSeats: 1 },
+      { seatClass: 'FIRST_CLASS', availableSeats: 1 }
+    ] as SeatSummary[],
+    routeId: 1,
+    aircraftId: 1,
     status: 'OPEN' as FlightStatus,
-    priceSeatClass: [{ seatClass: 'ECONOMY', price: 1500000 }] as PriceSeatClassDto[],
     departureTime: '',
     arrivalTime: '',
   });
@@ -58,6 +90,35 @@ export function FlightOperations() {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
+
+  const loadEmployees = async (page: number = 0) => {
+    try {
+      setLoadingEmployees(true);
+      const res = await employeeService.getAllEmployees({ page, size: 10 });
+      if (res.data) {
+        const sortedEmployees = res.data.content.sort((a, b) => a.position.localeCompare(b.position));
+        setEmployees(sortedEmployees);
+        setEmployeeTotalPages(res.data.totalPages || 0);
+      }
+    } catch (err) {
+      toast.error("Lỗi khi tải danh sách nhân viên");
+    } finally {
+      setLoadingEmployees(false);
+    }
+  };
+
+  const loadExistingAssignments = async (flightId: number) => {
+    try {
+      const res = await assignmentService.getAll({ all: true, filter: `flight.id==${flightId}` });
+      if (res.data) {
+        setExistingAssignments(res.data.content);
+        const assignedEmployeeIds = res.data.content.map((assignment: Assignment) => assignment.employee.id);
+        setSelectedEmployeeIds(assignedEmployeeIds);
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải phân công hiện tại", err);
+    }
+  };
 
   const fetchFlights = async () => {
     try {
@@ -102,10 +163,17 @@ export function FlightOperations() {
   }, [page, size, debouncedSearch, selectedStatus]);
 
   useEffect(() => {
+    if (showAssignDialog && selectedFlightForAssign) {
+      loadEmployees(employeePage);
+      loadExistingAssignments(selectedFlightForAssign.id);
+    }
+  }, [showAssignDialog, selectedFlightForAssign, employeePage]);
+
+  useEffect(() => {
     Promise.all([
       flightService.getAll({ all: true }),
       routeService.getAll(),
-      aircraftService.getAll({ all: true }),
+      aircraftService.getAll({ all: true, status: 'ACTIVE' }),
     ])
       .then(([allFlightsData, routesData, aircraftsData]) => {
         const allFlightsWithComputed = (allFlightsData.data.content as Flight[]).map(flight => ({
@@ -132,10 +200,19 @@ export function FlightOperations() {
         // Set default values to first items
         if (routesData.length > 0 && (aircraftsData as Aircraft[]).length > 0) {
           setNewFlight({
+            priceSeatClass: [
+              { seatClass: 'ECONOMY', price: 1500000 },
+              { seatClass: 'BUSINESS', price: 3000000 },
+              { seatClass: 'FIRST_CLASS', price: 5000000 }
+            ],
+            seatSummary: [
+              { seatClass: 'ECONOMY', availableSeats: 1 },
+              { seatClass: 'BUSINESS', availableSeats: 1 },
+              { seatClass: 'FIRST_CLASS', availableSeats: 1 }
+            ],
             routeId: routesData[0].id,
             aircraftId: (aircraftsData as Aircraft[])[0].id,
             status: 'OPEN',
-            priceSeatClass: [{ seatClass: 'ECONOMY', price: 1500000 }],
             departureTime: '',
             arrivalTime: '',
           });
@@ -145,6 +222,40 @@ export function FlightOperations() {
         toast.error("Không tải được dữ liệu");
       });
   }, []);
+
+  const handleCreateRoute = async () => {
+    try {
+      // Check for duplicate route
+      const existingRoute = routes.find(route =>
+        route.origin.toLowerCase() === newRoute.origin.toLowerCase() &&
+        route.destination.toLowerCase() === newRoute.destination.toLowerCase() &&
+        route.external === newRoute.external
+      );
+
+      if (existingRoute) {
+        toast.error("Tuyến bay này đã tồn tại. Vui lòng kiểm tra lại thông tin!");
+        return;
+      }
+
+      // Validate required fields
+      if (!newRoute.origin || !newRoute.destination) {
+        toast.error("Vui lòng nhập đầy đủ thông tin điểm đi và điểm đến");
+        return;
+      }
+
+      const createdRoute = await routeService.create(newRoute);
+      setRoutes(prev => [...prev, createdRoute]);
+      toast.success("Tuyến bay mới đã được tạo thành công");
+      setShowRouteDialog(false);
+      setNewRoute({
+        origin: '',
+        destination: '',
+        external: false
+      });
+    } catch (error) {
+      toast.error("Vui lòng nhập đầy đủ thông tin");
+    }
+  };
 
   const handleDelayFlight = () => {
     if (!selectedFlight) return;
@@ -239,10 +350,19 @@ export function FlightOperations() {
       toast.success("Chuyến bay mới đã được tạo thành công");
       setShowCreateDialog(false);
       setNewFlight({
-        routeId: routes[0]?.id || 0,
-        aircraftId: aircrafts[0]?.id || 0,
+        priceSeatClass: [
+          { seatClass: 'ECONOMY', price: 1500000 },
+          { seatClass: 'BUSINESS', price: 3000000 },
+          { seatClass: 'FIRST_CLASS', price: 5000000 }
+        ],
+        seatSummary: [
+          { seatClass: 'ECONOMY', availableSeats: 1 },
+          { seatClass: 'BUSINESS', availableSeats: 1 },
+          { seatClass: 'FIRST_CLASS', availableSeats: 1 }
+        ] as SeatSummary[],
+        routeId: routes[0]?.id || 1,
+        aircraftId: aircrafts[0]?.id || 1,
         status: 'OPEN' as FlightStatus,
-        priceSeatClass: [{ seatClass: 'ECONOMY', price: 1500000 }],
         departureTime: '',
         arrivalTime: '',
       });
@@ -264,6 +384,25 @@ export function FlightOperations() {
     return statusLabels[String(status ?? '').toLowerCase()] || String(status ?? '');
   };
 
+  const handleAssignCrew = async () => {
+    if (!selectedFlightForAssign || selectedEmployeeIds.length === 0) return;
+
+    try {
+      await assignmentService.assign({
+        flightId: selectedFlightForAssign.id,
+        employeeIds: selectedEmployeeIds,
+      });
+      toast.success("Phân công nhân viên thành công");
+      setShowAssignDialog(false);
+      setSelectedFlightForAssign(null);
+      setSelectedEmployeeIds([]);
+      setExistingAssignments([]);
+      setEmployeePage(0);
+    } catch (err) {
+      toast.error("Phân công chưa đáp ứng quy định, vui lòng xem xét lại.");
+    }
+  };
+
   const handleUpdateFlight = async () => {
     if (!editingFlight) return;
 
@@ -275,10 +414,10 @@ export function FlightOperations() {
       };
 
       const updatedData = await flightService.update(String(editingFlight.id), {
+        priceSeatClass: editFlightData.priceSeatClass,
         routeId: editFlightData.routeId,
         aircraftId: editFlightData.aircraftId,
         status: editFlightData.status,
-        priceSeatClass: editFlightData.priceSeatClass,
         departureTime: formatToISO(editFlightData.departureTime),
         arrivalTime: formatToISO(editFlightData.arrivalTime),
       });
@@ -354,6 +493,14 @@ export function FlightOperations() {
             <Download className="w-4 h-4 mr-2" />
             Xuất Excel
           </Button>
+          <Dialog open={showRouteDialog} onOpenChange={setShowRouteDialog}>
+            <DialogTrigger asChild>
+              <Button>
+                <MapPin className="w-4 h-4 mr-2" />
+                Tạo tuyến bay mới
+              </Button>
+            </DialogTrigger>
+          </Dialog>
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
               <Button>
@@ -421,60 +568,49 @@ export function FlightOperations() {
                 </div>
                 <div className="space-y-2">
                   <Label>Giá theo hạng ghế</Label>
-                  <div className="space-y-2 border p-3 rounded">
-                    {newFlight.priceSeatClass.map((price, index) => (
-                      <div key={index} className="grid grid-cols-2 gap-2 items-center">
-                        <select
-                          className="border p-2 rounded"
-                          value={price.seatClass}
-                          onChange={(e) => {
-                            const updated = [...newFlight.priceSeatClass];
-                            updated[index].seatClass = e.target.value;
-                            setNewFlight({ ...newFlight, priceSeatClass: updated });
-                          }}
-                        >
-                          <option value="ECONOMY">Phổ thông</option>
-                          <option value="BUSINESS">Thương gia</option>
-                          <option value="FIRST">Hạng nhất</option>
-                        </select>
-                        <div className="flex gap-2 items-center">
-                          <Input
-                            type="number"
-                            value={price.price}
-                            onChange={(e) => {
-                              const updated = [...newFlight.priceSeatClass];
-                              updated[index].price = parseInt(e.target.value) || 0;
-                              setNewFlight({ ...newFlight, priceSeatClass: updated });
-                            }}
-                            placeholder="Giá"
-                          />
-                          {newFlight.priceSeatClass.length > 1 && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                const updated = newFlight.priceSeatClass.filter((_, i) => i !== index);
-                                setNewFlight({ ...newFlight, priceSeatClass: updated });
-                              }}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setNewFlight({
-                        ...newFlight,
-                        priceSeatClass: [...newFlight.priceSeatClass, { seatClass: 'ECONOMY', price: 0 }]
-                      })}
-                    >
-                      <Plus className="w-4 h-4 mr-1" /> Thêm hạng ghế
-                    </Button>
+                  <div className="grid grid-cols-3 gap-4 border p-3 rounded">
+                    <div>
+                      <Label htmlFor="economy-price">Phổ thông</Label>
+                      <Input
+                        id="economy-price"
+                        type="number"
+                        value={newFlight.priceSeatClass[0].price}
+                        onChange={(e) => {
+                          const updated = [...newFlight.priceSeatClass];
+                          updated[0].price = parseInt(e.target.value) || 0;
+                          setNewFlight({ ...newFlight, priceSeatClass: updated });
+                        }}
+                        placeholder="Giá"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="business-price">Thương gia</Label>
+                      <Input
+                        id="business-price"
+                        type="number"
+                        value={newFlight.priceSeatClass[1].price}
+                        onChange={(e) => {
+                          const updated = [...newFlight.priceSeatClass];
+                          updated[1].price = parseInt(e.target.value) || 0;
+                          setNewFlight({ ...newFlight, priceSeatClass: updated });
+                        }}
+                        placeholder="Giá"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="first-class-price">Hạng nhất</Label>
+                      <Input
+                        id="first-class-price"
+                        type="number"
+                        value={newFlight.priceSeatClass[2].price}
+                        onChange={(e) => {
+                          const updated = [...newFlight.priceSeatClass];
+                          updated[2].price = parseInt(e.target.value) || 0;
+                          setNewFlight({ ...newFlight, priceSeatClass: updated });
+                        }}
+                        placeholder="Giá"
+                      />
+                    </div>
                   </div>
                 </div>
                 <Button className="w-full" onClick={handleCreateFlight}>
@@ -517,6 +653,7 @@ export function FlightOperations() {
                   className="border p-2 rounded w-full"
                   value={editFlightData.aircraftId}
                   onChange={(e) => setEditFlightData({ ...editFlightData, aircraftId: parseInt(e.target.value) })}
+                  disabled
                 >
                   {aircrafts.map((aircraft) => (
                     <option key={aircraft.id} value={aircraft.id}>
@@ -548,60 +685,52 @@ export function FlightOperations() {
             </div>
             <div className="space-y-2">
               <Label>Giá theo hạng ghế</Label>
-              <div className="space-y-2 border p-3 rounded">
-                {editFlightData.priceSeatClass.map((price, index) => (
-                  <div key={index} className="grid grid-cols-2 gap-2 items-center">
-                    <select
-                      className="border p-2 rounded"
-                      value={price.seatClass}
-                      onChange={(e) => {
-                        const updated = [...editFlightData.priceSeatClass];
-                        updated[index].seatClass = e.target.value;
-                        setEditFlightData({ ...editFlightData, priceSeatClass: updated });
-                      }}
-                    >
-                      <option value="ECONOMY">Phổ thông</option>
-                      <option value="BUSINESS">Thương gia</option>
-                      <option value="FIRST">Hạng nhất</option>
-                    </select>
-                    <div className="flex gap-2 items-center">
-                      <Input
-                        type="number"
-                        value={price.price}
-                        onChange={(e) => {
-                          const updated = [...editFlightData.priceSeatClass];
-                          updated[index].price = parseInt(e.target.value) || 0;
-                          setEditFlightData({ ...editFlightData, priceSeatClass: updated });
-                        }}
-                        placeholder="Giá"
-                      />
-                      {editFlightData.priceSeatClass.length > 1 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const updated = editFlightData.priceSeatClass.filter((_, i) => i !== index);
-                            setEditFlightData({ ...editFlightData, priceSeatClass: updated });
-                          }}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditFlightData({
-                    ...editFlightData,
-                    priceSeatClass: [...editFlightData.priceSeatClass, { seatClass: 'ECONOMY', price: 0 }]
-                  })}
-                >
-                  <Plus className="w-4 h-4 mr-1" /> Thêm hạng ghế
-                </Button>
+              <div className="grid grid-cols-3 gap-4 border p-3 rounded">
+                <div>
+                  <Label htmlFor="edit-economy-price">Phổ thông</Label>
+                  <Input
+                    id="edit-economy-price"
+                    type="number"
+                    value={editFlightData.priceSeatClass[0].price}
+                    onChange={(e) => {
+                      const updated = [...editFlightData.priceSeatClass];
+                      updated[0].price = parseInt(e.target.value) || 0;
+                      setEditFlightData({ ...editFlightData, priceSeatClass: updated });
+                    }}
+                    placeholder="Giá"
+                    readOnly
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-business-price">Thương gia</Label>
+                  <Input
+                    id="edit-business-price"
+                    type="number"
+                    value={editFlightData.priceSeatClass[1].price}
+                    onChange={(e) => {
+                      const updated = [...editFlightData.priceSeatClass];
+                      updated[1].price = parseInt(e.target.value) || 0;
+                      setEditFlightData({ ...editFlightData, priceSeatClass: updated });
+                    }}
+                    placeholder="Giá"
+                    readOnly
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-first-class-price">Hạng nhất</Label>
+                  <Input
+                    id="edit-first-class-price"
+                    type="number"
+                    value={editFlightData.priceSeatClass[2].price}
+                    onChange={(e) => {
+                      const updated = [...editFlightData.priceSeatClass];
+                      updated[2].price = parseInt(e.target.value) || 0;
+                      setEditFlightData({ ...editFlightData, priceSeatClass: updated });
+                    }}
+                    placeholder="Giá"
+                    readOnly
+                  />
+                </div>
               </div>
             </div>
             <Button className="w-full" onClick={handleUpdateFlight}>
@@ -752,6 +881,16 @@ export function FlightOperations() {
                       <Button
                         variant="outline"
                         onClick={() => {
+                          setSelectedFlightForAssign(flight);
+                          setShowAssignDialog(true);
+                        }}
+                      >
+                        <Users className="w-4 h-4 mr-2" />
+                        Phân công
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
                           setEditingFlight(flight);
 
                           // Formart datetime
@@ -763,21 +902,24 @@ export function FlightOperations() {
                             return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
                           };
 
-                          // Convert prices object to priceSeatClass array
-                          const prices = flight.prices;
-                          const priceSeatClass = prices
-                            ? Object.entries(prices).map(([seatClass, price]) => ({
-                              seatClass: seatClass.toUpperCase(),
-                              price: price as number
-                            }))
-                            : [{ seatClass: 'ECONOMY', price: 1500000 }];
+                          // Group flightSeats by seatClass to get prices
+                          const priceMap = flight.flightSeats.reduce((acc, seat) => {
+                            acc[seat.seatClass] = seat.price;
+                            return acc;
+                          }, {} as Record<string, number>);
 
+                          const priceSeatClass = [
+                            { seatClass: 'ECONOMY', price: priceMap.ECONOMY || 0 },
+                            { seatClass: 'BUSINESS', price: priceMap.BUSINESS || 0 },
+                            { seatClass: 'FIRST_CLASS', price: priceMap.FIRST_CLASS || 0 }
+                          ];
 
                           setEditFlightData({
-                            routeId: flight.route?.id ?? 0,
-                            aircraftId: flight.aircraft?.id ?? 0,
-                            status: flight.status,
                             priceSeatClass: priceSeatClass,
+                            seatSummary: flight.seatSummary,
+                            routeId: flight.route?.id ?? 1,
+                            aircraftId: flight.aircraft?.id ?? 1,
+                            status: flight.status,
                             departureTime: isoToLocalInput(flight.departureTime),
                             arrivalTime: isoToLocalInput(flight.arrivalTime),
                           });
@@ -915,6 +1057,157 @@ export function FlightOperations() {
           <Button disabled={page >= (totalPages - 1) || loading} onClick={() => setPage(p => Math.min((totalPages - 1) || p + 1, p + 1))}>Next</Button>
         </div>
       </div>
+
+      {/* Route Management Dialog */}
+      <Dialog open={showRouteDialog} onOpenChange={setShowRouteDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Tạo tuyến bay mới</DialogTitle>
+            <DialogDescription>
+              Thêm tuyến bay mới vào hệ thống
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="origin">Điểm đi</Label>
+                <Input
+                  id="origin"
+                  value={newRoute.origin}
+                  onChange={(e) =>
+                    setNewRoute({ ...newRoute, origin: e.target.value })
+                  }
+                  placeholder="Nhập điểm đi"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="destination">Điểm đến</Label>
+                <Input
+                  id="destination"
+                  value={newRoute.destination}
+                  onChange={(e) =>
+                    setNewRoute({ ...newRoute, destination: e.target.value })
+                  }
+                  placeholder="Nhập điểm đến"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Loại tuyến bay</Label>
+              <div className="flex items-center gap-6">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    checked={!newRoute.external}
+                    onChange={() =>
+                      setNewRoute({ ...newRoute, external: false })
+                    }
+                    className="mr-2"
+                  />
+                  Nội địa
+                </label>
+
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    checked={newRoute.external}
+                    onChange={() =>
+                      setNewRoute({ ...newRoute, external: true })
+                    }
+                    className="mr-2"
+                  />
+                  Quốc tế
+                </label>
+              </div>
+            </div>
+
+            <Button className="w-full" onClick={handleCreateRoute}>
+              Tạo tuyến bay
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Crew Assignment Dialog */}
+      <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
+        <DialogContent className="w-[600px] max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Phân công nhân viên cho chuyến bay {selectedFlightForAssign?.id}</DialogTitle>
+            <DialogDescription>
+              Chọn nhân viên để phân công cho chuyến bay này
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            {loadingEmployees ? (
+              <div className="text-center py-4">Đang tải danh sách nhân viên...</div>
+            ) : (
+              <div className="overflow-y-auto max-h-96 pr-2">
+                <div className="grid grid-cols-2 gap-2">
+                  {employees.map((employee) => (
+                    <label key={employee.id} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50 min-w-[200px]">
+                      <input
+                        type="checkbox"
+                        checked={selectedEmployeeIds.includes(employee.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedEmployeeIds([...selectedEmployeeIds, employee.id]);
+                          } else {
+                            setSelectedEmployeeIds(selectedEmployeeIds.filter(id => id !== employee.id));
+                          }
+                        }}
+                        className="w-5 h-5 rounded"
+                      />
+                      <div>
+                        <div className="font-medium">{employee.fullName}</div>
+                        <div className="text-sm text-gray-600">{employee.position} - {employee.totalFlightHours}/{employee.maxFlightHoursPerMonth} giờ</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+                {/* Employee Pagination */}
+                {employeeTotalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                    <div className="text-sm text-gray-600">
+                      Trang {employeePage + 1} / {employeeTotalPages}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={employeePage <= 0 || loadingEmployees}
+                        onClick={() => setEmployeePage(p => Math.max(0, p - 1))}
+                      >
+                        Trước
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={employeePage >= (employeeTotalPages - 1) || loadingEmployees}
+                        onClick={() => setEmployeePage(p => Math.min((employeeTotalPages - 1) || p + 1, p + 1))}
+                      >
+                        Sau
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button variant="outline" onClick={() => setShowAssignDialog(false)}>
+              Hủy
+            </Button>
+            <Button onClick={handleAssignCrew} disabled={selectedEmployeeIds.length === 0}>
+              Phân công ({selectedEmployeeIds.length} nhân viên)
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
+

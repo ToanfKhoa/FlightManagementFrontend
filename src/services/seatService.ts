@@ -1,5 +1,5 @@
 import axiosClient from '../api/axiosClient';
-import type { Seat, CreateSeatRequest, UpdateSeatRequest } from '../types/seatType';
+import type { Seat, CreateSeatRequest, UpdateSeatRequest, CreateSeatsRequest } from '../types/seatType';
 
 export const seatService = {
   getAll(): Promise<Seat[]> {
@@ -23,6 +23,10 @@ export const seatService = {
   },
 
   deleteBulk(ids: number[]): Promise<void> {
-    return axiosClient.delete('/seats/bulk', { data: { ids } });
+    return axiosClient.delete('/seats/bulk', { params: { ids } });
+  },
+
+  createBulk(payload: CreateSeatsRequest): Promise<Seat[]> {
+    return axiosClient.post('/seats/bulk', payload);
   }
 };
