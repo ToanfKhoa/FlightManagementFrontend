@@ -10,7 +10,7 @@ import { Search, Check, QrCode, Download } from "lucide-react";
 import { formatCurrency } from "../../lib/mockData";
 import { toast } from "sonner";
 import type { Ticket } from "../../types/ticketType";
-import type { Flight } from "../../types/flightType";
+import type { Flight, FlightSeatResponse } from "../../types/flightType";
 import type { Seat } from "../../types/seatType";
 import { ticketService } from "../../services/ticketService";
 
@@ -18,7 +18,7 @@ export function CheckInDesk() {
   const [ticketCode, setTicketCode] = useState("");
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [flight, setFlight] = useState<Flight | null>(null);
-  const [availableSeats, setAvailableSeats] = useState<Seat[]>([]);
+  const [availableSeats, setAvailableSeats] = useState<FlightSeatResponse[]>([]);
   const [selectedSeatId, setSelectedSeatId] = useState<number | null>(null);
   const [showBoardingPass, setShowBoardingPass] = useState(false);
   const [checkedIn, setCheckedIn] = useState(false);
@@ -42,8 +42,7 @@ export function CheckInDesk() {
         return;
       }
 
-      const foundFlight = ticket?.flight;
-
+      const foundFlight = foundTicket.flight;
       if (!foundFlight) {
         toast.error("Không tìm thấy thông tin chuyến bay");
         return;
@@ -56,14 +55,13 @@ export function CheckInDesk() {
 
       // Fetch available seats for the flight
       try {
-        const getAvailableSeats = (allSeats: Seat[], targetClass: string) => {
-          return allSeats.filter(seat =>
-            seat.seatClass === targetClass &&
-            seat.status === 'AVAILABLE' // Hoặc check seat.isBooked === false tùy data của bạn
-          );
-        };
+        const seats = foundFlight.flightSeats;
 
-        setAvailableSeats(seats);
+        const availableEconomySeats = seats.filter((seat) =>
+          seat.seatClass === 'ECONOMY' && seat.status === 'AVAILABLE'
+        );
+
+        setAvailableSeats(availableEconomySeats);
       } catch (error) {
         console.error("Error fetching seats:", error);
         toast.error("Không thể tải danh sách ghế");
@@ -80,6 +78,7 @@ export function CheckInDesk() {
     if (!ticket || !selectedSeatId) return;
 
     try {
+      console.log(ticket.id, selectedSeatId);
       await ticketService.checkin({
         ticketId: ticket.id,
         seatId: selectedSeatId
@@ -177,7 +176,7 @@ export function CheckInDesk() {
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Ghế / Seat</p>
                   <p className="text-3xl font-bold">
-                    {availableSeats.find(s => s.id === selectedSeatId)?.seatNumber || ticket.seat.seatNumber}
+                    {availableSeats.find(s => s.id === selectedSeatId)?.seatClass || ticket.seat.seatNumber}
                   </p>
                 </div>
                 <div className="col-span-2">
@@ -322,7 +321,7 @@ export function CheckInDesk() {
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="seatSelect">Ghế hiện tại: {seat}</Label>
+                  <Label htmlFor="seatSelect">Ghế hiện tại: {selectedSeatId}</Label>
                   <Select
                     value={selectedSeatId?.toString() || ""}
                     onValueChange={(value) => setSelectedSeatId(parseInt(value))}
@@ -334,7 +333,7 @@ export function CheckInDesk() {
                     <SelectContent>
                       {availableSeats.map((seat) => (
                         <SelectItem key={seat.id} value={seat.id.toString()}>
-                          {seat.seatNumber} - {seat.seatClass === "FIRST_CLASS" ? "Hạng Nhất" : seat.seatClass === "BUSINESS" ? "Thương Gia" : "Phổ Thông"}
+                          {seat.id} - {seat.seatClass === "FIRST_CLASS" ? "Hạng Nhất" : seat.seatClass === "BUSINESS" ? "Thương Gia" : "Phổ Thông"}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -345,7 +344,7 @@ export function CheckInDesk() {
                     <div>
                       <p className="text-sm text-gray-600">Số ghế</p>
                       <p className="text-xl font-bold">
-                        {availableSeats.find(s => s.id === selectedSeatId)?.seatNumber}
+                        {availableSeats.find(s => s.id === selectedSeatId)?.id}
                       </p>
                     </div>
                     <div>

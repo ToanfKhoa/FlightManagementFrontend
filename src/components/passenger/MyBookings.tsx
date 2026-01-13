@@ -123,17 +123,17 @@ export function MyBookings({ userId }: MyBookingsProps) {
 
   const handleRefund = async () => {
     if (selectedTicket) {
-      const refundAmount = selectedTicket.price * 0.8;
+      const refundAmount = selectedTicket.price * 1.0;
       setShowRefundDialog(false);
 
       const res = await ticketService.refund(selectedTicket.id);
 
-      if (res.code === 200 || res.code === 0 || res.message?.toLowerCase().includes('success')) {
-        toast.success(`Hoàn tiền ${formatCurrency(refundAmount)} thành công!`);
+      if (res) {
+        toast.success(`Hoàn vé thành công!`);
         setTickets(tickets.map(t => t.id === selectedTicket.id ? { ...t, status: 'CANCELED' as const } : t));
         setSelectedTicket(null);
       } else {
-        toast.error("Hoàn tiền thất bại. Vui lòng thử lại sau.");
+        toast.error("Hoàn vé thất bại. Vui lòng thử lại sau.");
       }
     }
   };
@@ -315,7 +315,7 @@ export function MyBookings({ userId }: MyBookingsProps) {
           <DialogHeader>
             <DialogTitle>Hoàn tiền vé</DialogTitle>
             <DialogDescription>
-              Bạn sẽ nhận lại 80% giá trị vé. Số tiền hoàn lại sẽ được chuyển trong
+              Bạn sẽ nhận lại 100% giá trị vé. Số tiền hoàn lại sẽ được chuyển trong
               vòng 7-10 ngày làm việc.
             </DialogDescription>
           </DialogHeader>
@@ -328,9 +328,9 @@ export function MyBookings({ userId }: MyBookingsProps) {
                 </span>
               </div>
               <div className="flex justify-between text-green-600">
-                <span>Số tiền hoàn lại (80%):</span>
+                <span>Số tiền hoàn lại (100%):</span>
                 <span className="font-bold">
-                  {formatCurrency(selectedTicket.price * 0.8)}
+                  {formatCurrency(selectedTicket.price * 1.0)}
                 </span>
               </div>
             </div>
