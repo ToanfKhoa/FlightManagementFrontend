@@ -93,6 +93,7 @@ export function Reports() {
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* 
             <Card>
               <CardHeader className="pb-3">
                 <CardDescription className="flex items-center gap-1">
@@ -129,40 +130,11 @@ export function Reports() {
                 <CardTitle className="text-2xl">{mockCrew.length}</CardTitle>
               </CardHeader>
             </Card>
+
+            */}
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Thống kê vé</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-1">Đã thanh toán</p>
-                    <p className="text-2xl font-bold text-green-600">{paidBookings}</p>
-                  </div>
-                  <div className="bg-yellow-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-1">Đang giữ chỗ</p>
-                    <p className="text-2xl font-bold text-yellow-600">
-                      {mockBookings.filter((b) => b.status === "reserved").length}
-                    </p>
-                  </div>
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-1">Đã check-in</p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {mockBookings.filter((b) => b.status === "checked-in").length}
-                    </p>
-                  </div>
-                  <div className="bg-red-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-1">Đã hủy</p>
-                    <p className="text-2xl font-bold text-red-600">{canceledBookings}</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
+          {/*
           <Card>
             <CardHeader>
               <CardTitle>Phân bổ hạng vé</CardTitle>
@@ -193,6 +165,7 @@ export function Reports() {
               </div>
             </CardContent>
           </Card>
+          */}
 
           <Card>
             <CardHeader>
@@ -216,6 +189,36 @@ export function Reports() {
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <p className="text-sm text-gray-600 mb-1">Tổng vé ảnh hưởng</p>
                     <p className="text-2xl font-bold">{ticketStatusStats?.totalAffectedTickets || 0}</p>
+                  </div>
+                </div>
+              ) : (
+                <p>Loading...</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Trạng thái máy bay</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {aircraftStatusStats ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-green-50 p-4 rounded-lg text-center">
+                    <p className="text-sm text-gray-600 mb-2">Hoạt động</p>
+                    <p className="text-3xl font-bold text-green-600">{aircraftStatusStats?.activeCount || 0}</p>
+                  </div>
+                  <div className="bg-yellow-50 p-4 rounded-lg text-center">
+                    <p className="text-sm text-gray-600 mb-2">Bảo trì</p>
+                    <p className="text-3xl font-bold text-yellow-600">{aircraftStatusStats?.maintenanceCount || 0}</p>
+                  </div>
+                  <div className="bg-red-50 p-4 rounded-lg text-center">
+                    <p className="text-sm text-gray-600 mb-2">Không hoạt động</p>
+                    <p className="text-3xl font-bold text-red-600">{aircraftStatusStats?.inactiveCount || 0}</p>
+                  </div>
+                  <div className="bg-blue-50 p-4 rounded-lg text-center">
+                    <p className="text-sm text-gray-600 mb-2">Tổng số</p>
+                    <p className="text-3xl font-bold text-blue-600">{aircraftStatusStats?.totalAircraftCount || 0}</p>
                   </div>
                 </div>
               ) : (
@@ -324,36 +327,6 @@ export function Reports() {
               )}
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Trạng thái máy bay</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {aircraftStatusStats ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-green-50 p-4 rounded-lg text-center">
-                    <p className="text-sm text-gray-600 mb-2">Hoạt động</p>
-                    <p className="text-3xl font-bold text-green-600">{aircraftStatusStats?.activeCount || 0}</p>
-                  </div>
-                  <div className="bg-yellow-50 p-4 rounded-lg text-center">
-                    <p className="text-sm text-gray-600 mb-2">Bảo trì</p>
-                    <p className="text-3xl font-bold text-yellow-600">{aircraftStatusStats?.maintenanceCount || 0}</p>
-                  </div>
-                  <div className="bg-red-50 p-4 rounded-lg text-center">
-                    <p className="text-sm text-gray-600 mb-2">Không hoạt động</p>
-                    <p className="text-3xl font-bold text-red-600">{aircraftStatusStats?.inactiveCount || 0}</p>
-                  </div>
-                  <div className="bg-blue-50 p-4 rounded-lg text-center">
-                    <p className="text-sm text-gray-600 mb-2">Tổng số</p>
-                    <p className="text-3xl font-bold text-blue-600">{aircraftStatusStats?.totalAircraftCount || 0}</p>
-                  </div>
-                </div>
-              ) : (
-                <p>Loading...</p>
-              )}
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="revenue" className="space-y-4">
@@ -367,6 +340,7 @@ export function Reports() {
                 Thống kê doanh thu theo chuyến bay, hạng vé
               </CardDescription>
             </CardHeader>
+
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-blue-50 p-6 rounded-lg">
