@@ -47,10 +47,13 @@ export function PassengerLandingPage() {
                 {/* Content */}
                 <div className="relative max-w-4xl mx-auto text-center pt-24">
 
-                    <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-white mb-8 leading-tight">
-                        Khám phá thế giới cùng <br></br>
-                        <span className="text-black">
-                            SkyWings
+                    <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-white mb-8 leading-tight tracking-tight">
+                        Khám phá thế giới cùng <br />
+                        <span className="relative inline-block">
+                            <span className="absolute inset-0 bg-gradient-to-r from-sky-400 to-blue-600 blur-md opacity-70"></span>
+                            <span className="relative bg-gradient-to-r from-sky-500 to-blue-700 bg-clip-text text-transparent">
+                                SkyWings
+                            </span>
                         </span>
                     </h1>
 
@@ -86,7 +89,7 @@ export function PassengerLandingPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         <Card className="text-center hover:shadow-lg transition-shadow">
                             <CardHeader>
-                                <div className="mx-auto bg-blue-100 p-3 rounded-full w-fit mb-4">
+                                <div className="mx-auto bg-blue-50 p-3 rounded-full w-fit mb-4">
                                     <Shield className="w-6 h-6 text-blue-600" />
                                 </div>
                                 <CardTitle className="text-lg">An toàn tuyệt đối</CardTitle>
@@ -149,19 +152,19 @@ export function PassengerLandingPage() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
                         <div>
                             <div className="text-3xl font-bold mb-2">50+</div>
-                            <div className="text-blue-100">Điểm đến</div>
+                            <div className="text-blue-50">Điểm đến</div>
                         </div>
                         <div>
                             <div className="text-3xl font-bold mb-2">100+</div>
-                            <div className="text-blue-100">Chuyến bay/ngày</div>
+                            <div className="text-blue-50">Chuyến bay/ngày</div>
                         </div>
                         <div>
                             <div className="text-3xl font-bold mb-2">95%</div>
-                            <div className="text-blue-100">Tỷ lệ đúng giờ</div>
+                            <div className="text-blue-50">Tỷ lệ đúng giờ</div>
                         </div>
                         <div>
                             <div className="text-3xl font-bold mb-2">1M+</div>
-                            <div className="text-blue-100">Hành khách/năm</div>
+                            <div className="text-blue-50">Hành khách/năm</div>
                         </div>
                     </div>
                 </div>
@@ -233,7 +236,7 @@ export function PassengerLandingPage() {
                     <h2 className="text-3xl font-bold mb-4">
                         Sẵn sàng cho chuyến đi tiếp theo?
                     </h2>
-                    <p className="text-xl mb-8 text-blue-100">
+                    <p className="text-xl mb-8 text-blue-50">
                         Đặt vé ngay để tận hưởng một trải nghiệm hoàn toàn khác biệt
                     </p>
                     <div className="flex justify-center gap-4">

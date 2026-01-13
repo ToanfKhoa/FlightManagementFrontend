@@ -151,7 +151,7 @@ const getStatusLabel = (status: string) => {
     const statusLabels: Record<string, string> = {
         OPEN: "Đang mở",
         FULL: "Hết chỗ",
-        DELAYED: "Chậm",
+        DELAYED: "Hoãn",
         CANCLED: "Đã hủy",
         COMPLETED: "Hoàn thành",
         DEPARTED: "Khởi hành",
