@@ -39,6 +39,7 @@ export type FlightSeatResponse = {
   seatClass: string;
   price: number;
   createdAt: string;
+  status: 'AVAILABLE' | 'RESERVED' | 'BOOKED' | 'BLOCKED ';
 };
 
 export type SeatSummary = {
