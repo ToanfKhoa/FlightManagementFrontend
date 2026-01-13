@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { statisticService } from "../../services/statisticService";
 import { TicketStatusStatistic, FlightPassengerStatistic, FlightLoadFactorStatistic, FlightAvailableSeatsStatistic, CrewFlightHoursStatistic, CrewPerFlightStatistic, AircraftStatusStatistic } from "../../types/statisticType";
+import { exportStatisticsToExcel } from "../../utils/excelExport";
 
 export function Reports() {
   const handleDownloadReport = (reportName: string) => {
@@ -79,6 +80,10 @@ export function Reports() {
             Tổng hợp các chỉ số của hệ thống
           </p>
         </div>
+        <Button onClick={() => { const success = exportStatisticsToExcel({ ticketStatusStats, flightPassengerStats, loadFactorStats, availableSeatsStats, crewHoursStats, crewPerFlightStats, aircraftStatusStats, totalRevenue, totalBookings, paidBookings, canceledBookings, economyBookings, businessBookings, firstBookings, activeFlights, delayedFlights, canceledFlights, activeAircraft, maintenanceAircraft, pilots, attendants }); if (success) { toast.success("Đã xuất thống kê thành công!"); } else { toast.error("Lỗi khi xuất thống kê!"); } }}>
+          <Download className="w-4 h-4 mr-2" />
+          Xuất Excel
+        </Button>
       </div>
 
       <Tabs defaultValue="overview">
