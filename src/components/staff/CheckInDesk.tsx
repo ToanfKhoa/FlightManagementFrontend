@@ -6,61 +6,79 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
 import { Search, Check, QrCode, Download } from "lucide-react";
-import { mockBookings, mockFlights, formatCurrency } from "../../lib/mockData";
+import { formatCurrency } from "../../lib/mockData";
 import { toast } from "sonner";
-import type { Booking, Flight } from "../../lib/mockData";
+import type { Ticket } from "../../types/ticketType";
+import type { Flight } from "../../types/flightType";
+import { ticketService } from "../../services/ticketService";
+import { flightService } from "../../services/flightService";
 
 export function CheckInDesk() {
-  const [ticketCode, setTicketCode] = useState("");
-  const [booking, setBooking] = useState<Booking | null>(null);
+  const [ticketCode, setTicketCode] = useState<number>(0);
+  const [ticket, setTicket] = useState<Ticket | null>(null);
   const [flight, setFlight] = useState<Flight | null>(null);
   const [showBoardingPass, setShowBoardingPass] = useState(false);
+  const [checkedIn, setCheckedIn] = useState(false);
 
-  const handleSearch = () => {
-    const foundBooking = mockBookings.find((b) => b.ticketCode === ticketCode);
+  const handleSearch = async () => {
+    try {
+      const foundTicket = await ticketService.getTicketById(ticketCode);
 
-    if (!foundBooking) {
-      toast.error("Không tìm thấy vé");
-      return;
+      if (!foundTicket) {
+        toast.error("Không tìm thấy vé");
+        return;
+      }
+
+      if (foundTicket.status === "CANCELED") {
+        toast.error("Vé đã bị hủy");
+        return;
+      }
+
+      if (foundTicket.status !== "PAID") {
+        toast.error("Vé chưa được thanh toán");
+        return;
+      }
+
+      const foundFlight = await flightService.getById(foundTicket.flight.id.toString());
+
+      if (!foundFlight) {
+        toast.error("Không tìm thấy thông tin chuyến bay");
+        return;
+      }
+
+      setTicket(foundTicket);
+      setFlight(foundFlight.data);
+      setShowBoardingPass(false);
+      toast.success("Tìm thấy vé!");
+    } catch (error) {
+      toast.error("Lỗi khi tìm vé");
+      console.error(error);
     }
-
-    if (foundBooking.status === "canceled") {
-      toast.error("Vé đã bị hủy");
-      return;
-    }
-
-    if (foundBooking.status !== "paid" && foundBooking.status !== "checked-in") {
-      toast.error("Vé chưa được thanh toán");
-      return;
-    }
-
-    const foundFlight = mockFlights.find((f) => f.id === foundBooking.flightId);
-
-    if (!foundFlight) {
-      toast.error("Không tìm thấy thông tin chuyến bay");
-      return;
-    }
-
-    setBooking(foundBooking);
-    setFlight(foundFlight);
-    setShowBoardingPass(false);
-    toast.success("Tìm thấy vé!");
   };
 
-  const handleCheckIn = () => {
-    if (!booking) return;
+  const handleCheckIn = async () => {
+    if (!ticket) return;
 
-    booking.status = "checked-in";
-    setBooking({ ...booking });
-    setShowBoardingPass(true);
-    toast.success("Check-in thành công!");
+    try {
+      await ticketService.checkin({
+        ticketId: ticket.id,
+        passengerEmail: ticket.passenger.accountRequest.email,
+        seatId: ticket.seat.id
+      });
+      setCheckedIn(true);
+      setShowBoardingPass(true);
+      toast.success("Check-in thành công!");
+    } catch (error) {
+      toast.error("Lỗi khi check-in");
+      console.error(error);
+    }
   };
 
   const handlePrintBoardingPass = () => {
     toast.success("Đang in thẻ lên máy bay...");
   };
 
-  if (showBoardingPass && booking && flight) {
+  if (showBoardingPass && ticket && flight) {
     return (
       <div className="max-w-3xl mx-auto space-y-6">
         <div className="flex justify-between items-center">
@@ -69,9 +87,10 @@ export function CheckInDesk() {
             variant="outline"
             onClick={() => {
               setShowBoardingPass(false);
-              setBooking(null);
+              setTicket(null);
               setFlight(null);
-              setTicketCode("");
+              setTicketCode(0);
+              setCheckedIn(false);
             }}
           >
             Hoàn tất
@@ -105,23 +124,23 @@ export function CheckInDesk() {
               <div className="grid grid-cols-2 gap-6 mb-6">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Hành khách / Passenger</p>
-                  <p className="text-xl font-bold">{booking.passengerName}</p>
+                  <p className="text-xl font-bold">{ticket.passenger.fullName}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Chuyến bay / Flight</p>
-                  <p className="text-xl font-bold">{flight.flightCode}</p>
+                  <p className="text-xl font-bold">{flight.id}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Ngày bay / Date</p>
                   <p className="font-bold">
-                    {new Date(flight.date).toLocaleDateString("vi-VN")}
+                    {new Date(flight.departureTime).toLocaleDateString("vi-VN")}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 mb-1">
                     Giờ khởi hành / Departure Time
                   </p>
-                  <p className="font-bold">{flight.departureTime}</p>
+                  <p className="font-bold">{flight.departureTime.split('T')[1]?.substring(0, 5)}</p>
                 </div>
               </div>
 
@@ -134,16 +153,16 @@ export function CheckInDesk() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Ghế / Seat</p>
-                  <p className="text-3xl font-bold">{booking.seatNumber}</p>
+                  <p className="text-3xl font-bold">{ticket.seat.seatNumber}</p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-sm text-gray-600 mb-1">Hạng / Class</p>
                   <p className="text-xl font-bold">
-                    {booking.seatClass === "first"
+                    {ticket.seat.seatClass === "FIRST_CLASS"
                       ? "First Class"
-                      : booking.seatClass === "business"
-                      ? "Business"
-                      : "Economy"}
+                      : ticket.seat.seatClass === "BUSINESS"
+                        ? "Business"
+                        : "Economy"}
                   </p>
                 </div>
               </div>
@@ -157,7 +176,7 @@ export function CheckInDesk() {
                 <p className="text-sm text-gray-600">
                   Please arrive at the gate 30 minutes before departure
                 </p>
-                <p className="font-mono text-lg mt-4">{booking.ticketCode}</p>
+                <p className="font-mono text-lg mt-4">{ticket.id}</p>
               </div>
             </div>
 
@@ -170,9 +189,10 @@ export function CheckInDesk() {
                 variant="outline"
                 onClick={() => {
                   setShowBoardingPass(false);
-                  setBooking(null);
+                  setTicket(null);
                   setFlight(null);
-                  setTicketCode("");
+                  setTicketCode(0);
+                  setCheckedIn(false);
                 }}
               >
                 Hoàn tất
@@ -199,9 +219,9 @@ export function CheckInDesk() {
               </Label>
               <Input
                 id="ticketCode"
-                placeholder="TK001234567"
+                placeholder="123456789"
                 value={ticketCode}
-                onChange={(e) => setTicketCode(e.target.value)}
+                onChange={(e) => setTicketCode(parseInt(e.target.value))}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               />
             </div>
@@ -213,7 +233,7 @@ export function CheckInDesk() {
         </CardContent>
       </Card>
 
-      {booking && flight && (
+      {ticket && flight && (
         <>
           <Card>
             <CardHeader>
@@ -223,16 +243,16 @@ export function CheckInDesk() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-600">Họ và tên</p>
-                  <p className="font-semibold text-lg">{booking.passengerName}</p>
+                  <p className="font-semibold text-lg">{ticket.passenger.fullName}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Mã vé</p>
-                  <p className="font-mono font-semibold">{booking.ticketCode}</p>
+                  <p className="font-mono font-semibold">{ticket.id}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Trạng thái</p>
-                  <Badge variant={booking.status === "checked-in" ? "default" : "secondary"}>
-                    {booking.status === "checked-in" ? "Đã check-in" : "Đã thanh toán"}
+                  <Badge variant={checkedIn ? "default" : "secondary"}>
+                    {checkedIn ? "Đã check-in" : "Đã thanh toán"}
                   </Badge>
                 </div>
               </div>
@@ -247,21 +267,21 @@ export function CheckInDesk() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-600">Chuyến bay</p>
-                  <p className="font-semibold text-lg">{flight.flightCode}</p>
+                  <p className="font-semibold text-lg">{flight.id}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Tuyến đường</p>
-                  <p className="font-semibold">{flight.route}</p>
+                  <p className="font-semibold">{flight.route.origin} - {flight.route.destination}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Ngày bay</p>
                   <p className="font-semibold">
-                    {new Date(flight.date).toLocaleDateString("vi-VN")}
+                    {new Date(flight.departureTime).toLocaleDateString("vi-VN")}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Giờ khởi hành</p>
-                  <p className="font-semibold text-lg">{flight.departureTime}</p>
+                  <p className="font-semibold text-lg">{flight.departureTime.split('T')[1]?.substring(0, 5)}</p>
                 </div>
               </div>
             </CardContent>
@@ -275,34 +295,34 @@ export function CheckInDesk() {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <p className="text-sm text-gray-600">Số ghế</p>
-                  <p className="text-3xl font-bold">{booking.seatNumber}</p>
+                  <p className="text-3xl font-bold">{ticket.seat.seatNumber}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Hạng</p>
                   <p className="font-semibold">
-                    {booking.seatClass === "first"
+                    {ticket.seat.seatClass === "FIRST_CLASS"
                       ? "Hạng Nhất"
-                      : booking.seatClass === "business"
-                      ? "Thương Gia"
-                      : "Phổ Thông"}
+                      : ticket.seat.seatClass === "BUSINESS"
+                        ? "Thương Gia"
+                        : "Phổ Thông"}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Giá vé</p>
-                  <p className="font-semibold">{formatCurrency(booking.price)}</p>
+                  <p className="font-semibold">{formatCurrency(ticket.price)}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {booking.status !== "checked-in" && (
+          {!checkedIn && (
             <Button className="w-full" size="lg" onClick={handleCheckIn}>
               <Check className="w-4 h-4 mr-2" />
               Xác nhận Check-in
             </Button>
           )}
 
-          {booking.status === "checked-in" && (
+          {checkedIn && (
             <div className="bg-green-50 border border-green-200 p-4 rounded-lg text-center">
               <Check className="w-8 h-8 text-green-600 mx-auto mb-2" />
               <p className="font-semibold text-green-800">Hành khách đã check-in</p>
@@ -311,7 +331,7 @@ export function CheckInDesk() {
         </>
       )}
 
-      {!booking && (
+      {!ticket && (
         <Card>
           <CardContent className="py-16 text-center text-gray-500">
             <Search className="w-16 h-16 mx-auto mb-4 text-gray-400" />

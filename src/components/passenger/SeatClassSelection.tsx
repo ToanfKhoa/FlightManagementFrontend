@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -8,8 +8,10 @@ import { ArrowLeft, Check, Plane, CreditCard } from "lucide-react";
 import { Booking, formatCurrency, mockBookings } from "../../lib/mockData";
 import { toast } from "sonner";
 import { Flight } from "../../types/flightType"
-import { BookingRequest, BookingResponse } from "../../types/ticketType";
+import { BookingRequest, BookingResponse, PaymentRequest } from "../../types/ticketType";
 import ticketService from "../../services/ticketService";
+import { SeatClass } from "../../types/seatType";
+import { useAuth } from "../../context/AuthContext";
 
 interface Props {
   flight: Flight;
@@ -18,38 +20,51 @@ interface Props {
 }
 
 export function SeatClassSelection({ flight, userId, onBack }: Props) {
-  const [selectedClass, setSelectedClass] = useState<"BUSINESS" | "FIRST_CLASS" | "ECONOMY" | null>(null);
+  const { user, passenger } = useAuth();
+  const [selectedClass, setSelectedClass] = useState<SeatClass | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [passengerName, setPassengerName] = useState("Nguyễn Văn A");
-  const [passengerEmail, setPassengerEmail] = useState("nguyen.a@example.com");
-  const [passengerPhone, setPassengerPhone] = useState("0912345678");
   const [isProcessing, setIsProcessing] = useState(false);
   const [bookingComplete, setBookingComplete] = useState(false);
-  const [ticketCode, setTicketCode] = useState("");
+  const [bookingResponse, setBookingResponse] = useState<BookingResponse | null>(null);
 
-  if (!flight.prices) {
-    flight.prices = {
-      economy: 1500000,
-      business: 2500000,
-      first: 4000000
-    };
-  }
-  if (!flight.availableSeats) {
-    flight.availableSeats = {
-      economy: 150,
-      business: 50,
-      first: 40
-    };
-  }
+  const seatData = useMemo(() => {
+    if (!flight) return {};
 
-  const priceFor = (c: string) =>
-    c === "first"
-      ? flight.prices!.first
-      : c === "business"
-        ? flight.prices!.business
-        : flight.prices!.economy;
+    const prices = flight.flightSeats.reduce((acc, seat) => {
+      acc[seat.seatClass] = seat.price;
+      return acc;
+    }, {} as Record<string, number>);
 
-  const startBooking = (c: 'BUSINESS' | 'FIRST_CLASS' | 'ECONOMY') => {
+    const availability = flight.seatSummary.reduce((acc, item) => {
+      acc[item.seatClass] = item.availableSeats;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return { prices, availability };
+  }, [flight]);
+
+  const SEAT_CONFIG = [
+    {
+      key: 'ECONOMY',
+      label: 'Phổ Thông',
+      variant: 'outline',
+      bg: 'bg-blue-50'
+    },
+    {
+      key: 'BUSINESS',
+      label: 'Thương Gia',
+      variant: 'secondary',
+      bg: 'bg-purple-50'
+    },
+    {
+      key: 'FIRST_CLASS',
+      label: 'Hạng Nhất',
+      variant: 'default',
+      bg: 'bg-yellow-50'
+    }
+  ];
+
+  const startBooking = (c: SeatClass) => {
     setSelectedClass(c);
     setShowConfirmation(true);
   };
@@ -64,17 +79,40 @@ export function SeatClassSelection({ flight, userId, onBack }: Props) {
         seatClass: selectedClass
       };
 
-      const response: BookingResponse = await ticketService.booking(bookingData);
+      const response = await ticketService.booking(bookingData);
+      if (!response || !response.id) {
+        throw new Error("Invalid booking response");
+      }
+      else {
+        setBookingResponse(response);
+        setBookingComplete(true);
+        toast.success("Đặt vé thành công!");
+      }
 
-      // Giả sử response có ticketCode hoặc id
-      setTicketCode(`ID${response.id}`);
-      setBookingComplete(true);
-      toast.success("Đặt vé thành công!");
+
     } catch (error) {
       toast.error("Lỗi khi đặt vé. Vui lòng thử lại.");
       console.error("Booking error:", error);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handlePayment = async () => {
+    if (!bookingResponse?.id) return;
+    try {
+      const paymentData: PaymentRequest = {
+        paymentMethod: 'VNPAY',
+        returnUrl: window.location.origin + '/passenger',
+        cancelUrl: window.location.origin + '/passenger'
+      };
+      const paymentResponse = await ticketService.pay(bookingResponse.id, paymentData);
+      if (paymentResponse.paymentUrl) {
+        window.location.href = paymentResponse.paymentUrl;
+      }
+    } catch (error) {
+      toast.error("Lỗi khi thanh toán. Vui lòng thử lại.");
+      console.error("Payment error:", error);
     }
   };
 
@@ -93,7 +131,7 @@ export function SeatClassSelection({ flight, userId, onBack }: Props) {
           <CardContent className="space-y-4">
             <div className="bg-gray-50 p-4 rounded-lg text-center">
               <p className="text-sm text-gray-600 mb-1">Mã vé</p>
-              <p className="text-2xl font-mono font-bold">{ticketCode}</p>
+              <p className="text-2xl font-mono font-bold">{bookingResponse?.id}</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -107,12 +145,12 @@ export function SeatClassSelection({ flight, userId, onBack }: Props) {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Giá vé</p>
-                <p className="font-semibold">{formatCurrency(priceFor(selectedClass || "economy"))}</p>
+                <p className="font-semibold">{formatCurrency(bookingResponse?.price || 0)}</p>
               </div>
             </div>
 
             <div className="flex gap-3">
-              <Button className="flex-1" onClick={() => window.location.reload()}>
+              <Button className="flex-1" onClick={handlePayment}>
                 Thanh toán ngay
               </Button>
               <Button variant="outline" onClick={onBack}>
@@ -126,6 +164,7 @@ export function SeatClassSelection({ flight, userId, onBack }: Props) {
   }
 
   if (showConfirmation && selectedClass) {
+    const currentPrice = seatData.prices?.[selectedClass] || 0;
     return (
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="flex items-center gap-4">
@@ -164,15 +203,15 @@ export function SeatClassSelection({ flight, userId, onBack }: Props) {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Họ và tên</Label>
-              <Input id="name" value={passengerName} onChange={(e) => setPassengerName(e.target.value)} required />
+              <Input id="name" value={passenger?.fullName} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={passengerEmail} onChange={(e) => setPassengerEmail(e.target.value)} required />
+              <Input id="email" type="email" value={user?.email} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Số điện thoại</Label>
-              <Input id="phone" type="tel" value={passengerPhone} onChange={(e) => setPassengerPhone(e.target.value)} required />
+              <Input id="phone" type="tel" value={user?.phone} />
             </div>
           </CardContent>
         </Card>
@@ -184,11 +223,11 @@ export function SeatClassSelection({ flight, userId, onBack }: Props) {
           <CardContent className="space-y-4">
             <div className="flex justify-between">
               <span>Giá vé</span>
-              <span className="font-semibold">{formatCurrency(priceFor(selectedClass))}</span>
+              <span className="font-semibold">{formatCurrency(currentPrice || 0)}</span>
             </div>
 
             <div className="flex gap-3">
-              <Button className="flex-1" size="lg" onClick={handleConfirmBooking} disabled={isProcessing || !passengerName || !passengerEmail || !passengerPhone}>
+              <Button className="flex-1" size="lg" onClick={handleConfirmBooking} disabled={isProcessing || !passenger?.fullName || !user?.email || !user?.phone}>
                 {isProcessing ? "Đang xử lý..." : "Xác nhận đặt vé"}
               </Button>
               <Button variant="outline" onClick={() => setShowConfirmation(false)}>Quay lại</Button>
@@ -213,54 +252,41 @@ export function SeatClassSelection({ flight, userId, onBack }: Props) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {flight.prices.first > 0 && (
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>
-                  <Badge variant="default">Hạng Nhất</Badge>
-                </CardTitle>
-                <span>{formatCurrency(flight.prices.first)}</span>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p>Số ghế còn: {flight.availableSeats.first}</p>
-              <Button onClick={() => startBooking("FIRST_CLASS")}>Chọn hạng</Button>
-            </CardContent>
-          </Card>
-        )}
+        {SEAT_CONFIG.map((config) => {
+          const price = seatData.prices?.[config.key] || 0;
+          const available = seatData.availability?.[config.key] || 0;
 
-        {flight.prices.business > 0 && (
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>
-                  <Badge variant="secondary">Thương Gia</Badge>
-                </CardTitle>
-                <span>{formatCurrency(flight.prices.business)}</span>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p>Số ghế còn: {flight.availableSeats.business}</p>
-              <Button onClick={() => startBooking("BUSINESS")}>Chọn hạng</Button>
-            </CardContent>
-          </Card>
-        )}
+          // Chỉ hiển thị nếu có giá và còn chỗ (theo logic của bạn)
+          if (price === 0 || available <= 0) return null;
 
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle>
-                <Badge variant="outline">Phổ Thông</Badge>
-              </CardTitle>
-              <span>{formatCurrency(flight.prices.economy)}</span>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p>Số ghế còn: {flight.availableSeats.economy}</p>
-            <Button onClick={() => startBooking("ECONOMY")}>Chọn hạng</Button>
-          </CardContent>
-        </Card>
+          return (
+            <Card key={config.key} className={`${config.bg} border-2 hover:border-primary transition-all`}>
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-start">
+                  <CardTitle>
+                    <Badge variant={config.variant as any} className="text-sm">
+                      {config.label}
+                    </Badge>
+                  </CardTitle>
+                  <span className="font-bold text-lg text-primary">
+                    {formatCurrency(price)}
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-sm text-gray-600">
+                  Số ghế còn: <span className="font-medium text-black">{available}</span>
+                </div>
+                <Button
+                  className="w-full"
+                  onClick={() => startBooking(config.key as SeatClass)}
+                >
+                  Chọn {config.label}
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
