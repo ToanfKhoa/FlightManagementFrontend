@@ -37,20 +37,22 @@ export function Reports() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2>Báo cáo & Phân tích</h2>
+          <h2>Thống kê</h2>
           <p className="text-sm text-gray-600 mt-1">
-            Xem và tải xuống các báo cáo hệ thống
+            Tổng hợp các chỉ số của hệ thống
           </p>
         </div>
       </div>
 
       <Tabs defaultValue="overview">
+        {/*
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Tổng quan</TabsTrigger>
           <TabsTrigger value="revenue">Doanh thu</TabsTrigger>
           <TabsTrigger value="operations">Điều hành</TabsTrigger>
           <TabsTrigger value="resources">Nguồn lực</TabsTrigger>
         </TabsList>
+        */}
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

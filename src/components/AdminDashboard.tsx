@@ -55,7 +55,7 @@ export function AdminDashboard() {
             </TabsTrigger>
             <TabsTrigger value="reports" className="flex-1 flex justify-center items-center">
               <FileBarChart className="w-4 h-4 mr-2" />
-              Báo cáo
+              Thống kê
             </TabsTrigger>
           </TabsList>
 
