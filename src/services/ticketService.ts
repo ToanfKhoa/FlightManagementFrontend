@@ -1,3 +1,4 @@
+import { get } from 'http';
 import axiosClient from '../api/axiosClient';
 import ApiResponse, { PageResponse } from '../types/commonType';
 import { Flight } from '../types/flightType';
@@ -19,6 +20,9 @@ export const ticketService = {
     },
     refund(ticketId: number): Promise<ApiResponse<Ticket>> {
         return axiosClient.post(`/tickets/tickets/${ticketId}/refund`);
+    },
+    getTicketById(ticketId: number): Promise<Ticket> {
+        return axiosClient.get(`/tickets/${ticketId}`);
     }
 };
 

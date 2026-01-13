@@ -6,88 +6,100 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
 import { Search, Check, Calendar, Clock, Plane, QrCode, Download } from "lucide-react";
-import { mockBookings, mockFlights, formatCurrency } from "../../lib/mockData";
+import { formatCurrency } from "../../lib/mockData";
 import { toast } from "sonner";
-import type { Booking, Flight } from "../../lib/mockData";
+import type { Ticket } from "../../types/ticketType";
+import type { Flight } from "../../types/flightType";
+import { ticketService } from "../../services/ticketService";
+import { flightService } from "../../services/flightService";
 
 interface CheckInPageProps {
   userId: number;
 }
 
 export function CheckInPage({ userId }: CheckInPageProps) {
-  const [ticketCode, setTicketCode] = useState("");
-  const [booking, setBooking] = useState<Booking | null>(null);
+  const [ticketCode, setTicketCode] = useState<number | null>(null);
+  const [ticket, setTicket] = useState<Ticket | null>(null);
   const [flight, setFlight] = useState<Flight | null>(null);
   const [checkedIn, setCheckedIn] = useState(false);
   const [carryOnWeight, setCarryOnWeight] = useState(5);
   const [checkedWeight, setCheckedWeight] = useState(15);
 
-  const handleSearch = () => {
-    const foundBooking = mockBookings.find(
-      (b) => b.ticketCode === ticketCode && b.passengerId === userId
-    );
+  const handleSearch = async () => {
+    try {
+      if (!ticketCode) {
+        toast.error("Vui lòng nhập mã vé");
+        return;
+      }
+      const foundTicket = await ticketService.getTicketById(ticketCode);
 
-    if (!foundBooking) {
-      toast.error("Không tìm thấy vé");
-      return;
+      if (!foundTicket) {
+        toast.error("Không tìm thấy vé");
+        return;
+      }
+
+      if (foundTicket.status === "CANCELED") {
+        toast.error("Vé đã bị hủy");
+        return;
+      }
+
+      if (foundTicket.status !== "PAID" && foundTicket.status !== "CHANGED") { // assuming checked-in is CHANGED or something
+        toast.error("Vé chưa được thanh toán");
+        return;
+      }
+
+      const foundFlight = await flightService.getById(foundTicket.flight.id.toString());
+
+      if (!foundFlight) {
+        toast.error("Không tìm thấy thông tin chuyến bay");
+        return;
+      }
+
+      // Check if check-in is available (48h - 2h before departure)
+      const flightDate = new Date(foundFlight.data.departureTime);
+      const now = new Date();
+      const hoursDiff = (flightDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+      if (hoursDiff > 48) {
+        toast.error("Check-in chỉ khả dụng từ 48 giờ trước giờ khởi hành");
+        return;
+      }
+
+      if (hoursDiff < 2) {
+        toast.error("Check-in đã đóng (2 giờ trước giờ khởi hành)");
+        return;
+      }
+
+      setTicket(foundTicket);
+      setFlight(foundFlight.data);
+      toast.success("Tìm thấy vé!");
+    } catch (error) {
+      toast.error("Lỗi khi tìm vé");
+      console.error(error);
     }
-
-    if (foundBooking.status === "canceled") {
-      toast.error("Vé đã bị hủy");
-      return;
-    }
-
-    if (foundBooking.status !== "paid" && foundBooking.status !== "checked-in") {
-      toast.error("Vé chưa được thanh toán");
-      return;
-    }
-
-    const foundFlight = mockFlights.find((f) => f.id === foundBooking.flightId);
-
-    if (!foundFlight) {
-      toast.error("Không tìm thấy thông tin chuyến bay");
-      return;
-    }
-
-    // Check if check-in is available (48h - 2h before departure)
-    const flightDate = new Date(foundFlight.date + "T" + foundFlight.departureTime);
-    const now = new Date();
-    const hoursDiff = (flightDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-    if (hoursDiff > 48) {
-      toast.error("Check-in chỉ khả dụng từ 48 giờ trước giờ khởi hành");
-      return;
-    }
-
-    if (hoursDiff < 2) {
-      toast.error("Check-in đã đóng (2 giờ trước giờ khởi hành)");
-      return;
-    }
-
-    setBooking(foundBooking);
-    setFlight(foundFlight);
-    toast.success("Tìm thấy vé!");
   };
 
-  const handleCheckIn = () => {
-    if (!booking) return;
+  const handleCheckIn = async () => {
+    if (!ticket) return;
 
-    booking.status = "checked-in";
-    booking.baggage = {
-      carryOn: carryOnWeight,
-      checked: checkedWeight,
-      extraFee: 0, // In real app, this would be calculated
-    };
-
-    setCheckedIn(true);
-    toast.success("Check-in thành công!");
+    try {
+      await ticketService.checkin(ticket.id, {
+        passengerEmail: carryOnWeight,
+        seatID: checkedWeight,
+      });
+      setCheckedIn(true);
+      toast.success("Check-in thành công!");
+    } catch (error) {
+      toast.error("Lỗi khi check-in");
+      console.error(error);
+    }
   };
 
   const handleDownloadBoardingPass = () => {
     toast.success("Đang tải thẻ lên máy bay...");
   };
 
-  if (checkedIn && booking && flight) {
+  if (checkedIn && ticket && flight) {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
         <Card className="border-green-500">
@@ -121,21 +133,21 @@ export function CheckInPage({ userId }: CheckInPageProps) {
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <p className="text-sm text-gray-600">Hành khách</p>
-                  <p className="font-bold">{booking.passengerName}</p>
+                  <p className="font-bold">{ticket.passenger.fullName}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Chuyến bay</p>
-                  <p className="font-bold">{flight.flightCode}</p>
+                  <p className="font-bold">{flight.id}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Ngày bay</p>
                   <p className="font-bold">
-                    {new Date(flight.date).toLocaleDateString("vi-VN")}
+                    {new Date(flight.departureTime).toLocaleDateString("vi-VN")}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Giờ khởi hành</p>
-                  <p className="font-bold">{flight.departureTime}</p>
+                  <p className="font-bold">{flight.departureTime.split('T')[1]?.substring(0, 5)}</p>
                 </div>
               </div>
 
@@ -148,14 +160,14 @@ export function CheckInPage({ userId }: CheckInPageProps) {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Ghế</p>
-                  <p className="text-2xl font-bold">{booking.seatNumber}</p>
+                  <p className="text-2xl font-bold">{ticket.seat.seatNumber}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Hạng</p>
                   <p className="font-bold">
-                    {booking.seatClass === "first"
+                    {ticket.seat.seatClass === "FIRST_CLASS"
                       ? "First"
-                      : booking.seatClass === "business"
+                      : ticket.seat.seatClass === "BUSINESS"
                         ? "Business"
                         : "Economy"}
                   </p>
@@ -166,7 +178,7 @@ export function CheckInPage({ userId }: CheckInPageProps) {
 
               <div className="text-center text-sm text-gray-600">
                 <p>Vui lòng có mặt tại cổng lên máy bay trước 30 phút</p>
-                <p className="font-mono mt-2">{booking.ticketCode}</p>
+                <p className="font-mono mt-2">{ticket.id}</p>
               </div>
             </div>
 
@@ -185,21 +197,21 @@ export function CheckInPage({ userId }: CheckInPageProps) {
     );
   }
 
-  if (booking && flight) {
+  if (ticket && flight) {
     const limits = {
       carryOn: 7,
       checked: {
-        economy: 20,
-        business: 30,
-        first: 40,
+        ECONOMY: 20,
+        BUSINESS: 30,
+        FIRST_CLASS: 40,
       },
     };
 
-    const allowedChecked = limits.checked[booking.seatClass];
+    const allowedChecked = limits.checked[ticket.seat.seatClass];
 
     return (
       <div className="max-w-2xl mx-auto space-y-6">
-        <Button variant="outline" onClick={() => setBooking(null)}>
+        <Button variant="outline" onClick={() => setTicket(null)}>
           Tìm vé khác
         </Button>
 
@@ -213,7 +225,7 @@ export function CheckInPage({ userId }: CheckInPageProps) {
                 <Plane className="w-4 h-4 text-gray-600" />
                 <div>
                   <p className="text-sm text-gray-600">Chuyến bay</p>
-                  <p className="font-semibold">{flight.flightCode}</p>
+                  <p className="font-semibold">{flight.id}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -221,7 +233,7 @@ export function CheckInPage({ userId }: CheckInPageProps) {
                 <div>
                   <p className="text-sm text-gray-600">Ngày bay</p>
                   <p className="font-semibold">
-                    {new Date(flight.date).toLocaleDateString("vi-VN")}
+                    {new Date(flight.departureTime).toLocaleDateString("vi-VN")}
                   </p>
                 </div>
               </div>
@@ -229,12 +241,12 @@ export function CheckInPage({ userId }: CheckInPageProps) {
                 <Clock className="w-4 h-4 text-gray-600" />
                 <div>
                   <p className="text-sm text-gray-600">Giờ khởi hành</p>
-                  <p className="font-semibold">{flight.departureTime}</p>
+                  <p className="font-semibold">{flight.departureTime.split('T')[1]?.substring(0, 5)}</p>
                 </div>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Tuyến đường</p>
-                <p className="font-semibold">{flight.route}</p>
+                <p className="font-semibold">{flight.route.origin} - {flight.route.destination}</p>
               </div>
             </div>
 
@@ -243,14 +255,14 @@ export function CheckInPage({ userId }: CheckInPageProps) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-600">Số ghế</p>
-                <p className="text-2xl font-bold">{booking.seatNumber}</p>
+                <p className="text-2xl font-bold">{ticket.seat.seatNumber}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Hạng vé</p>
                 <p className="font-semibold">
-                  {booking.seatClass === "first"
+                  {ticket.seat.seatClass === "FIRST_CLASS"
                     ? "Hạng Nhất"
-                    : booking.seatClass === "business"
+                    : ticket.seat.seatClass === "BUSINESS"
                       ? "Thương Gia"
                       : "Phổ Thông"}
                 </p>
@@ -336,9 +348,9 @@ export function CheckInPage({ userId }: CheckInPageProps) {
             <div className="flex gap-2">
               <Input
                 id="ticketCode"
-                placeholder="TK001234567"
-                value={ticketCode}
-                onChange={(e) => setTicketCode(e.target.value)}
+                placeholder="123456789"
+                value={ticketCode?.toString() || ""}
+                onChange={(e) => setTicketCode(parseInt(e.target.value))}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               />
               <Button onClick={handleSearch}>
