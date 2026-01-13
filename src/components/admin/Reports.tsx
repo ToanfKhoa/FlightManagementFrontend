@@ -4,11 +4,48 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Download, FileText, TrendingUp, Users, Plane, DollarSign } from "lucide-react";
 import { mockFlights, mockBookings, mockAircraft, mockCrew, formatCurrency } from "../../lib/mockData";
 import { toast } from "sonner";
+import { useState, useEffect } from "react";
+import { statisticService } from "../../services/statisticService";
+import { TicketStatusStatistic, FlightPassengerStatistic, FlightLoadFactorStatistic, FlightAvailableSeatsStatistic, CrewFlightHoursStatistic, CrewPerFlightStatistic, AircraftStatusStatistic } from "../../types/statisticType";
 
 export function Reports() {
   const handleDownloadReport = (reportName: string) => {
     toast.success(`Đang tải báo cáo ${reportName}...`);
   };
+
+  const [ticketStatusStats, setTicketStatusStats] = useState<TicketStatusStatistic | null>(null);
+  const [flightPassengerStats, setFlightPassengerStats] = useState<FlightPassengerStatistic[] | null>(null);
+  const [loadFactorStats, setLoadFactorStats] = useState<FlightLoadFactorStatistic[] | null>(null);
+  const [availableSeatsStats, setAvailableSeatsStats] = useState<FlightAvailableSeatsStatistic[] | null>(null);
+  const [crewHoursStats, setCrewHoursStats] = useState<CrewFlightHoursStatistic[] | null>(null);
+  const [crewPerFlightStats, setCrewPerFlightStats] = useState<CrewPerFlightStatistic[] | null>(null);
+  const [aircraftStatusStats, setAircraftStatusStats] = useState<AircraftStatusStatistic | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const responses = await Promise.all([
+          statisticService.getTicketStatusStatistic(),
+          statisticService.getFlightPassengerStatistic(),
+          statisticService.getFlightLoadFactorStatistic(),
+          statisticService.getFlightAvailableSeatsStatistic(),
+          statisticService.getCrewFlightHoursStatistic(),
+          statisticService.getCrewPerFlight(),
+          statisticService.getAircraftStatusStatistic(),
+        ]);
+        setTicketStatusStats(responses[0].data);
+        setFlightPassengerStats(responses[1].data);
+        setLoadFactorStats(responses[2].data);
+        setAvailableSeatsStats(responses[3].data);
+        setCrewHoursStats(responses[4].data);
+        setCrewPerFlightStats(responses[5].data);
+        setAircraftStatusStats(responses[6].data);
+      } catch (error) {
+        console.error('Error fetching statistics:', error);
+      }
+    };
+    fetchData();
+  }, []);
 
   // Calculate statistics
   const totalRevenue = mockBookings
@@ -37,23 +74,26 @@ export function Reports() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2>Báo cáo & Phân tích</h2>
+          <h2>Thống kê</h2>
           <p className="text-sm text-gray-600 mt-1">
-            Xem và tải xuống các báo cáo hệ thống
+            Tổng hợp các chỉ số của hệ thống
           </p>
         </div>
       </div>
 
       <Tabs defaultValue="overview">
+        {/*
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Tổng quan</TabsTrigger>
           <TabsTrigger value="revenue">Doanh thu</TabsTrigger>
           <TabsTrigger value="operations">Điều hành</TabsTrigger>
           <TabsTrigger value="resources">Nguồn lực</TabsTrigger>
         </TabsList>
+        */}
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* 
             <Card>
               <CardHeader className="pb-3">
                 <CardDescription className="flex items-center gap-1">
@@ -90,40 +130,11 @@ export function Reports() {
                 <CardTitle className="text-2xl">{mockCrew.length}</CardTitle>
               </CardHeader>
             </Card>
+
+            */}
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Thống kê vé</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-1">Đã thanh toán</p>
-                    <p className="text-2xl font-bold text-green-600">{paidBookings}</p>
-                  </div>
-                  <div className="bg-yellow-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-1">Đang giữ chỗ</p>
-                    <p className="text-2xl font-bold text-yellow-600">
-                      {mockBookings.filter((b) => b.status === "reserved").length}
-                    </p>
-                  </div>
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-1">Đã check-in</p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {mockBookings.filter((b) => b.status === "checked-in").length}
-                    </p>
-                  </div>
-                  <div className="bg-red-50 p-4 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-1">Đã hủy</p>
-                    <p className="text-2xl font-bold text-red-600">{canceledBookings}</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
+          {/*
           <Card>
             <CardHeader>
               <CardTitle>Phân bổ hạng vé</CardTitle>
@@ -154,6 +165,168 @@ export function Reports() {
               </div>
             </CardContent>
           </Card>
+          */}
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Thống kê trạng thái vé</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {ticketStatusStats ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-red-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-1">Đã hủy</p>
+                    <p className="text-2xl font-bold text-red-600">{ticketStatusStats?.canceledCount || 0}</p>
+                  </div>
+                  <div className="bg-yellow-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-1">Đã đổi</p>
+                    <p className="text-2xl font-bold text-yellow-600">{ticketStatusStats?.changedCount || 0}</p>
+                  </div>
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-1">Đã hoàn tiền</p>
+                    <p className="text-2xl font-bold text-blue-600">{ticketStatusStats?.refundedCount || 0}</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-1">Tổng vé ảnh hưởng</p>
+                    <p className="text-2xl font-bold">{ticketStatusStats?.totalAffectedTickets || 0}</p>
+                  </div>
+                </div>
+              ) : (
+                <p>Loading...</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Trạng thái máy bay</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {aircraftStatusStats ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-green-50 p-4 rounded-lg text-center">
+                    <p className="text-sm text-gray-600 mb-2">Hoạt động</p>
+                    <p className="text-3xl font-bold text-green-600">{aircraftStatusStats?.activeCount || 0}</p>
+                  </div>
+                  <div className="bg-yellow-50 p-4 rounded-lg text-center">
+                    <p className="text-sm text-gray-600 mb-2">Bảo trì</p>
+                    <p className="text-3xl font-bold text-yellow-600">{aircraftStatusStats?.maintenanceCount || 0}</p>
+                  </div>
+                  <div className="bg-red-50 p-4 rounded-lg text-center">
+                    <p className="text-sm text-gray-600 mb-2">Không hoạt động</p>
+                    <p className="text-3xl font-bold text-red-600">{aircraftStatusStats?.inactiveCount || 0}</p>
+                  </div>
+                  <div className="bg-blue-50 p-4 rounded-lg text-center">
+                    <p className="text-sm text-gray-600 mb-2">Tổng số</p>
+                    <p className="text-3xl font-bold text-blue-600">{aircraftStatusStats?.totalAircraftCount || 0}</p>
+                  </div>
+                </div>
+              ) : (
+                <p>Loading...</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Số hành khách theo chuyến bay</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {flightPassengerStats ? (
+                <div className="space-y-3">
+                  {flightPassengerStats.map((stat) => (
+                    <div key={stat.flightId} className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                      <div>
+                        <p className="font-semibold">{stat.origin} - {stat.destination}</p>
+                        <p className="text-sm text-gray-600">{new Date(stat.departureTime).toLocaleString()}</p>
+                      </div>
+                      <p className="font-bold">{stat.passengerCount} hành khách</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p>Loading...</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Tỷ lệ lấp đầy chỗ ngồi</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loadFactorStats ? (
+                <div className="space-y-3">
+                  {loadFactorStats.map((stat) => (
+                    <div key={stat.flightId} className="p-3 bg-gray-50 rounded">
+                      <div className="flex justify-between items-center mb-2">
+                        <p className="font-semibold">{stat.origin} - {stat.destination}</p>
+                        <p className="font-bold">{stat.loadFactorPercentage.toFixed(1)}%</p>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full"
+                          style={{ width: `${stat.loadFactorPercentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p>Loading...</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Chỗ ngồi khả dụng</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {availableSeatsStats ? (
+                <div className="space-y-3">
+                  {availableSeatsStats.map((stat) => (
+                    <div key={stat.flightId} className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                      <div>
+                        <p className="font-semibold">{stat.origin} - {stat.destination}</p>
+                        <p className="text-sm text-gray-600">{stat.aircraftRegistrationNumber}</p>
+                      </div>
+                      <p className="font-bold">{stat.availableSeatsCount}/{stat.totalSeatCapacity}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p>Loading...</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Phi hành đoàn theo chuyến bay</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {crewPerFlightStats ? (
+                <div className="space-y-3">
+                  {crewPerFlightStats.map((stat) => (
+                    <div key={stat.flightId} className="p-3 bg-gray-50 rounded">
+                      <div className="flex justify-between items-center mb-2">
+                        <p className="font-semibold">{stat.origin} - {stat.destination}</p>
+                        <p className="font-bold">Tổng: {stat.totalCrewCount}</p>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-sm">
+                        <p>Phi công: {stat.pilotCount}</p>
+                        <p>Phó phi công: {stat.copilotCount}</p>
+                        <p>Tiếp viên: {stat.attendantCount}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p>Loading...</p>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="revenue" className="space-y-4">
@@ -167,6 +340,7 @@ export function Reports() {
                 Thống kê doanh thu theo chuyến bay, hạng vé
               </CardDescription>
             </CardHeader>
+
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-blue-50 p-6 rounded-lg">
