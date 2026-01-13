@@ -114,19 +114,19 @@ export function CrewDashboard() {
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg">
                   <Award className="w-6 h-6 text-green-600 mb-2" />
-                  <p className="text-sm text-gray-600 mb-1">Tổng giờ bay</p>
+                  <p className="text-sm text-gray-600 mb-1">Tổng giờ bay tháng này</p>
                   <p className="text-lg font-bold">{employee.totalFlightHours}h</p>
                 </div>
                 <div className="bg-purple-50 p-4 rounded-lg">
                   <Clock className="w-6 h-6 text-purple-600 mb-2" />
-                  <p className="text-sm text-gray-600 mb-1">Giờ bay tháng này</p>
-                  <p className="text-lg font-bold">{employee.monthlyHours}h</p>
+                  <p className="text-sm text-gray-600 mb-1">Giờ bay tối đa</p>
+                  <p className="text-lg font-bold">{employee.maxFlightHoursPerMonth}h</p>
                 </div>
                 <div className="bg-yellow-50 p-4 rounded-lg">
                   <Plane className="w-6 h-6 text-yellow-600 mb-2" />
                   <p className="text-sm text-gray-600 mb-1">Còn lại</p>
                   <p className="text-lg font-bold">
-                    {employee.maxHours - employee.monthlyHours}h
+                    {employee.maxFlightHoursPerMonth - employee.totalFlightHours}h
                   </p>
                 </div>
               </div>

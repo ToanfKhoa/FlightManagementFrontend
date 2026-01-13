@@ -65,6 +65,7 @@ export type UpdateFlightRequest = {
 };
 
 import type { ApiResponse, PageResponse } from './commonType';
+import Employee from './employeeType';
 
 export type FlightsPageResponse = PageResponse<Flight>;
 export type FlightResponse = ApiResponse<Flight>;

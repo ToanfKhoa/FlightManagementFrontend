@@ -12,14 +12,18 @@ import {
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Pencil, Plane, AlertTriangle, Clock, X, Plus, Download, MapPin } from "lucide-react";
+import { Pencil, Plane, AlertTriangle, Clock, X, Plus, Download, MapPin, Users } from "lucide-react";
 import { toast } from "sonner";
 import { exportFlightsToExcel } from "../../utils/excelExport";
 import { flightService } from "../../services/flightService";
 import { aircraftService } from "../../services/aircraftService";
 import { routeService } from "../../services/routeService";
+import { assignmentService } from "../../services/assignmentService";
+import { employeeService } from "../../services/employeeService";
 import type { Flight, Route, FlightStatus, FlightsPageResponse, FlightSeat, SeatSummary, CreateRouteRequest } from "../../types/flightType";
 import type { Aircraft } from "../../types/aircraftType";
+import type { Employee } from "../../types/employeeType";
+import type { Assignment } from "../../types/assignmentType";
 import type { ApiResponse } from "../../types/commonType";
 
 export function FlightOperations() {
@@ -57,6 +61,14 @@ export function FlightOperations() {
   });
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingFlight, setEditingFlight] = useState<Flight | null>(null);
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [selectedFlightForAssign, setSelectedFlightForAssign] = useState<Flight | null>(null);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
+  const [employeePage, setEmployeePage] = useState(0);
+  const [employeeTotalPages, setEmployeeTotalPages] = useState(0);
+  const [existingAssignments, setExistingAssignments] = useState<Assignment[]>([]);
   const [editFlightData, setEditFlightData] = useState({
     priceSeatClass: [
       { seatClass: 'ECONOMY', price: 1500000 },
@@ -78,6 +90,35 @@ export function FlightOperations() {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
+
+  const loadEmployees = async (page: number = 0) => {
+    try {
+      setLoadingEmployees(true);
+      const res = await employeeService.getAllEmployees({ page, size: 10 });
+      if (res.data) {
+        const sortedEmployees = res.data.content.sort((a, b) => a.position.localeCompare(b.position));
+        setEmployees(sortedEmployees);
+        setEmployeeTotalPages(res.data.totalPages || 0);
+      }
+    } catch (err) {
+      toast.error("Lỗi khi tải danh sách nhân viên");
+    } finally {
+      setLoadingEmployees(false);
+    }
+  };
+
+  const loadExistingAssignments = async (flightId: number) => {
+    try {
+      const res = await assignmentService.getAll({ all: true, filter: `flight.id==${flightId}` });
+      if (res.data) {
+        setExistingAssignments(res.data.content);
+        const assignedEmployeeIds = res.data.content.map((assignment: Assignment) => assignment.employee.id);
+        setSelectedEmployeeIds(assignedEmployeeIds);
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải phân công hiện tại", err);
+    }
+  };
 
   const fetchFlights = async () => {
     try {
@@ -120,6 +161,13 @@ export function FlightOperations() {
   useEffect(() => {
     fetchFlights();
   }, [page, size, debouncedSearch, selectedStatus]);
+
+  useEffect(() => {
+    if (showAssignDialog && selectedFlightForAssign) {
+      loadEmployees(employeePage);
+      loadExistingAssignments(selectedFlightForAssign.id);
+    }
+  }, [showAssignDialog, selectedFlightForAssign, employeePage]);
 
   useEffect(() => {
     Promise.all([
@@ -334,6 +382,25 @@ export function FlightOperations() {
       departed: "Khởi hành",
     };
     return statusLabels[String(status ?? '').toLowerCase()] || String(status ?? '');
+  };
+
+  const handleAssignCrew = async () => {
+    if (!selectedFlightForAssign || selectedEmployeeIds.length === 0) return;
+
+    try {
+      await assignmentService.assign({
+        flightId: selectedFlightForAssign.id,
+        employeeIds: selectedEmployeeIds,
+      });
+      toast.success("Phân công nhân viên thành công");
+      setShowAssignDialog(false);
+      setSelectedFlightForAssign(null);
+      setSelectedEmployeeIds([]);
+      setExistingAssignments([]);
+      setEmployeePage(0);
+    } catch (err) {
+      toast.error("Phân công chưa đáp ứng quy định, vui lòng xem xét lại.");
+    }
   };
 
   const handleUpdateFlight = async () => {
@@ -814,6 +881,16 @@ export function FlightOperations() {
                       <Button
                         variant="outline"
                         onClick={() => {
+                          setSelectedFlightForAssign(flight);
+                          setShowAssignDialog(true);
+                        }}
+                      >
+                        <Users className="w-4 h-4 mr-2" />
+                        Phân công
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
                           setEditingFlight(flight);
 
                           // Formart datetime
@@ -1049,6 +1126,82 @@ export function FlightOperations() {
 
             <Button className="w-full" onClick={handleCreateRoute}>
               Tạo tuyến bay
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Crew Assignment Dialog */}
+      <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
+        <DialogContent className="w-[600px] max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Phân công nhân viên cho chuyến bay {selectedFlightForAssign?.id}</DialogTitle>
+            <DialogDescription>
+              Chọn nhân viên để phân công cho chuyến bay này
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            {loadingEmployees ? (
+              <div className="text-center py-4">Đang tải danh sách nhân viên...</div>
+            ) : (
+              <div className="overflow-y-auto max-h-96 pr-2">
+                <div className="grid grid-cols-2 gap-2">
+                  {employees.map((employee) => (
+                    <label key={employee.id} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50 min-w-[200px]">
+                      <input
+                        type="checkbox"
+                        checked={selectedEmployeeIds.includes(employee.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedEmployeeIds([...selectedEmployeeIds, employee.id]);
+                          } else {
+                            setSelectedEmployeeIds(selectedEmployeeIds.filter(id => id !== employee.id));
+                          }
+                        }}
+                        className="w-5 h-5 rounded"
+                      />
+                      <div>
+                        <div className="font-medium">{employee.fullName}</div>
+                        <div className="text-sm text-gray-600">{employee.position} - {employee.totalFlightHours}/{employee.maxFlightHoursPerMonth} giờ</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+                {/* Employee Pagination */}
+                {employeeTotalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                    <div className="text-sm text-gray-600">
+                      Trang {employeePage + 1} / {employeeTotalPages}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={employeePage <= 0 || loadingEmployees}
+                        onClick={() => setEmployeePage(p => Math.max(0, p - 1))}
+                      >
+                        Trước
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={employeePage >= (employeeTotalPages - 1) || loadingEmployees}
+                        onClick={() => setEmployeePage(p => Math.min((employeeTotalPages - 1) || p + 1, p + 1))}
+                      >
+                        Sau
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button variant="outline" onClick={() => setShowAssignDialog(false)}>
+              Hủy
+            </Button>
+            <Button onClick={handleAssignCrew} disabled={selectedEmployeeIds.length === 0}>
+              Phân công ({selectedEmployeeIds.length} nhân viên)
             </Button>
           </div>
         </DialogContent>
