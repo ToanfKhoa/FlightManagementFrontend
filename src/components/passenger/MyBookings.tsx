@@ -4,11 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
-import { Calendar, Clock, Plane, Ticket, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Calendar, Clock, Plane, Ticket as TicketIcon, AlertCircle, CheckCircle2, CreditCard, ArrowLeft } from "lucide-react";
 import { formatCurrency } from "../../lib/mockData";
 import { toast } from "sonner";
-import type { Ticket } from "../../types/ticketType";
+import type { Ticket, PaymentRequest, BookingRequest } from "../../types/ticketType";
 import { ticketService } from "../../services/ticketService";
+import { useAuth } from "../../context/AuthContext";
 
 interface MyBookingsProps {
   userId: number;
@@ -21,6 +22,7 @@ export function MyBookings({ userId }: MyBookingsProps) {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showRefundDialog, setShowRefundDialog] = useState(false);
   const [showCheckInDialog, setShowCheckInDialog] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -51,19 +53,31 @@ export function MyBookings({ userId }: MyBookingsProps) {
   };
 
   const handlePayment = (ticket: any) => {
-    toast.success("Chuyển đến trang thanh toán...");
-    // For now, mock update
-    setTimeout(() => {
-      // Update local state
-      setTickets(tickets.map(t => t.id === ticket.id ? { ...t, status: 'PAID' as const } : t));
-      toast.success("Thanh toán thành công!");
-    }, 1500);
+    setSelectedTicket(ticket);
+    setShowPaymentDialog(true);
+  };
+
+  const handleConfirmPayment = async () => {
+    if (!selectedTicket?.id) return;
+    try {
+      const paymentData: PaymentRequest = {
+        paymentMethod: 'VNPAY',
+        returnUrl: window.location.origin + '/passenger',
+        cancelUrl: window.location.origin + '/passenger'
+      };
+      const paymentResponse = await ticketService.pay(selectedTicket.id, paymentData);
+      if (paymentResponse.paymentUrl) {
+        window.location.href = paymentResponse.paymentUrl;
+      }
+    } catch (error) {
+      toast.error("Lỗi khi thanh toán. Vui lòng thử lại.");
+      console.error("Payment error:", error);
+    }
   };
 
   const handleCheckIn = () => {
     if (selectedTicket) {
-      // Mock check-in
-      setTickets(tickets.map(t => t.id === selectedTicket.id ? { ...t, status: 'PAID' as const } : t)); // Keep as PAID
+      setTickets(tickets.map(t => t.id === selectedTicket.id ? { ...t, status: 'PAID' as const } : t));
       setShowCheckInDialog(false);
       toast.success("Check-in thành công! Vui lòng đến cổng lên máy bay đúng giờ.");
       setSelectedTicket(null);
@@ -71,15 +85,12 @@ export function MyBookings({ userId }: MyBookingsProps) {
   };
 
   const canCheckIn = (ticket: any): boolean => {
-    // Can only check-in if status is "PAID"
     if (ticket.status !== "PAID") return false;
 
-    // Check if flight date is within 24 hours
     const flightDateTime = new Date(`${ticket.flight.date}T${ticket.flight.departureTime}`);
     const now = new Date();
     const hoursUntilFlight = (flightDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-    // Can check-in 24 hours before and up to departure time
     return hoursUntilFlight <= 24 && hoursUntilFlight > 0;
   };
 
@@ -105,7 +116,6 @@ export function MyBookings({ userId }: MyBookingsProps) {
     if (selectedTicket) {
       setTickets(tickets.map(t => t.id === selectedTicket.id ? { ...t, status: 'CANCELED' as const } : t));
       setShowCancelDialog(false);
-
       toast.success("Vé đã được hủy");
       setSelectedTicket(null);
     }
@@ -113,7 +123,7 @@ export function MyBookings({ userId }: MyBookingsProps) {
 
   const handleRefund = () => {
     if (selectedTicket) {
-      const refundAmount = selectedTicket.price * 0.8; // 80% refund
+      const refundAmount = selectedTicket.price * 0.8;
 
       setTickets(tickets.map(t => t.id === selectedTicket.id ? { ...t, status: 'CANCELED' as const } : t));
       setShowRefundDialog(false);
@@ -131,7 +141,7 @@ export function MyBookings({ userId }: MyBookingsProps) {
     return (
       <Card>
         <CardContent className="py-16 text-center">
-          <Ticket className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+          <TicketIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
           <h3 className="mb-2">Chưa có vé nào</h3>
           <p className="text-gray-600 mb-4">
             Bạn chưa đặt vé nào. Hãy tìm kiếm chuyến bay để đặt vé.
@@ -157,7 +167,7 @@ export function MyBookings({ userId }: MyBookingsProps) {
               <div className="flex justify-between items-start">
                 <div>
                   <CardTitle className="flex items-center gap-2">
-                    {flight.flightCode}
+                    {flight.id}
                     {getStatusBadge(ticket.status)}
                   </CardTitle>
                   <CardDescription className="mt-1">
@@ -165,7 +175,7 @@ export function MyBookings({ userId }: MyBookingsProps) {
                   </CardDescription>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold">{/*ticket.seat.seatNumber*/ticket.ticketClass}</p>
+                  <p className="text-2xl font-bold">{ticket.ticketClass}</p>
                   <p className="text-sm text-gray-600">
                     {ticket.ticketClass === "FIRST"
                       ? "Hạng Nhất"
@@ -182,7 +192,7 @@ export function MyBookings({ userId }: MyBookingsProps) {
                   <Plane className="w-4 h-4 text-gray-600" />
                   <div>
                     <p className="text-sm text-gray-600">Tuyến đường</p>
-                    <p className="font-semibold">{flight.route}</p>
+                    <p className="font-semibold">{flight.route.origin} - {flight.route.destination}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -190,7 +200,7 @@ export function MyBookings({ userId }: MyBookingsProps) {
                   <div>
                     <p className="text-sm text-gray-600">Ngày bay</p>
                     <p className="font-semibold">
-                      {new Date(flight.date).toLocaleDateString("vi-VN")}
+                      {new Date(flight.departureTime).toLocaleDateString("vi-VN")}
                     </p>
                   </div>
                 </div>
@@ -198,7 +208,7 @@ export function MyBookings({ userId }: MyBookingsProps) {
                   <Clock className="w-4 h-4 text-gray-600" />
                   <div>
                     <p className="text-sm text-gray-600">Giờ khởi hành</p>
-                    <p className="font-semibold">{flight.departureTime}</p>
+                    <p className="font-semibold">{flight.departureTime.toString().split('T')[1].substring(0, 5)}</p>
                   </div>
                 </div>
                 <div>
@@ -213,6 +223,7 @@ export function MyBookings({ userId }: MyBookingsProps) {
                 {ticket.status === "RESERVED" && (
                   <>
                     <Button onClick={() => handlePayment(ticket)}>
+                      <CreditCard className="w-4 h-4 mr-2" />
                       Thanh toán ngay
                     </Button>
                     <Button
@@ -338,22 +349,22 @@ export function MyBookings({ userId }: MyBookingsProps) {
             </DialogDescription>
           </DialogHeader>
           {selectedTicket && (
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="flex justify-between mb-2">
-                <span>Giá vé gốc:</span>
+            <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+              <div className="flex justify-between">
+                <span>Giá vé:</span>
                 <span className="font-semibold">
                   {formatCurrency(selectedTicket.price)}
                 </span>
               </div>
-              <div className="flex justify-between text-green-600">
+              <div className="flex justify-between">
                 <span>Trạng thái:</span>
                 <span className="font-bold">
                   {getStatusBadge(selectedTicket.status)}
                 </span>
               </div>
-              <div className="flex justify-between text-green-600">
+              <div className="flex justify-between">
                 <span>Thông báo:</span>
-                <span className="font-bold">
+                <span className="text-sm text-right">
                   {getCheckInMessage(selectedTicket)}
                 </span>
               </div>
@@ -365,6 +376,94 @@ export function MyBookings({ userId }: MyBookingsProps) {
             </Button>
             <Button onClick={handleCheckIn}>Xác nhận check-in</Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Dialog */}
+      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Xác nhận thông tin thanh toán vé</DialogTitle>
+          </DialogHeader>
+
+          {selectedTicket && (
+            <div className="space-y-4 pr-4">
+              {/* Thông tin chuyến bay */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Thông tin chuyến bay</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Mã chuyến bay:</span>
+                    <span className="font-semibold">{selectedTicket.flight.id}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Tuyến đường:</span>
+                    <span className="font-semibold">
+                      {selectedTicket.flight.route.origin} → {selectedTicket.flight.route.destination}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Ngày bay:</span>
+                    <span className="font-semibold">
+                      {new Date(selectedTicket.flight.departureTime).toLocaleDateString("vi-VN")}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Giờ khởi hành:</span>
+                    <span className="font-semibold">
+                      {selectedTicket.flight.departureTime.toString().split('T')[1].substring(0, 5)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Hạng vé:</span>
+                    <span className="font-semibold">
+                      {selectedTicket.ticketClass === "FIRST"
+                        ? "Hạng Nhất"
+                        : selectedTicket.ticketClass === "BUSINESS"
+                          ? "Thương Gia"
+                          : "Phổ Thông"}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Thông tin thanh toán */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Thông tin thanh toán</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-gray-600">Giá vé:</span>
+                      <span className="font-semibold">{formatCurrency(selectedTicket.price)}</span>
+                    </div>
+
+                    <Separator className="my-2" />
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-lg">Tổng cộng:</span>
+                      <span className="font-bold text-lg text-blue-600">
+                        {formatCurrency(selectedTicket.price)}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Nút hành động */}
+              <div className="flex gap-2 justify-end pt-4">
+                <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>
+                  Hủy
+                </Button>
+                <Button onClick={handleConfirmPayment} className="gap-2">
+                  <CreditCard className="w-4 h-4" />
+                  Xác nhận thanh toán
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
