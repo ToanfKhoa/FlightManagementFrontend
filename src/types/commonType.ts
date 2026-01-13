@@ -25,5 +25,9 @@ export interface PageResponse<T> {
   numberOfElements: number;
   content: T[];
 }
-
+export interface PageableParams {
+  page?: number;
+  size?: number;
+  sort?: string;
+}
 export default ApiResponse;
