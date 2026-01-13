@@ -45,6 +45,7 @@ export function MyBookings({ userId }: MyBookingsProps) {
       PAID: { variant: "default", label: "Đã thanh toán" },
       CANCELED: { variant: "destructive", label: "Đã hủy" },
       CHANGED: { variant: "default", label: "Đã đổi" },
+      CHECKIN: { variant: "default", label: "Đã check-in" }
     };
 
     return (
@@ -172,11 +173,13 @@ export function MyBookings({ userId }: MyBookingsProps) {
               <div className="flex justify-between items-start">
                 <div>
                   <CardTitle className="flex items-center gap-2">
-                    {flight.id}
+                    Mã chuyến bay: {flight.id}
                     {getStatusBadge(ticket.status)}
+                    {ticket.status != "CANCELED" && ticket.seat && getStatusBadge("CHECKIN")}
                   </CardTitle>
                   <CardDescription className="mt-1">
                     Mã vé: {ticket.id} | ID hành khách: {ticket.passenger.id}
+                    {ticket.seat && ` | Mã ghế chuyến bay: ${ticket.seat.id}`}
                   </CardDescription>
                 </div>
                 <div className="text-right">
@@ -245,7 +248,7 @@ export function MyBookings({ userId }: MyBookingsProps) {
 
                 {ticket.status === "PAID" && (
                   <>
-                    {canCheckIn(ticket) ? (
+                    {/* {canCheckIn(ticket) ? (
                       <Button
                         onClick={() => {
                           setSelectedTicket(ticket);
@@ -265,7 +268,7 @@ export function MyBookings({ userId }: MyBookingsProps) {
                           {getCheckInMessage(ticket)}
                         </p>
                       </div>
-                    )}
+                    )} */}
                     {/* <Button variant="outline">Đổi vé</Button>
                     <Button variant="outline">Nâng hạng</Button> */}
                     <Button

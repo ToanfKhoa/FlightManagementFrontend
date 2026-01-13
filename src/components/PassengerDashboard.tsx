@@ -6,6 +6,7 @@ import { LogOut, Search, Ticket, Luggage, FileText, Star } from "lucide-react";
 import { FlightSearch } from "./passenger/FlightSearch";
 import { MyBookings } from "./passenger/MyBookings";
 import { CheckInPage } from "./passenger/CheckInPage";
+import { CheckInDesk } from "./staff/CheckinDesk";
 import { BaggageCalculator } from "./passenger/BaggageCalculator";
 import { useAuth } from "../context/AuthContext";
 import logoIcon from "../assets/images/logo-icon.png";
@@ -134,7 +135,7 @@ export function PassengerDashboard() {
             </TabsContent>
 
             <TabsContent value="checkin" className="mt-0">
-              <CheckInPage userId={user!.id} />
+              <CheckInDesk />
             </TabsContent>
 
             <TabsContent value="baggage" className="mt-0">

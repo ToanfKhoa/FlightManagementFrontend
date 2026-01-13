@@ -156,7 +156,7 @@ export function CheckInDesk() {
                   <p className="text-xl font-bold">{ticket.passenger.fullName}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Chuyến bay / Flight</p>
+                  <p className="text-sm text-gray-600 mb-1">Mã chuyến bay / Flight</p>
                   <p className="text-xl font-bold">{flight.id}</p>
                 </div>
                 <div>
@@ -252,7 +252,7 @@ export function CheckInDesk() {
             <CardContent className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-gray-600">Chuyến bay</p>
+                  <p className="text-sm text-gray-600">Mã chuyến bay</p>
                   <p className="font-semibold text-lg">{flight.id}</p>
                 </div>
                 <div>
@@ -335,6 +335,12 @@ export function CheckInDesk() {
           {selectedSeatId && (
             <div className="bg-blue-50 text-blue-700 p-3 rounded-md text-center font-medium animate-in fade-in slide-in-from-bottom-2">
               {checkedIn ? "Mã ghế của bạn là" : "Bạn đang chọn ghế"}: {ticket.flight.flightSeats.find(s => s.id === selectedSeatId)?.id}
+            </div>
+          )}
+
+          {checkedIn && (
+            <div className="bg-blue-50 text-blue-700 p-3 rounded-md text-center font-medium animate-in fade-in slide-in-from-bottom-2">
+              {"Mã ghế của bạn là"}: {ticket.seat?.id}
             </div>
           )}
 

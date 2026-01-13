@@ -136,7 +136,7 @@ export function CheckInPage({ userId }: CheckInPageProps) {
                   <p className="font-bold">{ticket.passenger.fullName}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Chuyến bay</p>
+                  <p className="text-sm text-gray-600">Mã chuyến bay</p>
                   <p className="font-bold">{flight.id}</p>
                 </div>
                 <div>
