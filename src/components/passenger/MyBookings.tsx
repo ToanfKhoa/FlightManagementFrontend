@@ -176,7 +176,7 @@ export function MyBookings({ userId }: MyBookingsProps) {
                     {getStatusBadge(ticket.status)}
                   </CardTitle>
                   <CardDescription className="mt-1">
-                    Mã vé: {ticket.id}
+                    Mã vé: {ticket.id} | ID hành khách: {ticket.passenger.id}
                   </CardDescription>
                 </div>
                 <div className="text-right">
