@@ -80,5 +80,17 @@ export const flightService = {
     return axiosClient.delete('/flights/bulk', {
       data: { ids }
     });
+  },
+
+  delayFlight(id: string | number, minutes: number): Promise<FlightResponse> {
+    return axiosClient.patch(
+      `/flights/${id}/delay`,
+      null,
+      { params: { minutes } }
+    );
+  },
+
+  cancelFlight(id: string | number): Promise<FlightResponse> {
+    return axiosClient.patch(`/flights/${id}/cancel`);
   }
 };

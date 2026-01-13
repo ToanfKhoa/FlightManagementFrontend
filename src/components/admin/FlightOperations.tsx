@@ -257,57 +257,78 @@ export function FlightOperations() {
     }
   };
 
-  const handleDelayFlight = () => {
+  const handleDelayFlight = async () => {
     if (!selectedFlight) return;
 
-    setFlights((prev) =>
-      prev.map((f) =>
-        f.id === selectedFlight.id ? { ...f, status: "DELAYED" } : f
-      )
-    );
-    setAllFlights((prev) =>
-      prev.map((f) =>
-        f.id === selectedFlight.id ? { ...f, status: "DELAYED" } : f
-      )
-    );
+    try {
+      const response = await flightService.delayFlight(selectedFlight.id, delayMinutes);
+      const baseFlight = selectedFlight;
 
-    toast.success(
-      `Chuyến bay ${selectedFlight.id} đã được đánh dấu chậm ${delayMinutes} phút`
-    );
-    setSelectedFlight(null);
-    setShowDelayDialog(false);
+      const addMinutes = (iso: string, minutes: number) =>
+        new Date(new Date(iso).getTime() + minutes * 60_000).toISOString();
+
+      const updatedFlight: Flight = {
+        ...baseFlight,
+        status: "DELAYED",
+        departureTime: addMinutes(baseFlight.departureTime, delayMinutes),
+        arrivalTime: addMinutes(baseFlight.arrivalTime, delayMinutes),
+      };
+
+      const withComputed = {
+        ...updatedFlight,
+        date: new Date(updatedFlight.departureTime).toISOString().split("T")[0],
+        departureTimeDisplay: computeDisplayTime(updatedFlight.departureTime),
+        arrivalTimeDisplay: computeDisplayTime(updatedFlight.arrivalTime),
+      };
+
+      setFlights(prev =>
+        prev.map(f => (f.id === updatedFlight.id ? withComputed : f))
+      );
+
+      setAllFlights(prev =>
+        prev.map(f => (f.id === updatedFlight.id ? withComputed : f))
+      );
+
+      toast.success(
+        `Chuyến bay ${selectedFlight.id} đã được đánh dấu chậm ${delayMinutes} phút`
+      );
+      setSelectedFlight(null);
+      setShowDelayDialog(false);
+    } catch (error) {
+      toast.error("Lỗi khi báo chậm chuyến bay");
+    }
   };
 
-  const handleCancelFlight = (flight: Flight) => {
-    setFlights((prev) =>
-      prev.map((f) =>
-        f.id === flight.id ? { ...f, status: "CANCELED" } : f
-      )
-    );
-    setAllFlights((prev) =>
-      prev.map((f) =>
-        f.id === flight.id ? { ...f, status: "CANCELED" } : f
-      )
-    );
+  const handleCancelFlight = async (flight: Flight) => {
+    try {
+      const response = await flightService.cancelFlight(flight.id);
 
-    toast.success(
-      `Chuyến bay ${flight.id} đã bị hủy. Hệ thống sẽ thông báo cho hành khách.`
-    );
-  };
+      const updatedFlight: Flight = {
+        ...flight,
+        status: "CANCELED",
+      };
 
-  const handleReactivateFlight = (flight: Flight) => {
-    setFlights((prev) =>
-      prev.map((f) =>
-        f.id === flight.id ? { ...f, status: "OPEN" } : f
-      )
-    );
-    setAllFlights((prev) =>
-      prev.map((f) =>
-        f.id === flight.id ? { ...f, status: "OPEN" } : f
-      )
-    );
+      const withComputed = {
+        ...updatedFlight,
+        date: new Date(updatedFlight.departureTime).toISOString().split("T")[0],
+        departureTimeDisplay: computeDisplayTime(updatedFlight.departureTime),
+        arrivalTimeDisplay: computeDisplayTime(updatedFlight.arrivalTime),
+      };
 
-    toast.success(`Chuyến bay ${flight.id} đã được kích hoạt lại`);
+      setFlights(prev =>
+        prev.map(f => (f.id === flight.id ? withComputed : f))
+      );
+
+      setAllFlights(prev =>
+        prev.map(f => (f.id === flight.id ? withComputed : f))
+      );
+
+      toast.success(
+        `Chuyến bay ${flight.id} đã bị hủy. Hệ thống sẽ thông báo cho hành khách.`
+      );
+    } catch (error) {
+      toast.error("Lỗi khi hủy chuyến bay");
+    }
   };
 
   const computeDisplayTime = (iso: string) =>
@@ -460,7 +481,7 @@ export function FlightOperations() {
       open: { variant: "default", label: "Đang mở" },
       full: { variant: "secondary", label: "Hết chỗ" },
       delayed: { variant: "destructive", label: "Chậm" },
-      canceled: { variant: "destructive", label: "Đã hủy" },
+      canceled: { variant: "destructive_2", label: "Đã hủy" },
       completed: { variant: "secondary", label: "Hoàn thành" },
       departed: { variant: "secondary", label: "Khởi hành" },
     };
@@ -1030,16 +1051,6 @@ export function FlightOperations() {
                           </Dialog>
                         </>
                       )}
-
-                      {(flight.status === "DELAYED" ||
-                        flight.status === "CANCELED") && (
-                          <Button
-                            variant="outline"
-                            onClick={() => handleReactivateFlight(flight)}
-                          >
-                            Kích hoạt lại
-                          </Button>
-                        )}
                     </div>
                   </CardContent>
                 </Card>
