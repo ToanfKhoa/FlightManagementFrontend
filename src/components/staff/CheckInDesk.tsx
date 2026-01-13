@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
@@ -10,13 +11,15 @@ import { formatCurrency } from "../../lib/mockData";
 import { toast } from "sonner";
 import type { Ticket } from "../../types/ticketType";
 import type { Flight } from "../../types/flightType";
+import type { Seat } from "../../types/seatType";
 import { ticketService } from "../../services/ticketService";
-import { flightService } from "../../services/flightService";
 
 export function CheckInDesk() {
   const [ticketCode, setTicketCode] = useState("");
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [flight, setFlight] = useState<Flight | null>(null);
+  const [availableSeats, setAvailableSeats] = useState<Seat[]>([]);
+  const [selectedSeatId, setSelectedSeatId] = useState<number | null>(null);
   const [showBoardingPass, setShowBoardingPass] = useState(false);
   const [checkedIn, setCheckedIn] = useState(false);
 
@@ -39,7 +42,7 @@ export function CheckInDesk() {
         return;
       }
 
-      const foundFlight = await flightService.getById(foundTicket.flight.id.toString());
+      const foundFlight = ticket?.flight;
 
       if (!foundFlight) {
         toast.error("Không tìm thấy thông tin chuyến bay");
@@ -47,8 +50,25 @@ export function CheckInDesk() {
       }
 
       setTicket(foundTicket);
-      setFlight(foundFlight.data);
+      setFlight(foundFlight);
+      setSelectedSeatId(foundTicket.seat.id);
       setShowBoardingPass(false);
+
+      // Fetch available seats for the flight
+      try {
+        const getAvailableSeats = (allSeats: Seat[], targetClass: string) => {
+          return allSeats.filter(seat =>
+            seat.seatClass === targetClass &&
+            seat.status === 'AVAILABLE' // Hoặc check seat.isBooked === false tùy data của bạn
+          );
+        };
+
+        setAvailableSeats(seats);
+      } catch (error) {
+        console.error("Error fetching seats:", error);
+        toast.error("Không thể tải danh sách ghế");
+      }
+
       toast.success("Tìm thấy vé!");
     } catch (error) {
       toast.error("Không tìm thấy vé");
@@ -57,13 +77,12 @@ export function CheckInDesk() {
   };
 
   const handleCheckIn = async () => {
-    if (!ticket) return;
+    if (!ticket || !selectedSeatId) return;
 
     try {
       await ticketService.checkin({
         ticketId: ticket.id,
-        passengerEmail: ticket.passenger.accountRequest.email,
-        seatId: ticket.seat.id
+        seatId: selectedSeatId
       });
       setCheckedIn(true);
       setShowBoardingPass(true);
@@ -90,6 +109,10 @@ export function CheckInDesk() {
               setTicket(null);
               setFlight(null);
               setTicketCode("");
+
+              setAvailableSeats([]);
+              setSelectedSeatId(null);
+
               setCheckedIn(false);
             }}
           >
@@ -153,14 +176,16 @@ export function CheckInDesk() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Ghế / Seat</p>
-                  <p className="text-3xl font-bold">{ticket.seat.seatNumber}</p>
+                  <p className="text-3xl font-bold">
+                    {availableSeats.find(s => s.id === selectedSeatId)?.seatNumber || ticket.seat.seatNumber}
+                  </p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-sm text-gray-600 mb-1">Hạng / Class</p>
                   <p className="text-xl font-bold">
-                    {ticket.seat.seatClass === "FIRST_CLASS"
+                    {availableSeats.find(s => s.id === selectedSeatId)?.seatClass === "FIRST_CLASS"
                       ? "First Class"
-                      : ticket.seat.seatClass === "BUSINESS"
+                      : availableSeats.find(s => s.id === selectedSeatId)?.seatClass === "BUSINESS"
                         ? "Business"
                         : "Economy"}
                   </p>
@@ -192,6 +217,8 @@ export function CheckInDesk() {
                   setTicket(null);
                   setFlight(null);
                   setTicketCode("");
+                  setAvailableSeats([]);
+                  setSelectedSeatId(null);
                   setCheckedIn(false);
                 }}
               >
@@ -289,28 +316,50 @@ export function CheckInDesk() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Thông tin ghế</CardTitle>
+              <CardTitle>Chọn ghế</CardTitle>
+              <CardDescription>Chọn ghế cho hành khách check-in</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-gray-600">Số ghế</p>
-                  <p className="text-3xl font-bold">{ticket.seat.seatNumber}</p>
+                  <Label htmlFor="seatSelect">Ghế hiện tại: {seat}</Label>
+                  <Select
+                    value={selectedSeatId?.toString() || ""}
+                    onValueChange={(value) => setSelectedSeatId(parseInt(value))}
+                    disabled={checkedIn}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn ghế" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableSeats.map((seat) => (
+                        <SelectItem key={seat.id} value={seat.id.toString()}>
+                          {seat.seatNumber} - {seat.seatClass === "FIRST_CLASS" ? "Hạng Nhất" : seat.seatClass === "BUSINESS" ? "Thương Gia" : "Phổ Thông"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600">Hạng</p>
-                  <p className="font-semibold">
-                    {ticket.seat.seatClass === "FIRST_CLASS"
-                      ? "Hạng Nhất"
-                      : ticket.seat.seatClass === "BUSINESS"
-                        ? "Thương Gia"
-                        : "Phổ Thông"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Giá vé</p>
-                  <p className="font-semibold">{formatCurrency(ticket.price)}</p>
-                </div>
+                {selectedSeatId && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-600">Số ghế</p>
+                      <p className="text-xl font-bold">
+                        {availableSeats.find(s => s.id === selectedSeatId)?.seatNumber}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Hạng</p>
+                      <p className="font-semibold">
+                        {availableSeats.find(s => s.id === selectedSeatId)?.seatClass === "FIRST_CLASS"
+                          ? "Hạng Nhất"
+                          : availableSeats.find(s => s.id === selectedSeatId)?.seatClass === "BUSINESS"
+                            ? "Thương Gia"
+                            : "Phổ Thông"}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
