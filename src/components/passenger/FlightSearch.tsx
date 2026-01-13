@@ -4,7 +4,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { Search, Plane, Clock, Calendar, Users, UserPlus } from "lucide-react";
+import { Search, Plane, Clock, Calendar, Users, AlertCircle, X } from "lucide-react";
 import { formatCurrency } from "../../lib/mockData";
 import { toast } from "sonner";
 import SeatClassSelection from "./SeatClassSelection";
@@ -13,7 +13,6 @@ import type { WaitingListEntry } from "../../lib/mockData";
 import { flightService } from "../../services/flightService";
 import { routeService } from "../../services/routeService";
 import ApiResponse from "../../types/commonType";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 interface FlightSearchProps {
   userId: number;
@@ -24,19 +23,11 @@ export function FlightSearch({ userId }: FlightSearchProps) {
   const [destinations, setDestinations] = useState<string[]>([]);
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
-
   const [searchDate, setSearchDate] = useState("");
   const [searchResults, setSearchResults] = useState<Flight[]>([]);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
-
   const [hasSearched, setHasSearched] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-
-  // useEffect(() => {
-  //   if (debouncedOrigin || debouncedDestination || debouncedDate) {
-  //     handleSearch();
-  //   }
-  // }, [debouncedOrigin, debouncedDestination, debouncedDate]);
 
   useEffect(() => {
     const fetchRoutes = async () => {
@@ -67,13 +58,11 @@ export function FlightSearch({ userId }: FlightSearchProps) {
         date: searchDate ? `${searchDate}T00:00:00Z` : ""
       });
 
-      const response = res.data.content as Flight[]//ApiResponse<FlightsPageResponse>;
-      if (response) {//?.data) {
-        //const results = response as ApiResponse<FlightsPageResponse>
-        setSearchResults(response/*results.data.content*/ as Flight[]);
+      const response = res.data.content as Flight[];
+      if (response) {
+        setSearchResults(response as Flight[]);
         setHasSearched(true);
       }
-
     } catch (error) {
       toast.error("Lỗi khi tìm kiếm chuyến bay");
       setSearchResults([]);
@@ -82,44 +71,6 @@ export function FlightSearch({ userId }: FlightSearchProps) {
       setIsSearching(false);
     }
   };
-
-  // const handleJoinWaitingList = (flight: Flight) => {
-  //   // Initialize waiting list if it doesn't exist
-  //   if (!flight.waitingList) {
-  //     flight.waitingList = [];
-  //   }
-
-  //   // Check if user is already in the waiting list
-  //   const alreadyInList = flight.waitingList.some(
-  //     (entry) => entry.passengerId === userId
-  //   );
-
-  //   if (alreadyInList) {
-  //     toast.error("Bạn đã đăng ký chờ cho chuyến bay này!");
-  //     return;
-  //   }
-
-  //   // Add to waiting list
-  //   const newEntry: WaitingListEntry = {
-  //     id: "wl" + Date.now(),
-  //     passengerId: userId,
-  //     passengerName: "Hành khách", // In real app, get from user data
-  //     passengerEmail: "passenger@example.com", // In real app, get from user data
-  //     registeredAt: new Date().toISOString(),
-  //     notified: false,
-  //   };
-
-  //   flight.waitingList.push(newEntry);
-
-  //   // Update search results to reflect the change
-  //   setSearchResults([...searchResults]);
-
-  //   toast.success("Đã đăng ký chờ thành công! Chúng tôi sẽ thông báo khi có chỗ trống.");
-  // };
-
-  // const isInWaitingList = (flight: Flight) => {
-  //   return flight.waitingList?.some((entry) => entry.passengerId === userId) || false;
-  // };
 
   const getStatusBadge = (status: Flight["status"]) => {
     const variants: Record<Flight["status"], { variant: any; label: string }> = {
@@ -136,6 +87,19 @@ export function FlightSearch({ userId }: FlightSearchProps) {
     return <Badge variant={v.variant}>{v.label}</Badge>;
   };
 
+  const formatTimeDisplay = (dateTimeString: string): string => {
+    if (!dateTimeString) return "—";
+    try {
+      const date = new Date(dateTimeString);
+      return date.toLocaleTimeString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "—";
+    }
+  };
+
   if (selectedFlight) {
     return (
       <SeatClassSelection
@@ -148,11 +112,12 @@ export function FlightSearch({ userId }: FlightSearchProps) {
 
   return (
     <div className="space-y-6">
+      {/* Search Card */}
       <Card>
         <CardHeader>
           <CardTitle>Tìm kiếm chuyến bay</CardTitle>
           <CardDescription>
-            Tìm theo mã chuyến bay, tuyến đường hoặc ngày bay
+            Tìm theo nơi đi, nơi đến hoặc ngày bay
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -200,25 +165,33 @@ export function FlightSearch({ userId }: FlightSearchProps) {
           </div>
 
           <div className="flex justify-end mt-4">
-            <Button onClick={handleSearch} className="w-full md:w-auto mt-4" disabled={isSearching}>
+            <Button
+              onClick={handleSearch}
+              className="w-full md:w-auto mt-4"
+              disabled={isSearching}
+            >
               <Search className="w-4 h-4 mr-2" />
               {isSearching ? "Đang tìm..." : "Tìm kiếm"}
             </Button>
           </div>
-
         </CardContent>
       </Card>
 
+      {/* Loading State */}
       {isSearching && (
-        <div className="p-3 bg-gray-50 rounded-md">
-          <p className="text-sm text-gray-600">Đang tìm chuyến bay...</p>
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-700 flex items-center gap-2">
+            <Clock className="w-4 h-4 animate-spin" />
+            Đang tìm chuyến bay phù hợp...
+          </p>
         </div>
       )}
 
-      {hasSearched && (
+      {/* Search Results */}
+      {hasSearched && !isSearching && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h3>Kết quả tìm kiếm</h3>
+            <h3 className="text-lg font-semibold">Kết quả tìm kiếm</h3>
             <p className="text-sm text-gray-600">
               Tìm thấy {searchResults.length} chuyến bay
             </p>
@@ -226,105 +199,148 @@ export function FlightSearch({ userId }: FlightSearchProps) {
 
           {searchResults.length === 0 ? (
             <Card>
-              <CardContent className="py-8 text-center text-gray-500">
-                Không tìm thấy chuyến bay phù hợp
+              <CardContent className="py-12 text-center">
+                <Plane className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                <h4 className="font-semibold mb-2">Không tìm thấy chuyến bay</h4>
+                <p className="text-gray-600">
+                  Vui lòng thử lại với các tiêu chí tìm kiếm khác
+                </p>
               </CardContent>
             </Card>
           ) : (
-            searchResults.map((flight) => (
-              <Card key={flight.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3>{flight.id}</h3>
-                        {getStatusBadge(flight.status)}
-                      </div>
-                      <p className="text-gray-600 mb-2">{flight.route.origin} → {flight.route.destination}</p>
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        {/* <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          {flight.date ? new Date(flight.date).toLocaleDateString("vi-VN") : '—'}
-                        </div> */}
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          {flight.departureTime ? new Date(flight.departureTime).toLocaleDateString("vi-VN") : '-'} - {flight.arrivalTime ? new Date(flight.arrivalTime).toLocaleDateString("vi-VN") : '-'}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Plane className="w-4 h-4" />
-                          {flight.aircraft.type}
-                        </div>
-                      </div>
-                    </div>
+            <div className="space-y-4">
+              {searchResults.map((flight) => {
+                const s1 = flight.seatSummary?.[0]?.availableSeats || 0;
+                const s2 = flight.seatSummary?.[1]?.availableSeats || 0;
+                const s3 = flight.seatSummary?.[2]?.availableSeats || 0;
+                const availableSeats = s1 + s2 + s3;
 
-                    <div className="flex flex-col md:items-end gap-2">
-                      {/* <div className="space-y-1">
-                        <div className="flex items-center justify-between md:justify-end gap-4">
-                          <span className="text-sm text-gray-600">Phổ thông:</span>
-                          <span className="font-semibold">
-                            {flight.seat ? formatCurrency(flight.prices.economy) : '—'}
-                          </span>
-                        </div>
-                        {flight.prices && flight.prices.business > 0 && (
-                          <div className="flex items-center justify-between md:justify-end gap-4">
-                            <span className="text-sm text-gray-600">Thương gia:</span>
-                            <span className="font-semibold">
-                              {formatCurrency(flight.prices.business)}
-                            </span>
+                const canBook = flight.status === "OPEN" && availableSeats > 0;
+
+                return (
+                  <Card key={flight.id} className={!canBook ? "opacity-75" : ""}>
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-3">
+                          <Plane className="w-12 h-12 text-blue-600" />
+                          <div>
+                            <CardTitle className="text-lg">ID: {flight.id}</CardTitle>
+                            <CardDescription className="text-3xl">
+                              {flight.route ? `${flight.route.origin} → ${flight.route.destination}` : '—'}
+                            </CardDescription>
                           </div>
-                        )}
-                      </div> */}
+                        </div>
+                        <div className="text-right">
+                          {getStatusBadge(flight.status)}
+                        </div>
+                      </div>
+                    </CardHeader>
 
-                      <div className="flex items-center gap-1 text-sm text-gray-600">
-                        <Users className="w-4 h-4" />
-                        <span>
-                          {flight.availableSeats ? flight.availableSeats.economy +
-                            flight.availableSeats.business +
-                            flight.availableSeats.first : 0}{" "}
-                          chỗ trống
-                        </span>
+                    <CardContent className="space-y-4">
+                      {/* Flight Details Grid */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                          <p className="text-xs text-gray-600 uppercase tracking-wide">Khởi hành</p>
+                          <p className="text-lg font-semibold">
+                            {formatTimeDisplay(flight.departureTime)}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {flight.departureTime ? new Date(flight.departureTime).toLocaleDateString("vi-VN") : "—"}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-xs text-gray-600 uppercase tracking-wide">Hạ cánh</p>
+                          <p className="text-lg font-semibold">
+                            {formatTimeDisplay(flight.arrivalTime)}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {flight.arrivalTime ? new Date(flight.arrivalTime).toLocaleDateString("vi-VN") : "—"}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-xs text-gray-600 uppercase tracking-wide">Chỗ trống</p>
+                          <p className="text-lg font-semibold text-green-600">
+                            {availableSeats ? availableSeats : "0"}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            / {flight.aircraft?.seatCapacity || "—"}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-xs text-gray-600 uppercase tracking-wide">Máy bay</p>
+                          <p className="text-lg font-semibold">
+                            {flight.aircraft?.type || "—"}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {flight.aircraft?.registrationNumber || "—"}
+                          </p>
+                        </div>
                       </div>
 
-                      {/* {flight.status === "FULL" && flight.waitingList && flight.waitingList.length > 0 && (
-                        <div className="flex items-center gap-1 text-sm text-orange-600">
-                          <UserPlus className="w-4 h-4" />
-                          <span>{flight.waitingList.length} người đăng ký chờ</span>
+                      {/* Status Alerts */}
+                      {flight.status === "DELAYED" && (
+                        <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg flex items-start gap-2">
+                          <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="font-semibold text-yellow-800">Chuyến bay bị chậm</p>
+                            <p className="text-sm text-yellow-700">
+                              Hành khách sẽ được thông báo qua email và SMS
+                            </p>
+                          </div>
                         </div>
-                      )} */}
-
-                      {flight.status === "OPEN" ? (
-                        <Button onClick={() => setSelectedFlight(flight)}>
-                          Chọn chuyến bay
-                        </Button>
-                      ) : flight.status === "FULL" ? (
-                        <div className="flex gap-2">
-                          <Button variant="outline" disabled>
-                            Hết chỗ
-                          </Button>
-                          {/* {!isInWaitingList(flight) ? (
-                            <Button
-                              variant="secondary"
-                              onClick={() => handleJoinWaitingList(flight)}
-                            >
-                              <UserPlus className="w-4 h-4 mr-2" />
-                              Đăng ký chờ
-                            </Button>
-                          ) : (
-                            <Badge variant="secondary" className="px-3 py-2">
-                              Đã đăng ký chờ
-                            </Badge>
-                          )} */}
-                        </div>
-                      ) : (
-                        <Button variant="outline" disabled>
-                          Không khả dụng
-                        </Button>
                       )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+
+                      {flight.status === "CANCELED" && (
+                        <div className="bg-red-50 border border-red-200 p-3 rounded-lg flex items-start gap-2">
+                          <X className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="font-semibold text-red-800">Chuyến bay đã bị hủy</p>
+                            <p className="text-sm text-red-700">
+                              Hành khách có thể đổi hoặc hoàn vé
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {flight.status === "FULL" && (
+                        <div className="bg-orange-50 border border-orange-200 p-3 rounded-lg flex items-start gap-2">
+                          <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="font-semibold text-orange-800">Hết chỗ</p>
+                            <p className="text-sm text-orange-700">
+                              Chuyến bay này đã hết vé
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2 pt-2">
+                        {canBook ? (
+                          <Button
+                            onClick={() => setSelectedFlight(flight)}
+                            className="flex-1"
+                          >
+                            Đặt vé
+                          </Button>
+                        ) : (
+                          <Button
+                            disabled
+                            variant="secondary"
+                            className="flex-1"
+                          >
+                            Không thể đặt vé
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           )}
         </div>
       )}

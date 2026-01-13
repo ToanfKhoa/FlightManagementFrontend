@@ -177,7 +177,7 @@ export function MyBookings({ userId }: MyBookingsProps) {
                 <div className="text-right">
                   <p className="text-2xl font-bold">{ticket.ticketClass}</p>
                   <p className="text-sm text-gray-600">
-                    {ticket.ticketClass === "FIRST"
+                    {ticket.ticketClass.toString() === "FIRST"
                       ? "Hạng Nhất"
                       : ticket.ticketClass === "BUSINESS"
                         ? "Thương Gia"
@@ -419,7 +419,7 @@ export function MyBookings({ userId }: MyBookingsProps) {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Hạng vé:</span>
                     <span className="font-semibold">
-                      {selectedTicket.ticketClass === "FIRST"
+                      {selectedTicket.ticketClass.toString() === "FIRST"
                         ? "Hạng Nhất"
                         : selectedTicket.ticketClass === "BUSINESS"
                           ? "Thương Gia"
