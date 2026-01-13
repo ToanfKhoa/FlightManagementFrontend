@@ -45,12 +45,12 @@ export function CrewManagement() {
   const handleAddCrew = async (employeeData: Employee) => {
     try {
       /*
-      const maxHours = getMaxHoursByPosition(newCrewRole);
+      const maxFlightHoursPerMonth = getMaxHoursByPosition(newCrewRole);
       const newEmployee: Partial<Employee> = {
         fullName: newCrewName.trim(),
         position: newCrewRole,
-        monthlyHours: 0,
-        maxHours,
+        totalFlightHours: 0,
+        maxFlightHoursPerMonth,
         assignments: [],
         workExperience: "",
         totalFlightHours: 0,
@@ -143,10 +143,10 @@ export function CrewManagement() {
 
     // Check hour limits
     const estimatedHours = 8; // Estimate 8 hours per flight
-    const newTotalHours = selectedEmployee.monthlyHours + estimatedHours;
+    const newTotalHours = selectedEmployee.totalFlightHours + estimatedHours;
 
-    if (newTotalHours > selectedEmployee.maxHours) {
-      toast.error(`Không thể phân công! Sẽ vượt quá giới hạn giờ bay (${selectedEmployee.maxHours}h)`);
+    if (newTotalHours > selectedEmployee.maxFlightHoursPerMonth) {
+      toast.error(`Không thể phân công! Sẽ vượt quá giới hạn giờ bay (${selectedEmployee.maxFlightHoursPerMonth}h)`);
       return;
     }
 
@@ -154,7 +154,7 @@ export function CrewManagement() {
       const updatedEmployee: Partial<Employee> = {
         ...selectedEmployee,
         assignments: [...selectedEmployee.assignments, flight.id.toString()],
-        monthlyHours: newTotalHours,
+        totalFlightHours: newTotalHours,
       };
 
       await employeeService.updateEmployee(selectedEmployee.id.toString(), updatedEmployee);
@@ -176,7 +176,7 @@ export function CrewManagement() {
       const updatedEmployee: Partial<Employee> = {
         ...employee,
         assignments: employee.assignments.filter((a) => a !== flightCode),
-        monthlyHours: Math.max(0, employee.monthlyHours - 8), // Rough estimate
+        totalFlightHours: Math.max(0, employee.totalFlightHours - 8), // Rough estimate
       };
 
       await employeeService.updateEmployee(crewId.toString(), updatedEmployee);
@@ -190,12 +190,12 @@ export function CrewManagement() {
   const handleEditEmployee = async () => {
     if (!selectedEmployeeForEdit) return;
 
-    const maxHours = getMaxHoursByPosition(editPosition);
+    const maxFlightHoursPerMonth = getMaxHoursByPosition(editPosition);
     const updatedEmployee: Partial<Employee> = {
       fullName: editFullName.trim(),
       position: editPosition,
       workExperience: editWorkExperience,
-      maxHours,
+      maxFlightHoursPerMonth,
     };
 
     try {
@@ -210,15 +210,15 @@ export function CrewManagement() {
   };
 
   const getHoursPercentage = (member: Employee) => {
-    return (member.monthlyHours / member.maxHours) * 100;
+    return (member.totalFlightHours / member.maxFlightHoursPerMonth) * 100;
   };
 
   const isOverLimit = (member: Employee) => {
-    return member.monthlyHours > member.maxHours;
+    return member.totalFlightHours > member.maxFlightHoursPerMonth;
   };
 
   const isNearLimit = (member: Employee) => {
-    return member.monthlyHours >= member.maxHours * 0.9 && member.monthlyHours <= member.maxHours;
+    return member.totalFlightHours >= member.maxFlightHoursPerMonth * 0.9 && member.totalFlightHours <= member.maxFlightHoursPerMonth;
   };
 
   const getAvailableFlights = () => {
@@ -347,18 +347,18 @@ export function CrewManagement() {
                     <Edit className="w-4 h-4 mr-2" />
                     Chỉnh sửa
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={isOverLimit(member)}
-                    onClick={() => {
-                      setSelectedEmployee(member);
-                      setShowAssignDialog(true);
-                    }}
-                  >
-                    <PlaneTakeoff className="w-4 h-4 mr-2" />
-                    Phân công chuyến bay
-                  </Button>
+                  { /* <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={isOverLimit(member)}
+                      onClick={() => {
+                        setSelectedEmployee(member);
+                        setShowAssignDialog(true);
+                      }}
+                    >
+                      <PlaneTakeoff className="w-4 h-4 mr-2" />
+                      Phân công chuyến bay
+                  </Button> */}
                 </div>
               </div>
             </CardHeader>
@@ -368,7 +368,7 @@ export function CrewManagement() {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Giờ bay trong tháng</span>
                   <span className="font-semibold">
-                    {member.monthlyHours} / {member.maxHours} giờ
+                    {member.totalFlightHours} / {member.maxFlightHoursPerMonth} giờ
                   </span>
                 </div>
                 <Progress
@@ -383,17 +383,17 @@ export function CrewManagement() {
                 />
                 {isOverLimit(member) && (
                   <p className="text-sm text-red-600">
-                    ⚠️ Vượt quá giới hạn {member.monthlyHours - member.maxHours} giờ
+                    ⚠️ Vượt quá giới hạn {member.totalFlightHours - member.maxFlightHoursPerMonth} giờ
                   </p>
                 )}
                 {isNearLimit(member) && (
                   <p className="text-sm text-yellow-600">
-                    ⚠️ Gần đạt giới hạn: còn {member.maxHours - member.monthlyHours} giờ bay
+                    ⚠️ Gần đạt giới hạn: còn {member.maxFlightHoursPerMonth - member.totalFlightHours} giờ bay
                   </p>
                 )}
               </div>
 
-              {/* Assignments */}
+              {/* Assignments
               <div>
                 <p className="text-sm font-semibold mb-2">
                   Chuyến bay đang phân công ({member.assignments?.length})
@@ -420,6 +420,7 @@ export function CrewManagement() {
                   </div>
                 )}
               </div>
+               */}
             </CardContent>
           </Card>
         ))}
@@ -462,7 +463,7 @@ export function CrewManagement() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Giờ bay hiện tại:</span>
                     <span className="font-semibold">
-                      {selectedEmployee.monthlyHours} / {selectedEmployee.maxHours} giờ
+                      {selectedEmployee.totalFlightHours} / {selectedEmployee.maxFlightHoursPerMonth} giờ
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -482,7 +483,7 @@ export function CrewManagement() {
                     <option value="">-- Chọn chuyến bay --</option>
                     {getAvailableFlights().map((flight) => (
                       <option key={flight.id} value={flight.id}>
-                        {flight.id} - {flight.route.origin} - {flight.route.destination} ({flight.date ? new Date(flight.date).toLocaleDateString("vi-VN") : 'N/A'} {flight.departureTime})
+                        {flight.id} - {flight.route.origin} - {flight.route.destination} {flight.departureTime})
                       </option>
                     ))}
                   </select>
@@ -490,19 +491,19 @@ export function CrewManagement() {
 
                 <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg text-sm">
                   <p className="text-blue-800">
-                    💡 Mỗi chuyến bay ước tính 8 giờ. Giờ bay sau khi phân công: {selectedEmployee.monthlyHours + 8} giờ
+                    💡 Mỗi chuyến bay ước tính 8 giờ. Giờ bay sau khi phân công: {selectedEmployee.totalFlightHours + 8} giờ
                   </p>
                   <p className="text-blue-800">
-                    {isOverLimit(selectedEmployee) || (selectedEmployee.monthlyHours + 8 > selectedEmployee.maxHours)
+                    {isOverLimit(selectedEmployee) || (selectedEmployee.totalFlightHours + 8 > selectedEmployee.maxFlightHoursPerMonth)
                       ? "⚠️ Vượt quá giới hạn giờ bay!"
-                      : `✅ Phân công này vẫn trong giới hạn giờ bay (${selectedEmployee.maxHours} giờ).`}
+                      : `✅ Phân công này vẫn trong giới hạn giờ bay (${selectedEmployee.maxFlightHoursPerMonth} giờ).`}
                   </p>
                 </div>
 
                 <Button
                   className="w-full"
                   onClick={handleAssignFlight}
-                  disabled={!selectedFlightId || selectedEmployee.monthlyHours + 8 > selectedEmployee.maxHours}
+                  disabled={!selectedFlightId || selectedEmployee.totalFlightHours + 8 > selectedEmployee.maxFlightHoursPerMonth}
                 >
                   Xác nhận phân công
                 </Button>

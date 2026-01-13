@@ -14,7 +14,6 @@ export interface Employee {
   position: EmployeePosition;
   workExperience: string;
   totalFlightHours: number;
-  monthlyHours: number;
   maxFlightHoursPerMonth: number;
   assignments: string[];
 
