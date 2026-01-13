@@ -39,7 +39,15 @@ export const flightService = {
     }
     if (params.search) {
       const k = params.search.trim();
-      rsqlConditions.push(`(id=='*${k}*')`); // assuming search by id
+      if (/^\d+$/.test(k)) {
+        // search theo ID (kiểu số)
+        rsqlConditions.push(`id==${k}`);
+      } else {
+        // search theo text (route)
+        rsqlConditions.push(
+          `(route.origin=='*${k}*',route.destination=='*${k}*')`
+        );
+      }
     }
     if (params.origin) {
       rsqlConditions.push(`route.origin=='*${params.origin}*'`);

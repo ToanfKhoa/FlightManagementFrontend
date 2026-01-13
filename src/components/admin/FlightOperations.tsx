@@ -767,7 +767,7 @@ export function FlightOperations() {
       {/* Search */}
       <div className="flex gap-2 items-center mb-4">
         <Input
-          placeholder="Tìm kiếm theo ID chuyến bay..."
+          placeholder="Nhập ID chuyến bay hoặc địa điểm để tìm kiếm..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
