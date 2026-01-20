@@ -242,7 +242,9 @@ export function Reports() {
                   {flightPassengerStats.map((stat) => (
                     <div key={stat.flightId} className="flex justify-between items-center p-3 bg-gray-50 rounded">
                       <div>
-                        <p className="font-semibold">{stat.origin} - {stat.destination}</p>
+                        <p className="font-semibold">
+                          Mã chuyến bay: {stat.flightId} <br />
+                          {stat.origin} - {stat.destination}</p>
                         <p className="text-sm text-gray-600">{new Date(stat.departureTime).toLocaleString()}</p>
                       </div>
                       <p className="font-bold">{stat.passengerCount} hành khách</p>
@@ -265,7 +267,10 @@ export function Reports() {
                   {loadFactorStats.map((stat) => (
                     <div key={stat.flightId} className="p-3 bg-gray-50 rounded">
                       <div className="flex justify-between items-center mb-2">
-                        <p className="font-semibold">{stat.origin} - {stat.destination}</p>
+
+                        <p className="font-semibold">
+                          Mã chuyến bay: {stat.flightId} <br />
+                          {stat.origin} - {stat.destination}</p>
                         <p className="font-bold">{stat.loadFactorPercentage.toFixed(1)}%</p>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
@@ -293,7 +298,9 @@ export function Reports() {
                   {availableSeatsStats.map((stat) => (
                     <div key={stat.flightId} className="flex justify-between items-center p-3 bg-gray-50 rounded">
                       <div>
-                        <p className="font-semibold">{stat.origin} - {stat.destination}</p>
+                        <p className="font-semibold">
+                          Mã chuyến bay: {stat.flightId} <br />
+                          {stat.origin} - {stat.destination}</p>
                         <p className="text-sm text-gray-600">{stat.aircraftRegistrationNumber}</p>
                       </div>
                       <p className="font-bold">{stat.availableSeatsCount}/{stat.totalSeatCapacity}</p>
@@ -316,7 +323,9 @@ export function Reports() {
                   {crewPerFlightStats.map((stat) => (
                     <div key={stat.flightId} className="p-3 bg-gray-50 rounded">
                       <div className="flex justify-between items-center mb-2">
-                        <p className="font-semibold">{stat.origin} - {stat.destination}</p>
+                        <p className="font-semibold">
+                          Mã chuyến bay: {stat.flightId} <br />
+                          {stat.origin} - {stat.destination}</p>
                         <p className="font-bold">Tổng: {stat.totalCrewCount}</p>
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-sm">

@@ -188,7 +188,7 @@ export function FlightSearch({ userId }: FlightSearchProps) {
                 id="edit-departureTime"
                 value={searchDate}
                 onChange={(e) => setSearchDate(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
+                min={new Date().toISOString().slice(0, 16)}
               />
             </div>
           </div>

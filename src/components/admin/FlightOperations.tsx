@@ -260,7 +260,7 @@ export function FlightOperations() {
         external: false
       });
     } catch (error) {
-      toast.error("Vui lòng nhập đầy đủ thông tin");
+      toast.error(error as string);
     }
   };
 
@@ -401,7 +401,13 @@ export function FlightOperations() {
         arrivalTime: '',
       });
     } catch (error) {
-      toast.error("Vui lòng nhập đầy đủ thông tin");
+      var msg = error?.response?.data?.message || "Không thể tạo chuyến bay";
+
+      if (msg.includes("Departure time must after 24h")) {
+        msg = "Trong 24h máy bay chỉ khởi hành được 1 lần. Vui lòng chọn thời gian khác.";
+      }
+
+      toast.error(msg);
     }
     finally {
       setCreatingFlight(false);
@@ -591,6 +597,7 @@ export function FlightOperations() {
                       id="departureTime"
                       value={newFlight.departureTime}
                       onChange={(e) => setNewFlight({ ...newFlight, departureTime: e.target.value })}
+                      min={new Date().toISOString().slice(0, 16)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -600,6 +607,7 @@ export function FlightOperations() {
                       id="arrivalTime"
                       value={newFlight.arrivalTime}
                       onChange={(e) => setNewFlight({ ...newFlight, arrivalTime: e.target.value })}
+                      min={new Date().toISOString().slice(0, 16)}
                     />
                   </div>
                 </div>
@@ -721,6 +729,7 @@ export function FlightOperations() {
                   id="edit-arrivalTime"
                   value={editFlightData.arrivalTime}
                   onChange={(e) => setEditFlightData({ ...editFlightData, arrivalTime: e.target.value })}
+                  min={new Date().toISOString().slice(0, 16)}
                 />
               </div>
             </div>
